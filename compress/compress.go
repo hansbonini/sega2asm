@@ -1666,7 +1666,7 @@ func DecompressRNC(src []byte) ([]byte, error) {
 // to the output slice.  Output size is always a multiple of 4.
 //
 // Reference: https://github.com/Nasina7/PuyoComp/blob/main/src/decompress.rs
-func DecompressCompile(src []byte) ([]byte, error) {
+func DecompressLZCompile(src []byte) ([]byte, error) {
 	if len(src) == 0 {
 		return nil, fmt.Errorf("compile: empty input")
 	}
@@ -1937,8 +1937,8 @@ func Decompress(compression string, src []byte) ([]byte, error) {
 		return DecompressRNC1(src)
 	case "rnc2":
 		return DecompressRNC2(src)
-	case "compile":
-		return DecompressCompile(src)
+	case "lzcompile":
+		return DecompressLZCompile(src)
 	case "itl":
 		return DecompressITL(src)
 	case "lzfactor5":
