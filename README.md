@@ -57,6 +57,9 @@ Assembly output compatible with [Clownacy/clownassembler](https://github.com/Clo
   Cutthroat Island …).
 - `rnc`, `rnc1`, `rnc2` – Rob Northen Compression method 1/2 (generic,
   found in various ports and utilities).
+- `compile` – Compile Co. Ltd. command-byte scheme (Puyo Puyo, Aleste / MUSHA,
+  GG Aleste, Puyo Puyo 2, Power Strike II …). Back-references use a 256-byte
+  circular history; output is buffered in 4-byte chunks.
 
 **Labels & symbols:**
 - Reads `symbols.txt` in multiple formats (name=addr, addr:name, space-separated)
