@@ -12,20 +12,36 @@ import (
 // Public API
 // ---------------------------------------------------------------------------
 
+// FlowKind classifies the control-flow effect of an instruction.
+type FlowKind uint8
+
+const (
+	FlowNone     FlowKind = iota
+	FlowCall               // jsr, bsr — calls a subroutine
+	FlowReturn             // rts, rte, rtr — returns from subroutine
+	FlowJump               // jmp, bra — unconditional jump (no return)
+	FlowBranch             // bcc etc. — conditional branch
+	FlowHalt               // illegal, stop — execution stops
+)
+
 // Result holds a single disassembled instruction.
 type Result struct {
 	Addr    uint32
 	Bytes   []byte
-	Text    string // formatted instruction text
+	Text    string   // formatted instruction text
 	IsValid bool
+	Flow    FlowKind // control-flow classification
+	Target  uint32   // resolved target address for Call/Jump/Branch (0 = indirect/unknown)
 }
 
 // Disassembler holds state needed for a disassembly pass.
 type Disassembler struct {
-	data    []byte
-	base    uint32            // ROM base address (usually 0)
-	labels  map[uint32]string // address → label name
-	pos     int
+	data       []byte
+	base       uint32            // ROM base address (usually 0)
+	labels     map[uint32]string // address → label name
+	pos        int
+	lastFlow   FlowKind
+	lastTarget uint32
 }
 
 // New creates a Disassembler over data starting at baseAddr.
@@ -50,6 +66,9 @@ func (d *Disassembler) Next() Result {
 	startPos := d.pos
 	startPC := d.PC()
 
+	d.lastFlow = FlowNone
+	d.lastTarget = 0
+
 	text, ok := d.decode()
 
 	end := d.pos
@@ -66,6 +85,8 @@ func (d *Disassembler) Next() Result {
 		Bytes:   append([]byte(nil), d.data[startPos:end]...),
 		Text:    text,
 		IsValid: ok,
+		Flow:    d.lastFlow,
+		Target:  d.lastTarget,
 	}
 }
 
@@ -221,21 +242,26 @@ func (d *Disassembler) decodeGroup4(op uint16) (string, bool) {
 	// Specific patterns first
 	switch op {
 	case 0x4AFC:
+		d.lastFlow = FlowHalt
 		return "\tillegal", true
 	case 0x4E70:
 		return "\treset", true
 	case 0x4E71:
 		return "\tnop", true
 	case 0x4E72:
+		d.lastFlow = FlowHalt
 		ext := d.readImmU16()
 		return fmt.Sprintf("\tstop\t#$%04X", ext), true
 	case 0x4E73:
+		d.lastFlow = FlowReturn
 		return "\trte", true
 	case 0x4E75:
+		d.lastFlow = FlowReturn
 		return "\trts", true
 	case 0x4E76:
 		return "\ttrapv", true
 	case 0x4E77:
+		d.lastFlow = FlowReturn
 		return "\trtr", true
 	}
 
@@ -256,11 +282,17 @@ func (d *Disassembler) decodeGroup4(op uint16) (string, bool) {
 		return fmt.Sprintf("\tmove.l\tusp,a%d", op&7), true
 	}
 	if op&0xFFC0 == 0x4E80 {
+		d.lastFlow = FlowCall
+		posBeforeEA := d.pos
 		ea := d.decodeEA(op&0x3F, 4)
+		d.lastTarget = eaAbsTarget(op&0x3F, d.data, posBeforeEA, d.base)
 		return fmt.Sprintf("\tjsr\t%s", ea), true
 	}
 	if op&0xFFC0 == 0x4EC0 {
+		d.lastFlow = FlowJump
+		posBeforeEA := d.pos
 		ea := d.decodeEA(op&0x3F, 4)
+		d.lastTarget = eaAbsTarget(op&0x3F, d.data, posBeforeEA, d.base)
 		return fmt.Sprintf("\tjmp\t%s", ea), true
 	}
 	if op&0xFB80 == 0x4880 {
@@ -393,13 +425,17 @@ func (d *Disassembler) decodeBranch(op uint16) (string, bool) {
 		size = ".s"
 	}
 
+	d.lastTarget = target
 	label := d.labelOrHex(target)
 	if cond == 0 {
+		d.lastFlow = FlowJump
 		return fmt.Sprintf("\tbra%s\t%s", size, label), true
 	}
 	if cond == 1 {
+		d.lastFlow = FlowCall
 		return fmt.Sprintf("\tbsr%s\t%s", size, label), true
 	}
+	d.lastFlow = FlowBranch
 	return fmt.Sprintf("\tb%s%s\t%s", condName(cond), size, label), true
 }
 
@@ -701,14 +737,23 @@ func (d *Disassembler) readImmU32() uint32 {
 func (d *Disassembler) readImm(n int) uint32 {
 	switch n {
 	case 1:
+		if d.pos+2 > len(d.data) {
+			return 0
+		}
 		v := readU16(d.data, d.pos)
 		d.pos += 2
 		return uint32(v & 0xFF)
 	case 2:
+		if d.pos+2 > len(d.data) {
+			return 0
+		}
 		v := readU16(d.data, d.pos)
 		d.pos += 2
 		return uint32(v)
 	case 4:
+		if d.pos+4 > len(d.data) {
+			return 0
+		}
 		v := readU32(d.data, d.pos)
 		d.pos += 4
 		return v
@@ -747,6 +792,33 @@ func (d *Disassembler) labelOrHex32(addr uint32) string {
 		return name
 	}
 	return fmt.Sprintf("$%06X", addr)
+}
+
+// eaAbsTarget extracts the resolved absolute address from a JSR/JMP EA field
+// when the EA encodes a static address (absolute long/short or PC-relative).
+// posAfterOpword is the index in data right after the instruction opword.
+// Returns 0 for indirect/register-based EA modes.
+func eaAbsTarget(ea uint16, data []byte, posAfterOpword int, base uint32) uint32 {
+	if (ea>>3)&7 != 7 {
+		return 0 // not an extended EA mode
+	}
+	switch ea & 7 {
+	case 0: // absolute short (.w)
+		if posAfterOpword+2 <= len(data) {
+			return uint32(readU16(data, posAfterOpword))
+		}
+	case 1: // absolute long (.l)
+		if posAfterOpword+4 <= len(data) {
+			return readU32(data, posAfterOpword)
+		}
+	case 2: // PC-relative (d16,PC) — PC points past the displacement word
+		if posAfterOpword+2 <= len(data) {
+			disp := int16(readU16(data, posAfterOpword))
+			pc := base + uint32(posAfterOpword+2)
+			return uint32(int32(pc) + int32(disp))
+		}
+	}
+	return 0
 }
 
 func readU16(data []byte, pos int) uint16 {

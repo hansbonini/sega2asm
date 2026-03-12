@@ -5,6 +5,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"gopkg.in/yaml.v3"
 )
@@ -104,6 +105,19 @@ func Load(path string) (*Config, error) {
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
 		return nil, fmt.Errorf("parsing config %q: %w", path, err)
 	}
+
+	// Resolve input paths relative to the YAML file directory so that
+	// configs can be run from any working directory.
+	dir := filepath.Dir(path)
+	resolveRel := func(p string) string {
+		if p == "" || filepath.IsAbs(p) {
+			return p
+		}
+		return filepath.Join(dir, p)
+	}
+	cfg.Options.TargetPath = resolveRel(cfg.Options.TargetPath)
+	cfg.Options.SymbolsPath = resolveRel(cfg.Options.SymbolsPath)
+	cfg.Options.CharmapPath = resolveRel(cfg.Options.CharmapPath)
 
 	// Apply defaults
 	if cfg.Options.Platform == "" {
