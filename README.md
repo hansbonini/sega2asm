@@ -57,10 +57,11 @@ Assembly output compatible with [Clownacy/clownassembler](https://github.com/Clo
   Cutthroat Island …).
 - `rnc`, `rnc1`, `rnc2` – Rob Northen Compression method 1/2 (generic,
   found in various ports and utilities).
-- `compile` – Compile Co. Ltd. command-byte scheme
-- `itl` – I.T.L. (Sega) non-zero-bytes + XOR block compressor (Bonanza Bros, and other I.T.L.-developed Sega games). (Puyo Puyo, Aleste / MUSHA,
+- `compile` – Compile Co. Ltd. command-byte scheme (Puyo Puyo, Aleste / MUSHA,
   GG Aleste, Puyo Puyo 2, Power Strike II …). Back-references use a 256-byte
   circular history; output is buffered in 4-byte chunks.
+- `itl` – I.T.L. (Sega) non-zero-bytes + XOR block compressor (Bonanza Bros, and other I.T.L.-developed Sega games).
+- `lzfactor5` – Factor 5 LZ (version 1: 11-bit window / version 2: 16-bit window; auto-detected from header). Used in Factor 5 Mega Drive games.
 
 **Labels & symbols:**
 - Reads `symbols.txt` in multiple formats (name=addr, addr:name, space-separated)
