@@ -1,0 +1,106 @@
+name: sonic1
+# SHA1 of the Sonic The Hedgehog (USA, Europe) ROM — set to validate
+sha1: ""
+
+options:
+  platform: genesis
+  region: ntsc
+  basename: sonic1
+  base_path: ./out
+  target_path: ./Sonic The Hedgehog (USA, Europe).md
+  asm_path: asm
+  asset_path: assets
+  build_path: build
+  symbols_path: ./example/symbols.txt
+  charmap_path: ./example/charmap.tbl
+  header_output: true
+  incbin: false
+
+# Sonic 1 ROM: 512 KB — valid range $000000–$07FFFF
+segments:
+
+  # ROM header + interrupt vectors
+  - name: header
+    type: header
+    start: 0x000000
+    end: 0x000200
+
+  # Main 68000 code (~$37E00 bytes of code)
+  - name: main_code
+    type: m68k
+    start: 0x000200
+    end: 0x03A000
+    hints:
+      - offset: 0x0000        # relative to segment start (ROM $000200)
+        type: code
+        label: EntryPoint
+      - offset: 0x0040        # ROM $000240
+        type: data_long
+        length: 64
+        label: ObjectPtrTable
+
+  # Z80 sound driver (stored in ROM, runs in Z80 address space $0000+)
+  - name: sound_driver
+    type: z80
+    start: 0x072000
+    end: 0x073800
+
+  # Nemesis-compressed sprite art
+  - name: art_sonic
+    type: gfxcomp
+    compression: nemesis
+    start: 0x040000
+    end: 0x046000
+
+  - name: art_rings
+    type: gfxcomp
+    compression: nemesis
+    start: 0x046000
+    end: 0x048000
+
+  - name: art_badniks
+    type: gfxcomp
+    compression: nemesis
+    start: 0x048000
+    end: 0x04C000
+
+  # PCM DAC samples
+  - name: sfx_samples
+    type: pcm
+    sample_rate: 7040
+    start: 0x04C000
+    end: 0x050000
+
+  # Raw uncompressed art (HUD tiles etc.)
+  - name: art_hud
+    type: gfx
+    start: 0x050000
+    end: 0x051000
+
+  # Level layout binary data
+  - name: layout_ghz_act1
+    type: bin
+    start: 0x051000
+    end: 0x052000
+    subdir: levels
+
+  # Palette data
+  - name: palettes
+    type: bin
+    start: 0x06C000
+    end: 0x06C100
+    subdir: palettes
+
+  # Text strings with charmap
+  - name: credits_text
+    type: text
+    start: 0x070000
+    end: 0x070200
+    encoding: charmap
+
+  # Remaining code/data block
+  - name: data_misc
+    type: bin
+    start: 0x03A000
+    end: 0x040000
+    subdir: data

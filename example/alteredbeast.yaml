@@ -1,0 +1,605 @@
+name: alteredbeast
+# Altered Beast (USA, Europe) REV02 — Sega Genesis / Mega Drive
+# SHA-1 verified against original ROM
+sha1: "38945360D824D2FB9535B4FD7F25B9AA9B32F019"
+
+options:
+  platform: genesis
+  region: ntsc
+  basename: alteredbeast
+  base_path: ./out/alteredbeast
+  target_path: "./Altered Beast (USA, Europe).md"
+  asm_path: asm
+  asset_path: assets
+  build_path: build
+  symbols_path: ./alteredbeast_symbols.txt
+  charmap_path: ./alteredbeast_sjis.tbl
+  header_output: true
+  incbin: false
+
+# ROM: 512 KB original (valid range $000000–$07FFFF)
+# ⚠  CURRENT PROJECT STATE: The Z80 drivers include embedded music data (7–8 KB each),
+#    expanding the total ROM to ~$08C894 bytes (~563 KB). The SHA1 check will fail
+#    until the GFX/audio offsets in the main 68k ASM are reconciled.
+#    Addresses below reflect the REBUILT ROM layout, not the original game ROM.
+#
+# All segment start addresses extracted from hansbonini/smd_alteredbeast Makefile
+# and split.txt. Z80 driver boundaries measured from compiled .bin files.
+#
+# Layout overview:
+#   $000000–$0001FF   ROM header + interrupt vectors
+#   $000200–$000138EB M68K code (palettes + raw gfx embedded within)
+#   $000138EC–$0001FFFF PCM voice samples (6 clips)
+#   $00020000–$02D31E  Z80 drivers (7 programs, ~7-8 KB each, org $0000)
+#   $02D31E–$030894   $FF padding ($3576 bytes)
+#   $030894–$08C894   GFX assets (SegaRD/Nemesis compressed) — shifted +$C894 from original
+#   (original ROM had GFX at $024000–$07FFFF)
+#   $00060B66–$0007E36F Data (unknown structure — level maps / extra GFX)
+#   $0007E370–$0007FFFF GFX assets SegaRD-compressed (fireballs / game-over / font)
+
+segments:
+
+  # ── ROM Header ─────────────────────────────────────────────────────────────
+  - name: header
+    type: header
+    start: 0x000000
+    end:   0x000200
+
+  # ── Main 68000 Code ─────────────────────────────────────────────────────────
+  # Contains inline palette data and raw sprite sheets.
+  # Notable embedded data addresses (all from Makefile / splitrom):
+  #   $00009FB4  raw sprite sheet (1568 bytes, gfxdump palette $00009F94)
+  #   $0000BD72  raw sprite sheet (160 bytes,  gfxdump palette $0000BCB4)
+  #   $0000BCB4–$0000BD69 palette binary blocks (asm68k compiled)
+  - name: main_code
+    type: m68k
+    start: 0x000200
+    end:   0x000138EC
+
+  # ── PCM Voice Samples ───────────────────────────────────────────────────────
+  # File names in smd_alteredbeast/audio/pcm/ ARE the ROM offsets.
+  # Sample rates from Makefile wav2pcm / pcm2wav invocations.
+
+  - name: pcm_power_up
+    type: pcm
+    sample_rate: 8000
+    start: 0x000138EC
+    end:   0x0001552C
+    subdir: audio/pcm
+
+  - name: pcm_die_scream
+    type: pcm
+    sample_rate: 4000
+    start: 0x0001552C
+    end:   0x000173B4
+    subdir: audio/pcm
+
+  - name: pcm_transform_scream
+    type: pcm
+    sample_rate: 4000
+    start: 0x000173B4
+    end:   0x0001AFD4
+    subdir: audio/pcm
+
+  - name: pcm_boss_laugh
+    type: pcm
+    sample_rate: 4000
+    start: 0x0001AFD4
+    end:   0x0001CF56
+    subdir: audio/pcm
+
+  - name: pcm_rise_from_grave
+    type: pcm
+    sample_rate: 4000
+    start: 0x0001CF56
+    end:   0x0001EED8
+    subdir: audio/pcm
+
+  - name: pcm_welcome_to_doom
+    type: pcm
+    sample_rate: 4000
+    start: 0x0001EED8
+    end:   0x00020000
+    subdir: audio/pcm
+
+  # ── Z80 Sound Driver block ($020000–$024000) ───────────────────────────────
+  # The $4000-byte block contains 7 drivers assembled with sjasmplus, in order:
+  #
+  #   ROM order   File                           Z80 org
+  #   ─────────── ────────────────────────────── ──────────
+  #   pcm_1       z80/pcm_driver/pcm_driver1.asm $0000
+  #   pcm_2       z80/pcm_driver/pcm_driver2.asm $0000
+  #   pcm_3       z80/pcm_driver/pcm_driver3.asm $0000
+  #   sounddriver z80/sounddriver.asm            $0000
+  #   pcm_6       z80/pcm_driver/pcm_driver6.asm $0000
+  #   pcm_4       z80/pcm_driver/pcm_driver4.asm $0000
+  #   pcm_5       z80/pcm_driver/pcm_driver5.asm $0000
+  #
+  # Each driver is a complete standalone Z80 program (org $0000).  The 68k loads
+  # them into Z80 RAM at $A00000 on demand, replacing the previous driver.
+  #
+  # Total code:     $0A8A bytes ($020000–$020A8A)
+  # $FF padding:    $3576 bytes ($020A8A–$024000)
+  #
+  # Individual driver boundaries require the compiled .bin files or the ROM to
+  # measure.  The single z80 segment below disassembles the full code region as
+  # one continuous Z80 stream.  Split into separate segments once each .bin size
+  # is known (run `sjasmplus --lst` on each .asm and check the reported size, or
+  # binary-diff the compiled ROM at $020000 against each .bin file).
+
+  # ── Z80 Sound Driver block ───────────────────────────────────────────────────
+  # 7 complete Z80 images stored sequentially in ROM (each even-aligned).
+  # Layout per driver: [Z80 code: org $0000] + [embedded PCM/music data]
+  # The 68k copies the selected driver to Z80 RAM ($A00000) on demand.
+  #
+  # ROM order:  pcm_driver1 · pcm_driver2 · pcm_driver3 · sounddriver
+  #             pcm_driver6 · pcm_driver4 · pcm_driver5
+
+  # BGM set 1 — Z80 driver code (org $0000, 384 = $0180 bytes)
+  - name: z80_pcm_driver1
+    type: z80
+    start: 0x00020000
+    end:   0x00020180
+    z80_org: 0x0000
+    subdir: z80/pcm_driver1
+
+  # BGM set 1 — embedded PCM/music data (Z80 addr $0180–$1C3F, 6848 = $1AC0 bytes)
+  - name: pcm_pcm_driver1
+    type: bin
+    start: 0x00020180
+    end:   0x00021C40
+    subdir: z80/pcm_driver1
+
+  # BGM set 2 — Z80 driver code (org $0000, 384 = $0180 bytes)
+  - name: z80_pcm_driver2
+    type: z80
+    start: 0x00021C40
+    end:   0x00021DC0
+    z80_org: 0x0000
+    subdir: z80/pcm_driver2
+
+  # BGM set 2 — embedded PCM/music data (Z80 addr $0180–$1E87, 7432 = $1D08 bytes)
+  - name: pcm_pcm_driver2
+    type: bin
+    start: 0x00021DC0
+    end:   0x00023AC8
+    subdir: z80/pcm_driver2
+
+  # BGM set 3 — Z80 driver code (org $0000, 384 = $0180 bytes)
+  - name: z80_pcm_driver3
+    type: z80
+    start: 0x00023AC8
+    end:   0x00023C48
+    z80_org: 0x0000
+    subdir: z80/pcm_driver3
+
+  # BGM set 3 — embedded PCM/music data (Z80 addr $0180–$1F68, 7658 = $1DEA bytes)
+  - name: pcm_pcm_driver3
+    type: bin
+    start: 0x00023C48
+    end:   0x00025A32
+    subdir: z80/pcm_driver3
+
+  # main FM/PSG sound driver — Z80 driver code (org $0000, 4595 = $11F3 bytes)
+  - name: z80_sounddriver
+    type: z80
+    start: 0x00025A32
+    end:   0x00026C25
+    z80_org: 0x0000
+    subdir: z80/sounddriver
+
+  # main FM/PSG sound driver — embedded PCM/music data (Z80 addr $11F3–$1CB5, 2755 = $0AC3 bytes)
+  - name: pcm_sounddriver
+    type: bin
+    start: 0x00026C25
+    end:   0x000276E8
+    subdir: z80/sounddriver
+
+  # BGM set 6 — Z80 driver code (org $0000, 384 = $0180 bytes)
+  - name: z80_pcm_driver6
+    type: z80
+    start: 0x000276E8
+    end:   0x00027868
+    z80_org: 0x0000
+    subdir: z80/pcm_driver6
+
+  # BGM set 6 — embedded PCM/music data (Z80 addr $0180–$1F80, 7682 = $1E02 bytes)
+  - name: pcm_pcm_driver6
+    type: bin
+    start: 0x00027868
+    end:   0x0002966A
+    subdir: z80/pcm_driver6
+
+  # BGM set 4 — Z80 driver code (org $0000, 384 = $0180 bytes)
+  - name: z80_pcm_driver4
+    type: z80
+    start: 0x0002966A
+    end:   0x000297EA
+    z80_org: 0x0000
+    subdir: z80/pcm_driver4
+
+  # BGM set 4 — embedded PCM/music data (Z80 addr $0180–$1F80, 7682 = $1E02 bytes)
+  - name: pcm_pcm_driver4
+    type: bin
+    start: 0x000297EA
+    end:   0x0002B5EC
+    subdir: z80/pcm_driver4
+
+  # BGM set 5 — Z80 driver code (org $0000, 384 = $0180 bytes)
+  - name: z80_pcm_driver5
+    type: z80
+    start: 0x0002B5EC
+    end:   0x0002B76C
+    z80_org: 0x0000
+    subdir: z80/pcm_driver5
+
+  # BGM set 5 — embedded PCM/music data (Z80 addr $0180–$1D30, 7090 = $1BB2 bytes)
+  - name: pcm_pcm_driver5
+    type: bin
+    start: 0x0002B76C
+    end:   0x0002D31E
+    subdir: z80/pcm_driver5
+
+  # $FF fill separating Z80 block from GFX data
+  - name: z80_padding
+    type: bin
+    start: 0x0002D31E
+    end:   0x00030894   # $3576 bytes
+    subdir: z80
+
+  # ── GFX — SegaRD Compressed ─────────────────────────────────────────────────
+  # All offsets from Makefile segard_decomp targets.
+  # end = start of next segment (SegaRD reader stops at end-of-stream token).
+
+  - name: gfx_font
+    type: gfxcomp
+    compression: segard
+    start: 0x00030894
+    end:   0x0003466E
+    subdir: gfx/segard
+
+  - name: gfx_stage1_bg
+    type: gfxcomp
+    compression: segard
+    start: 0x0003466E
+    end:   0x0003757E
+    subdir: gfx/segard
+
+  - name: gfx_stage2_bg
+    type: gfxcomp
+    compression: segard
+    start: 0x0003757E
+    end:   0x00039A3E
+    subdir: gfx/segard
+
+  - name: gfx_stage3_bg
+    type: gfxcomp
+    compression: segard
+    start: 0x00039A3E
+    end:   0x0003BA88
+    subdir: gfx/segard
+
+  - name: gfx_stage4_bg
+    type: gfxcomp
+    compression: segard
+    start: 0x0003BA88
+    end:   0x0003D704
+    subdir: gfx/segard
+
+  - name: gfx_stage5_bg
+    type: gfxcomp
+    compression: segard
+    start: 0x0003D704
+    end:   0x0004033E
+    subdir: gfx/segard
+
+  - name: gfx_boss_stage2
+    type: gfxcomp
+    compression: segard
+    start: 0x0004033E
+    end:   0x00041EF0
+    subdir: gfx/segard
+
+  - name: gfx_boss_stage5
+    type: gfxcomp
+    compression: segard
+    start: 0x00041EF0
+    end:   0x000452C2
+    subdir: gfx/segard
+
+  - name: gfx_boss_stage1
+    type: gfxcomp
+    compression: segard
+    start: 0x000452C2
+    end:   0x00048294
+    subdir: gfx/segard
+
+  - name: gfx_boss_stage3
+    type: gfxcomp
+    compression: segard
+    start: 0x00048294
+    end:   0x0004A874
+    subdir: gfx/segard
+
+  - name: gfx_boss_stage4
+    type: gfxcomp
+    compression: segard
+    start: 0x0004A874
+    end:   0x0004D2B0
+    subdir: gfx/segard
+
+  - name: gfx_boss_normal_dogs
+    type: gfxcomp
+    compression: segard
+    start: 0x0004D2B0
+    end:   0x0004E1F0
+    subdir: gfx/segard
+
+  - name: gfx_power_ups
+    type: gfxcomp
+    compression: segard
+    start: 0x0004E1F0
+    end:   0x0004E34C
+    subdir: gfx/segard
+
+  - name: gfx_grave
+    type: gfxcomp
+    compression: segard
+    start: 0x0004E34C
+    end:   0x0004E75C
+    subdir: gfx/segard
+
+  - name: gfx_enemy_headless_horror2
+    type: gfxcomp
+    compression: segard
+    start: 0x0004E75C
+    end:   0x0004EF9E
+    subdir: gfx/segard
+
+  - name: gfx_enemy_rattle_tail
+    type: gfxcomp
+    compression: segard
+    start: 0x0004EF9E
+    end:   0x0004F710
+    subdir: gfx/segard
+
+  - name: gfx_enemy_round_leech
+    type: gfxcomp
+    compression: segard
+    start: 0x0004F710
+    end:   0x0004FE76
+    subdir: gfx/segard
+
+  - name: gfx_fossils
+    type: gfxcomp
+    compression: segard
+    start: 0x0004FE76
+    end:   0x000507B6
+    subdir: gfx/segard
+
+  - name: gfx_enemy_headless_horror1
+    type: gfxcomp
+    compression: segard
+    start: 0x000507B6
+    end:   0x00051032
+    subdir: gfx/segard
+
+  - name: gfx_enemy_cave_needle
+    type: gfxcomp
+    compression: segard
+    start: 0x00051032
+    end:   0x00051636
+    subdir: gfx/segard
+
+  - name: gfx_enemy_rock_turtle
+    type: gfxcomp
+    compression: segard
+    start: 0x00051636
+    end:   0x00051D0E
+    subdir: gfx/segard
+
+  - name: gfx_enemy_saw_fish
+    type: gfxcomp
+    compression: segard
+    start: 0x00051D0E
+    end:   0x00052640
+    subdir: gfx/segard
+
+  - name: gfx_enemy_gory_goat
+    type: gfxcomp
+    compression: segard
+    start: 0x00052640
+    end:   0x00052C70
+    subdir: gfx/segard
+
+  - name: gfx_enemy_bad_boar
+    type: gfxcomp
+    compression: segard
+    start: 0x00052C70
+    end:   0x0005396C
+    subdir: gfx/segard
+
+  - name: gfx_enemy_hammer_demon
+    type: gfxcomp
+    compression: segard
+    start: 0x0005396C
+    end:   0x00053F5A
+    subdir: gfx/segard
+
+  - name: gfx_enemy_dark_unicorn
+    type: gfxcomp
+    compression: segard
+    start: 0x00053F5A
+    end:   0x000547EA
+    subdir: gfx/segard
+
+  - name: gfx_rock
+    type: gfxcomp
+    compression: segard
+    start: 0x000547EA
+    end:   0x00054CE6
+    subdir: gfx/segard
+
+  - name: gfx_enemy_chicken_stinger
+    type: gfxcomp
+    compression: segard
+    start: 0x00054CE6
+    end:   0x000558B4
+    subdir: gfx/segard
+
+  - name: gfx_enemy_grave_master
+    type: gfxcomp
+    compression: segard
+    start: 0x000558B4
+    end:   0x00056BA2
+    subdir: gfx/segard
+
+  - name: gfx_enemy_skinny_orcus
+    type: gfxcomp
+    compression: segard
+    start: 0x00056BA2
+    end:   0x00057382
+    subdir: gfx/segard
+
+  - name: gfx_smoke
+    type: gfxcomp
+    compression: segard
+    start: 0x00057382
+    end:   0x0005789E
+    subdir: gfx/segard
+
+  - name: gfx_powerup_steal_magic
+    type: gfxcomp
+    compression: segard
+    start: 0x0005789E
+    end:   0x00057C38
+    subdir: gfx/segard
+
+  - name: gfx_font_credits
+    type: gfxcomp
+    compression: segard
+    start: 0x00057C38
+    end:   0x00058E94
+    subdir: gfx/segard
+
+  # ── GFX — Nemesis Compressed ────────────────────────────────────────────────
+  # From Makefile nemesis_decomp section.
+  - name: gfx_title_tiles_nemesis
+    type: gfxcomp
+    compression: nemesis
+    start: 0x00058E94
+    end:   0x00059AE2
+    subdir: gfx/nemesis
+
+  # ── GFX — SegaRD Compressed (continued) ─────────────────────────────────────
+  - name: gfx_title_screen2
+    type: gfxcomp
+    compression: segard
+    start: 0x00059AE2
+    end:   0x00059EE2
+    subdir: gfx/segard
+
+  - name: gfx_title_screen
+    type: gfxcomp
+    compression: segard
+    start: 0x00059EE2
+    end:   0x0005F29E
+    subdir: gfx/segard
+
+  - name: gfx_zeus_sprites
+    type: gfxcomp
+    compression: segard
+    start: 0x0005F29E
+    end:   0x00064DF6
+    subdir: gfx/segard
+
+  - name: gfx_flames
+    type: gfxcomp
+    compression: segard
+    start: 0x00064DF6
+    end:   0x00066308
+    subdir: gfx/segard
+
+  - name: gfx_transform_bg
+    type: gfxcomp
+    compression: segard
+    start: 0x00066308
+    end:   0x0006677C
+    subdir: gfx/segard
+
+  - name: gfx_portrait
+    type: gfxcomp
+    compression: segard
+    start: 0x0006677C
+    end:   0x0006CB14
+    subdir: gfx/segard
+
+  - name: gfx_eyes_cutscene2
+    type: gfxcomp
+    compression: segard
+    start: 0x0006CB14
+    end:   0x0006D3FA
+    subdir: gfx/segard
+
+  # ── Unknown Data Region ──────────────────────────────────────────────────────
+  # ~120 KB between last known GFX and end-of-ROM GFX block.
+  # Likely contains: level/chunk maps, tileset tables, additional GFX.
+  # Investigate with debugger / IDA to sub-divide further.
+  - name: gfx_eyes_cutscene
+    type: gfxcomp
+    compression: segard
+    start: 0x0006D3FA
+    end:   0x0008AC04
+    subdir: gfx/segard
+
+  # ── GFX — SegaRD Compressed (end of ROM) ─────────────────────────────────────
+  # Addresses $0007E370–$0007FFFF from gfx2png / segard_comp Makefile targets.
+
+  - name: gfx_fireball
+    type: gfxcomp
+    compression: segard
+    start: 0x0008AC04
+    end:   0x0008AE80
+    subdir: gfx/segard
+
+  - name: gfx_fireball2
+    type: gfxcomp
+    compression: segard
+    start: 0x0008AE80
+    end:   0x0008B320
+    subdir: gfx/segard
+
+  - name: gfx_fireball3
+    type: gfxcomp
+    compression: segard
+    start: 0x0008B320
+    end:   0x0008B7A6
+    subdir: gfx/segard
+
+  - name: gfx_fireball4
+    type: gfxcomp
+    compression: segard
+    start: 0x0008B7A6
+    end:   0x0008B8A2
+    subdir: gfx/segard
+
+  - name: gfx_bolts
+    type: gfxcomp
+    compression: segard
+    start: 0x0008B8A2
+    end:   0x0008BD5A
+    subdir: gfx/segard
+
+  - name: gfx_game_over
+    type: gfxcomp
+    compression: segard
+    start: 0x0008BD5A
+    end:   0x0008C14A
+    subdir: gfx/segard
+
+  - name: gfx_font_end
+    type: gfxcomp
+    compression: segard
+    start: 0x0008C14A
+    end:   0x0008C894
+    subdir: gfx/segard

@@ -1,0 +1,254 @@
+; sega2asm symbols — Altered Beast (USA, Europe) REV02
+; SHA-1: 38945360D824D2FB9535B4FD7F25B9AA9B32F019
+; Source: hansbonini/smd_alteredbeast (Makefile, splitrom addresses)
+;
+; Format: name = $ADDRESS   or   $ADDRESS name   (both accepted by sega2asm)
+; Z80 symbols use Z80 address space (0-based), not ROM addresses.
+; All non-Z80 symbols use absolute ROM / bus addresses.
+
+; ── Interrupt Vectors ($000000–$0001FF) ─────────────────────────────────────
+; M68000 exception vector table — ROM header region
+Vectors            = $000000
+Vec_Reset_SSP      = $000000   ; Initial Stack Pointer
+Vec_Reset_PC       = $000004   ; Initial Program Counter (EntryPoint)
+Vec_BusError       = $000008
+Vec_AddressError   = $00000C
+Vec_IllegalInstr   = $000010
+Vec_ZeroDivide     = $000014
+Vec_CHK            = $000018
+Vec_TRAPV          = $00001C
+Vec_PrivViolation  = $000020
+Vec_Trace          = $000024
+Vec_LineA          = $000028
+Vec_LineF          = $00002C
+Vec_HInt           = $000070   ; Horizontal Interrupt
+Vec_VInt           = $000078   ; Vertical Interrupt (Level 6 autovector)
+
+; ── ROM Header fields ($000100–$0001FF) ──────────────────────────────────────
+ROM_Header         = $000100
+ROM_HW_Id          = $000100   ; "SEGA MEGA DRIVE   "
+ROM_Copyright      = $000110   ; "(C)SEGA 1989.JAN  "
+ROM_DomesticName   = $000120   ; Japanese title
+ROM_OverseasName   = $000150   ; "ALTERD BEAST      "
+ROM_Serial         = $000180   ; "GM- 00054002-02"
+ROM_Checksum       = $00018E
+ROM_IOSupport      = $000190
+ROM_ROMStart       = $0001A0
+ROM_ROMEnd         = $0001A4
+ROM_RAMStart       = $0001A8
+ROM_RAMEnd         = $0001AC
+ROM_Regions        = $0001F0   ; "JU"
+
+; ── Entry Point & Core Engine ($000200+) ─────────────────────────────────────
+EntryPoint         = $000200
+
+; ── Palette Data (inline binary blocks in main_code) ─────────────────────────
+; All addresses from Makefile 68k_assemble_palettes targets.
+; Each is a small binary block assembled from includes/palettes/XXXXXXXX.asm
+
+Pal_00000C2C       = $00000C2C
+Pal_00000C3A       = $00000C3A
+Pal_000010C6       = $000010C6
+Pal_000010D0       = $000010D0
+Pal_000015BC       = $000015BC
+Pal_000015CA       = $000015CA
+Pal_000015D8       = $000015D8
+Pal_000015E6       = $000015E6
+Pal_000015F4       = $000015F4
+Pal_00001602       = $00001602
+Pal_00001B56       = $00001B56
+Pal_00001B66       = $00001B66
+Pal_00001B76       = $00001B76
+Pal_00001B86       = $00001B86
+Pal_00001B96       = $00001B96
+Pal_00001BA6       = $00001BA6
+Pal_00001BB6       = $00001BB6
+Pal_00001BC6       = $00001BC6
+Pal_00001BD6       = $00001BD6
+Pal_000021D4       = $000021D4
+Pal_000021F2       = $000021F2
+Pal_00002210       = $00002210
+Pal_0000222E       = $0000222E
+Pal_00003FDC       = $00003FDC
+Pal_00003FF2       = $00003FF2
+Pal_00004008       = $00004008
+Pal_0000401E       = $0000401E
+Pal_00004034       = $00004034
+Pal_00004048       = $00004048
+Pal_0000405C       = $0000405C
+Pal_00004070       = $00004070
+Pal_00004082       = $00004082
+Pal_00004094       = $00004094
+Pal_000040A8       = $000040A8
+Pal_000040BE       = $000040BE
+Pal_0000618E       = $0000618E
+Pal_00008EBE       = $00008EBE
+Pal_00008ECE       = $00008ECE
+Pal_00008EDC       = $00008EDC
+Pal_00008EE8       = $00008EE8
+Pal_00008EF2       = $00008EF2
+Pal_00008EFA       = $00008EFA
+Pal_00008F00       = $00008F00
+Pal_00008F22       = $00008F22
+Pal_00008F32       = $00008F32
+Pal_00008F42       = $00008F42
+Pal_00008F52       = $00008F52
+Pal_00008F62       = $00008F62
+Pal_00008F72       = $00008F72
+Pal_00008F82       = $00008F82
+Pal_00009D00       = $00009D00
+Pal_00009D04       = $00009D04
+Pal_00009D14       = $00009D14
+Pal_00009D22       = $00009D22
+Pal_00009D30       = $00009D30
+Pal_00009D3E       = $00009D3E
+Pal_00009D4C       = $00009D4C
+Pal_00009D5A       = $00009D5A
+Pal_00009D68       = $00009D68
+Pal_00009D76       = $00009D76
+Pal_00009D7A       = $00009D7A
+Pal_00009D9C       = $00009D9C
+Pal_00009DB0       = $00009DB0
+Pal_00009DC2       = $00009DC2
+Pal_00009DD6       = $00009DD6
+Pal_00009F6C       = $00009F6C
+Pal_00009F94       = $00009F94
+
+; ── Raw (Uncompressed) GFX embedded in main_code ─────────────────────────────
+; Extracted by gfxdump tool; sizes from Makefile fsutil seteof values.
+GFX_00009FB4       = $00009FB4   ; 1568 bytes; palette Pal_00009F94
+GFX_0000BD72       = $0000BD72   ; 160 bytes;  palette Pal_0000BCB4
+
+; ── More Palette Data (after GFX_00009FB4 region) ───────────────────────────
+Pal_0000AD54       = $0000AD54
+Pal_0000AD5C       = $0000AD5C
+Pal_0000B7CE       = $0000B7CE
+Pal_0000B7EC       = $0000B7EC
+Pal_0000B80A       = $0000B80A
+Pal_0000B828       = $0000B828
+Pal_0000B846       = $0000B846
+Pal_0000B864       = $0000B864
+Pal_0000B884       = $0000B884
+Pal_0000B8A4       = $0000B8A4
+Pal_0000B8C4       = $0000B8C4
+Pal_0000B8E4       = $0000B8E4
+Pal_0000B904       = $0000B904
+Pal_0000B912       = $0000B912
+Pal_0000BCB4       = $0000BCB4
+Pal_0000BCC4       = $0000BCC4
+Pal_0000BD06       = $0000BD06
+Pal_0000BD10       = $0000BD10
+Pal_0000BD1A       = $0000BD1A
+Pal_0000BD2A       = $0000BD2A
+Pal_0000BD3A       = $0000BD3A
+Pal_0000BD4A       = $0000BD4A
+Pal_0000BD5A       = $0000BD5A
+Pal_00027DB8       = $00027DB8
+Pal_0002ACC8       = $0002ACC8
+Pal_0002D188       = $0002D188
+Pal_0002F1D2       = $0002F1D2
+Pal_00030E4E       = $00030E4E
+Pal_000529E8       = $000529E8
+Pal_000531A0       = $000531A0
+
+; ── PCM Voice Samples ─────────────────────────────────────────────────────────
+; ROM addresses = audio/pcm filenames in smd_alteredbeast repository.
+PCM_PowerUp        = $000138EC   ; "Power Up"         8000 Hz
+PCM_DieScream      = $0001552C   ; "Die Scream"        4000 Hz
+PCM_Transform      = $000173B4   ; "Transformation Scream" 4000 Hz
+PCM_BossLaugh      = $0001AFD4   ; "Boss Laugh"        4000 Hz
+PCM_RiseFromGrave  = $0001CF56   ; "Rise from Your Grave"  4000 Hz
+PCM_WelcomeDoom    = $0001EED8   ; "Welcome to Your Doom"  4000 Hz
+
+; ── GFX — SegaRD Compressed (ROM addresses = gfx/segard/ filenames) ──────────
+GFX_Font           = $00024000   ; Game Font            (palette Pal_0000BD4A)
+GFX_Stage1_BG      = $00027DDA   ; Stage 1 BG elements  (palette Pal_00027DB8)
+GFX_Stage2_BG      = $0002ACEA   ; Stage 2 BG elements  (palette Pal_0002ACC8)
+GFX_Stage3_BG      = $0002D1AA   ; Stage 3 BG elements  (palette Pal_0002D188)
+GFX_Stage4_BG      = $0002F1F4   ; Stage 4 BG elements  (palette Pal_0002F1D2)
+GFX_Stage5_BG      = $00030E70   ; Stage 5 BG elements  (palette Pal_00030E4E)
+GFX_Boss_Stage2    = $00033AAA   ; Boss Stage 2 (Octeyes) (palette Pal_0000B7EC)
+GFX_Boss_Stage5    = $0003565C   ; Boss Stage 5 (Neff)   (palette Pal_0000B846)
+GFX_Boss_Stage1    = $00038A2E   ; Boss Stage 1 (CrocWorm)(palette Pal_0000B7CE)
+GFX_Boss_Stage3    = $0003BA00   ; Boss Stage 3 (GoatHead)(palette Pal_0000B828)
+GFX_Boss_Stage4    = $0003DFE0   ; Boss Stage 4 (Beholder)(palette Pal_0000B80A)
+GFX_Boss_Normal    = $00040A1C   ; Boss normal form + Dogs(palette greyscale)
+GFX_PowerUps       = $0004195C   ; Power-Up orbs        (palette greyscale)
+GFX_Grave          = $00041AB8   ; Grave prop           (palette greyscale)
+GFX_HeadlessHorror2= $00041EC8   ; Enemy Headless Horror 2 (palette greyscale)
+GFX_RattleTail     = $0004270A   ; Enemy Rattle Tail    (palette greyscale)
+GFX_RoundLeech     = $00042E7C   ; Enemy Round Leech    (palette greyscale)
+GFX_Fossils        = $000435E2   ; Fossils prop         (palette greyscale)
+GFX_HeadlessHorror1= $00043F22   ; Enemy Headless Horror 1 (palette greyscale)
+GFX_CaveNeedle     = $0004479E   ; Enemy Cave Needle    (palette greyscale)
+GFX_RockTurtle     = $00044DA2   ; Enemy Rock Turtle    (palette greyscale)
+GFX_SawFish        = $0004547A   ; Enemy Saw Fish       (palette greyscale)
+GFX_GoryGoat       = $00045DAC   ; Enemy Gory Goat      (palette greyscale)
+GFX_BadBoar        = $000463DC   ; Enemy Bad Boar       (palette greyscale)
+GFX_HammerDemon    = $000470D8   ; Enemy Hammer Demon   (palette greyscale)
+GFX_DarkUnicorn    = $000476C6   ; Enemy Dark Unicorn   (palette greyscale)
+GFX_Rock           = $00047F56   ; Rock prop            (palette greyscale)
+GFX_ChickenStinger = $00048452   ; Enemy Chicken Stinger(palette greyscale)
+GFX_GraveMaster    = $00049020   ; Enemy Grave Master   (palette greyscale)
+GFX_SkinnyOrcus    = $0004A30E   ; Enemy Skinny Orcus   (palette greyscale)
+GFX_Smoke          = $0004AAEE   ; Smoke FX             (palette greyscale)
+GFX_PowerUpSteal   = $0004B00A   ; PowerUp Steal Magic  (palette greyscale)
+GFX_FontCredits    = $0004B3A4   ; Font Credits         (palette greyscale)
+
+; ── GFX — Nemesis Compressed ─────────────────────────────────────────────────
+GFX_TitleTiles     = $0004C600   ; Title Screen tiles   (palette Pal_0000BD10, nemesis)
+
+; ── GFX — SegaRD Compressed (continued) ──────────────────────────────────────
+GFX_TitleScreen2   = $0004D24E   ; Title Screen overlay  (palette Pal_0000BD5A)
+GFX_TitleScreen    = $0004D64E   ; Title Screen main     (palette Pal_0000BD4A)
+GFX_Zeus           = $00052A0A   ; Zeus sprites          (palette Pal_0000B864)
+GFX_Flames         = $00058562   ; Flames FX             (palette greyscale)
+GFX_TransformBG    = $00059A74   ; Transformation BG     (palette greyscale)
+GFX_Portrait       = $00059EE8   ; Portrait              (palette greyscale)
+GFX_EyesCutscene2  = $00060280   ; Eyes Cutscene 2       (palette greyscale)
+GFX_EyesCutscene   = $00060B66   ; Eyes Cutscene         (palette greyscale)
+
+; ── GFX — End-of-ROM SegaRD blocks ───────────────────────────────────────────
+GFX_Fireball       = $0007E370   ; Fireball FX           (palette greyscale)
+GFX_Fireball2      = $0007E5EC   ; Fireball 2 FX         (palette greyscale)
+GFX_Fireball3      = $0007EA8C   ; Fireball 3 FX         (palette greyscale)
+GFX_Fireball4      = $0007EF12   ; Fireball 4 FX         (palette greyscale)
+GFX_Bolts          = $0007F00E   ; Bolts FX              (palette greyscale)
+GFX_GameOver       = $0007F4C6   ; Game Over screen      (palette greyscale)
+GFX_FontEnd        = $0007F8B6   ; Font (end of ROM)     (palette Pal_00027DB8)
+
+; ── Mega Drive Hardware Registers (bus addresses) ─────────────────────────────
+VDP_DATA           = $00C00000   ; VDP data port
+VDP_DATA_W         = $00C00000   ; VDP data port (word)
+VDP_CTRL           = $00C00004   ; VDP control port
+VDP_HVCOUNTER      = $00C00008   ; H/V counter
+PSG_DATA           = $00C00011   ; SN76489 PSG data
+Z80_RAM            = $00A00000   ; Z80 RAM base ($00A00000–$00A01FFF)
+Z80_BUSREQ         = $00A11100   ; Z80 bus request
+Z80_RESET          = $00A11200   ; Z80 reset
+IO_DATA_1          = $00A10003   ; Controller port 1 data
+IO_DATA_2          = $00A10005   ; Controller port 2 data
+IO_CTRL_1          = $00A10009   ; Controller port 1 control
+IO_CTRL_2          = $00A1000B   ; Controller port 2 control
+TMSS_REG           = $00A14000   ; TMSS register ("SEGA")
+CART_ROM           = $00000000   ; Cartridge ROM base
+
+; ── Z80 Address Space (0-based, used within z80_drivers segment) ──────────────
+; All 7 drivers load at Z80 org $0000 and are swapped in by the 68k.
+; ROM layout ($020000+):
+;   pcm_driver1  pcm_driver2  pcm_driver3  sounddriver  pcm_driver6  pcm_driver4  pcm_driver5
+;   (each followed by "even" alignment byte; total code $0A8A bytes)
+;
+; Common Z80 vectors (present in every driver):
+$0000 Z80_Start        ; JP / DI + init
+$0038 Z80_IRQ          ; RST $38 / IM 1 interrupt handler
+$0066 Z80_NMI          ; NMI handler
+;
+; Hardware registers accessed from Z80:
+; $4000 YM2612_A0      ; YM2612 part 1 address port
+; $4001 YM2612_D0      ; YM2612 part 1 data port
+; $4002 YM2612_A1      ; YM2612 part 2 address port
+; $4003 YM2612_D1      ; YM2612 part 2 data port
+; $6000 Bank_Register  ; ROM bank register (Z80 $8000 window → 68k ROM)
+; $7F11 PSG_Data       ; SN76489 data port
+; $8000 ROM_Window     ; Z80 banked window into 68k ROM ($8000–$FFFF)

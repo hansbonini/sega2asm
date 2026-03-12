@@ -1,0 +1,53 @@
+; sega2asm symbols — Sonic The Hedgehog (USA, Europe)
+; Addresses match the ROM (68000 address space).
+; All labels must fall within a segment range to be emitted.
+;
+; Format: name = $ADDRESS  (or ADDRESS name  or  ADDRESS:name)
+
+; ── Entry points & interrupt handlers (within main_code $000200–$03A000) ──
+EntryPoint         = $000200
+VBlank_IRQ         = $000280
+HBlank_IRQ         = $0002A0
+BusError_Handler   = $0002C0
+AddressError       = $0002C4
+
+; ── Core engine routines ────────────────────────────────────────────────────
+GameLoop           = $000500
+Level_Init         = $000600
+Object_Manager     = $000800
+Sprite_Renderer    = $000A00
+Scroll_Update      = $000C00
+VDP_Init           = $000E00
+DMA_Transfer       = $001000
+
+; ── Object routines ─────────────────────────────────────────────────────────
+Obj_Sonic          = $001200
+Obj_Ring           = $001400
+Obj_Monitor        = $001600
+Obj_Spring         = $001800
+Obj_Enemy_Motobug  = $001A00
+Obj_Enemy_Buzz     = $001C00
+
+; ── Data tables ─────────────────────────────────────────────────────────────
+LevelDataPtrs      = $002000
+PalDataPtrs        = $002200
+ArtPtrs            = $002400
+ObjectPtrTable     = $002600
+CollisionArray     = $002800
+
+; ── Z80 address space (used in z80 segments, org $0000) ─────────────────────
+; Z80 symbols use Z80 addresses, not ROM addresses.
+$0000 Z80_Start
+$0003 Z80_SoundLoop
+$0100 Z80_CommandHandler
+$0200 Z80_DriverInit
+
+; ── Work RAM labels ($FF0000–$FFFFFF, for reference in instructions) ─────────
+v_player_x         = $FFFF0000
+v_player_y         = $FFFF0002
+v_rings            = $FFFF0100
+v_timer            = $FFFF0102
+v_score            = $FFFF0200
+v_lives            = $FFFF0300
+v_camera_x         = $FFFF1000
+v_camera_y         = $FFFF1002
