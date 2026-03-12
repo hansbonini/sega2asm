@@ -912,11 +912,11 @@ func DecompressChameleon(src []byte) ([]byte, error) {
 	return out, nil
 }
 
-// ── LZNanco ─ Ball Jacks, Klax, Marvel Land, Pac-Attack, PacMan2, Phelios …──
+// ── LZNamco ─ Ball Jacks, Klax, Marvel Land, Pac-Attack, PacMan2, Phelios …──
 // Window 0x1000, cursor 0xFEE, fill 0x00. Header: BE16 uncompressed size.
 // 8-bit ctrl (LSB first). bit=1→literal; bit=0→match BE16: len=(lo&0xF)+3, offset=((lo&0xF0)<<4)|hi.
 
-func DecompressLZNanco(src []byte) ([]byte, error) { return decompressNamco(src, 0x1000, 0xFEE) }
+func DecompressLZNamco(src []byte) ([]byte, error) { return decompressNamco(src, 0x1000, 0xFEE) }
 
 // LZStrike — Desert/Jungle/Urban Strike. Same as Namco but window=0x800.
 func DecompressLZStrike(src []byte) ([]byte, error) { return decompressNamco(src, 0x800, 0x7EE) }
@@ -1282,7 +1282,7 @@ func DecompressLZTose(src []byte) ([]byte, error) {
 // ── LZNextech — Crusader of Centy ────────────────────────────────────────────
 // ── LZWolfteam — El Viento, Granada, Earnest Evans, Final Zone, Ranger-X, Zan Yasha
 // Both: window 0x1000 cursor 0xFEE, special init. Header: LE32 compSize + LE32 uncompSize.
-// Same back-ref encoding as LZNanco.
+// Same back-ref encoding as LZNamco.
 
 func DecompressLZNextech(src []byte) ([]byte, error)  { return decompressNextech(src) }
 func DecompressLZWolfteam(src []byte) ([]byte, error) { return decompressNextech(src) }
@@ -1681,7 +1681,7 @@ func Decompress(compression string, src []byte) ([]byte, error) {
 	case "chameleon":
 		return DecompressChameleon(src)
 	case "lznamco":
-		return DecompressLZNanco(src)
+		return DecompressLZNamco(src)
 	case "lzstrike":
 		return DecompressLZStrike(src)
 	case "lztechnosoft":
