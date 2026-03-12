@@ -23,11 +23,40 @@ Assembly output compatible with [Clownacy/clownassembler](https://github.com/Clo
 | `text`     | `.txt` | Text with optional charmap decode |
 | `bin`      | `.bin` | Raw binary blob |
 
+…  
 **Compression formats supported:**
-- `nemesis` – Clownacy/clownnemesis bit-exact format
-- `kosinski` – Clownacy/clownlzss Kosinski variant
-- `enigma` – tile mapping compression
-- `segard` – simple RLE (Altered Beast style)
+
+- `none` – no compression, data is copied verbatim.
+- `nemesis` – Konami “Nemesis” tile compressor.
+- `kosinski` – Kosinski LZ‑style scheme.
+- `kosinskiplus` – extended Kosinski variant.
+- `enigma` – Enigma bit‑packed compressor.
+- `segard` – SegaRD graphics compression.
+- `saxman`, `saxman_noheader` – clownlzss variants used by the Saxman tool.
+- `comper` – word‑oriented clownlzss format.
+- `rocket` – clownlzss variant (used in a few Sega releases).
+- `faxman` – another clownlzss variant.
+- `rage` – Streets of Rage‑style bit‑stream compressor (used in SOR, etc.).
+- `chameleon` – yet another clownlzss derivative.
+- `lznamco` – Namco LZ (Ball Jacks, Klax, Marvel Land, Pac‑Attack, PacMan 2,
+  Phelios …).
+- `lzstrike` – same as Namco but with 0x800 window (Desert/Jungle/Urban Strike).
+- `lztechnosoft` – Technosoft variant with no size header (Elemental Master).
+- `lzkonami1` – Konami’s first LZ (Animaniacs, Contra Hard Corps, Lethal Enforcers II,
+  Sparkster …).
+- `lzkonami2` – Konami’s second LZ (Castlevania Bloodlines, Rocket Knight,
+  TMNT Hyperstone, Sunset Riders …).
+- `lzkonami3` – Konami’s third LZ (Castlevania Bloodlines, Lethal Enforcers,
+  TMNT Tournament Fighters …).
+- `lzancient` – Ancient/LucasArts compressor (Beyond Oasis, Streets of Rage 2).
+- `lztose` – Tose LZ (Dragon Ball Z: Buyuu Retsuden).
+- `lznextech` / `lzwolfteam` – Nextech/WolfTeam LZ (Crusader of Centy,
+  El Viento, Granada, Earnest Evans, Final Zone, Ranger‑X, Zan Yasha …).
+- `lzsti` – STI LZ used by Comix Zone.
+- `rlesc` – Software Creations RLE (Maximum Carnage, Venom, The Tick,
+  Cutthroat Island …).
+- `rnc`, `rnc1`, `rnc2` – Rob Northen Compression method 1/2 (generic,
+  found in various ports and utilities).
 
 **Labels & symbols:**
 - Reads `symbols.txt` in multiple formats (name=addr, addr:name, space-separated)
