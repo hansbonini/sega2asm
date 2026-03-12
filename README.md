@@ -31,13 +31,13 @@ Assembly output compatible with [Clownacy/clownassembler](https://github.com/Clo
 - `kosinski` – Kosinski LZ‑style scheme.
 - `kosinskiplus` – extended Kosinski variant.
 - `enigma` – Enigma bit‑packed compressor.
-- `segard` – SegaRD graphics compression.
-- `saxman`, `saxman_noheader` – clownlzss variants used by the Saxman tool.
-- `comper` – word‑oriented clownlzss format.
-- `rocket` – clownlzss variant (used in a few Sega releases).
-- `faxman` – another clownlzss variant.
+- `segard` – SegaRD graphics compression. (used in Altered Beast).
+- `saxman`, `saxman_noheader` – format used by Sonic the Hedgehog 2, to compress its sound engine and music data (is actually a lightly-modified version of Haruhiko Okumura's 1989 LZSS format).
+- `comper` – other community-developed format, which is designed from the ground up with a focus on decompression speed on the Motorola 68000. This comes at a significant cost to compression ratio.
+- `rocket` – Rocket Knight compression.
+- `faxman` – a modified version of Saxman designed to produce smaller files when used to compress SMPS music data
 - `rage` – Streets of Rage‑style bit‑stream compressor (used in SOR, etc.).
-- `chameleon` – yet another clownlzss derivative.
+- `chameleon` – Kid Chameleon compression.
 - `lznamco` – Namco LZ (Ball Jacks, Klax, Marvel Land, Pac‑Attack, PacMan 2,
   Phelios …).
 - `lzstrike` – same as Namco but with 0x800 window (Desert/Jungle/Urban Strike).
