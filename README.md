@@ -77,7 +77,7 @@ Assembly output compatible with [Clownacy/clownassembler](https://github.com/Clo
 ## Installation
 
 ```bash
-git clone https://github.com/you/sega2asm
+git clone https://github.com/hansbonini/sega2asm
 cd sega2asm
 go build -o sega2asm .
 ```
