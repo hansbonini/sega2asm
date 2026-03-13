@@ -783,7 +783,7 @@ func (d *Disassembler) labelOrHex(addr uint32) string {
 	if name, ok := d.labels[addr]; ok {
 		return name
 	}
-	return fmt.Sprintf("$%06X", addr)
+	return fmt.Sprintf("loc_%06X", addr)
 }
 
 func (d *Disassembler) labelOrHex16(addr uint32) string {
@@ -894,13 +894,16 @@ func regListStr(mask uint16, predecrement bool) string {
 }
 
 // DisassembleBlock disassembles data[start:end] treating it as M68K code.
-// Returns all Result entries with labels resolved.
+// Returns all Result entries with labels resolved, including automatic
+// jump-table detection (dc.l entries replacing garbled post-terminator bytes).
 func DisassembleBlock(data []byte, baseAddr, start, end uint32, labels map[uint32]string) []Result {
 	segData := data[start:end]
-	d := New(segData, baseAddr+start, labels)
+	segBase := baseAddr + start
+	d := New(segData, segBase, labels)
 	var results []Result
 	for d.Remaining() >= 2 {
 		results = append(results, d.Next())
 	}
+	results = detectJumpTables(results, segData, segBase, d.labels)
 	return results
 }
