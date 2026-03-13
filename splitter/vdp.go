@@ -17,7 +17,7 @@ type vdpAnnotator struct {
 // newVDPAnnotator compiles regexes that match the VDP control port either by
 // its raw address ($C00004) or by an optional symbol name (e.g. "VDP_CTRL").
 func newVDPAnnotator(ctrlSym string) *vdpAnnotator {
-	dest := `(?:\$00)?[Cc]00004(?:\.l)?`
+	dest := `\$(?:00)?[Cc]00004(?:\.l)?`
 	if ctrlSym != "" {
 		dest = dest + `|` + regexp.QuoteMeta(ctrlSym)
 	}

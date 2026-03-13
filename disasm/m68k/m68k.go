@@ -45,11 +45,17 @@ type Disassembler struct {
 }
 
 // New creates a Disassembler over data starting at baseAddr.
+// Genesis hardware register addresses are pre-loaded as symbolic names;
+// any entry in labels overrides the built-in defaults.
 func New(data []byte, baseAddr uint32, labels map[uint32]string) *Disassembler {
-	if labels == nil {
-		labels = make(map[uint32]string)
+	merged := make(map[uint32]string, len(genesisHWPorts)+len(labels))
+	for k, v := range genesisHWPorts {
+		merged[k] = v
 	}
-	return &Disassembler{data: data, base: baseAddr, labels: labels}
+	for k, v := range labels {
+		merged[k] = v
+	}
+	return &Disassembler{data: data, base: baseAddr, labels: merged}
 }
 
 // PC returns the current program counter (base + position).
