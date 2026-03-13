@@ -79,7 +79,6 @@ Pal_00009F6C       = $00009F6C
 Pal_00009F94       = $00009F94
 
 ; ── Raw (Uncompressed) GFX embedded in main_code ─────────────────────────────
-; Extracted by gfxdump tool; sizes from Makefile fsutil seteof values.
 GFX_00009FB4       = $00009FB4   ; 1568 bytes; palette Pal_00009F94
 GFX_0000BD72       = $0000BD72   ; 160 bytes;  palette Pal_0000BCB4
 
