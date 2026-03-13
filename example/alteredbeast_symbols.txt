@@ -6,42 +6,6 @@
 ; Z80 symbols use Z80 address space (0-based), not ROM addresses.
 ; All non-Z80 symbols use absolute ROM / bus addresses.
 
-; ── Interrupt Vectors ($000000–$0001FF) ─────────────────────────────────────
-; M68000 exception vector table — ROM header region
-Vectors            = $000000
-Vec_Reset_SSP      = $000000   ; Initial Stack Pointer
-Vec_Reset_PC       = $000004   ; Initial Program Counter (EntryPoint)
-Vec_BusError       = $000008
-Vec_AddressError   = $00000C
-Vec_IllegalInstr   = $000010
-Vec_ZeroDivide     = $000014
-Vec_CHK            = $000018
-Vec_TRAPV          = $00001C
-Vec_PrivViolation  = $000020
-Vec_Trace          = $000024
-Vec_LineA          = $000028
-Vec_LineF          = $00002C
-Vec_HInt           = $000070   ; Horizontal Interrupt
-Vec_VInt           = $000078   ; Vertical Interrupt (Level 6 autovector)
-
-; ── ROM Header fields ($000100–$0001FF) ──────────────────────────────────────
-ROM_Header         = $000100
-ROM_HW_Id          = $000100   ; "SEGA MEGA DRIVE   "
-ROM_Copyright      = $000110   ; "(C)SEGA 1989.JAN  "
-ROM_DomesticName   = $000120   ; Japanese title
-ROM_OverseasName   = $000150   ; "ALTERD BEAST      "
-ROM_Serial         = $000180   ; "GM- 00054002-02"
-ROM_Checksum       = $00018E
-ROM_IOSupport      = $000190
-ROM_ROMStart       = $0001A0
-ROM_ROMEnd         = $0001A4
-ROM_RAMStart       = $0001A8
-ROM_RAMEnd         = $0001AC
-ROM_Regions        = $0001F0   ; "JU"
-
-; ── Entry Point & Core Engine ($000200+) ─────────────────────────────────────
-EntryPoint         = $000200
-
 ; ── Palette Data (inline binary blocks in main_code) ─────────────────────────
 ; All addresses from Makefile 68k_assemble_palettes targets.
 ; Each is a small binary block assembled from includes/palettes/XXXXXXXX.asm

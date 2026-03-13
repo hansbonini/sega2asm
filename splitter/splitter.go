@@ -303,6 +303,11 @@ func (s *Splitter) writeM68K(r *rom.ROM, seg config.Segment, dir string, syms *s
 			sb.WriteByte('\n')
 			sb.WriteString(syms.Label(addr) + ":")
 			sb.WriteString(fmt.Sprintf("\t\t\t\t; $%06X\n", addr))
+		} else if addr == r.InitialPC {
+			// Automatically label the ROM entry point when no symbol is defined.
+			sb.WriteByte('\n')
+			sb.WriteString("EntryPoint:")
+			sb.WriteString(fmt.Sprintf("\t\t\t\t; $%06X\n", addr))
 		}
 
 		// Check hints: override with explicit data directives.

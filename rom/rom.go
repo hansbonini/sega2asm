@@ -31,9 +31,10 @@ type Header struct {
 
 // ROM holds the loaded ROM binary and its parsed header.
 type ROM struct {
-	Data   []byte
-	Header *Header
-	Size   int
+	Data      []byte
+	Header    *Header
+	Size      int
+	InitialPC uint32 // Reset vector: ROM[$000004] — entry point of the game
 }
 
 // Load reads a Mega Drive ROM file, detecting interleaved formats.
@@ -53,6 +54,9 @@ func Load(path string) (*ROM, error) {
 
 	r := &ROM{Data: data, Size: len(data)}
 	r.Header = parseHeader(data)
+	if len(data) >= 8 {
+		r.InitialPC = binary.BigEndian.Uint32(data[4:8])
+	}
 	return r, nil
 }
 

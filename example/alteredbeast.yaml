@@ -51,7 +51,7 @@ segments:
   #   $00009FB4  raw sprite sheet (1568 bytes, gfxdump palette $00009F94)
   #   $0000BD72  raw sprite sheet (160 bytes,  gfxdump palette $0000BCB4)
   #   $0000BCB4–$0000BD69 palette binary blocks (asm68k compiled)
-  - name: EntryPoint
+  - name: loc_000200
     type: m68k
     start: 0x000200
     end:   0x000236
