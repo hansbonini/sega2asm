@@ -180,32 +180,6 @@ GFX_Bolts          = $0007F00E   ; Bolts FX              (palette greyscale)
 GFX_GameOver       = $0007F4C6   ; Game Over screen      (palette greyscale)
 GFX_FontEnd        = $0007F8B6   ; Font (end of ROM)     (palette Pal_00027DB8)
 
-; ── Mega Drive Hardware Registers (bus addresses) ─────────────────────────────
-VDP_DATA           = $00C00000   ; VDP data port
-VDP_DATA_W         = $00C00000   ; VDP data port (word)
-VDP_CTRL           = $00C00004   ; VDP control port
-VDP_HVCOUNTER      = $00C00008   ; H/V counter
-PSG_DATA           = $00C00011   ; SN76489 PSG data
-Z80_RAM            = $00A00000   ; Z80 RAM base ($00A00000–$00A01FFF)
-Z80_BUSREQ         = $00A11100   ; Z80 bus request
-Z80_RESET          = $00A11200   ; Z80 reset
-IO_DATA_1          = $00A10003   ; Controller port 1 data
-IO_DATA_2          = $00A10005   ; Controller port 2 data
-IO_CTRL_1          = $00A10009   ; Controller port 1 control
-IO_CTRL_2          = $00A1000B   ; Controller port 2 control
-TMSS_REG           = $00A14000   ; TMSS register ("SEGA")
-CART_ROM           = $00000000   ; Cartridge ROM base
-
-; ── Z80 Address Space (0-based, used within z80_drivers segment) ──────────────
-; All 7 drivers load at Z80 org $0000 and are swapped in by the 68k.
-; ROM layout ($020000+):
-;   pcm_driver1  pcm_driver2  pcm_driver3  sounddriver  pcm_driver6  pcm_driver4  pcm_driver5
-;   (each followed by "even" alignment byte; total code $0A8A bytes)
-;
-; Common Z80 vectors (present in every driver):
-$0000 Z80_Start        ; JP / DI + init
-$0038 Z80_IRQ          ; RST $38 / IM 1 interrupt handler
-$0066 Z80_NMI          ; NMI handler
 ;
 ; Hardware registers accessed from Z80:
 ; $4000 YM2612_A0      ; YM2612 part 1 address port
