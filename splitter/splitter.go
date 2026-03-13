@@ -96,9 +96,11 @@ func (s *Splitter) Run() error {
 	var includes []incEntry
 
 	// ── Process segments ─────────────────────────────────────────────────
-	for i, seg := range cfg.Segments {
+	segs := cfg.Segments
+	for i := 0; i < len(segs); i++ {
+		seg := segs[i]
 		s.log("[SEG %d/%d] %s (%s) $%06X–$%06X",
-			i+1, len(cfg.Segments), seg.Name, seg.Type,
+			i+1, len(segs), seg.Name, seg.Type,
 			uint32(seg.Start), uint32(seg.End))
 
 		if uint32(seg.End) <= uint32(seg.Start) {
@@ -132,7 +134,24 @@ func (s *Splitter) Run() error {
 		case "m68k":
 			outPath, err = s.writeM68K(r, seg, asmDir, syms, cmap)
 		case "z80":
-			outPath, err = s.writeZ80(r, seg, asmDir, syms)
+			// Collect consecutive bin segments that share the same subdir — they
+			// are embedded data sections (PCM/music) logically belonging to this
+			// Z80 driver slot. Write their binaries now and embed them as incbin
+			// directives at the end of the Z80 .asm file. Skip them in the main loop.
+			var extraBins []incEntry
+			for j := i + 1; j < len(segs); j++ {
+				next := segs[j]
+				if !strings.EqualFold(next.Type, "bin") || next.SubDir != seg.SubDir {
+					break
+				}
+				binPath, binErr := s.writeBin(r, next, assetDir)
+				if binErr == nil {
+					extraBins = append(extraBins, incEntry{path: binPath, addr: uint32(next.Start)})
+				}
+				i++ // absorb this segment
+			}
+			outPath, err = s.writeZ80(r, seg, asmDir, syms, extraBins)
+			// Z80 .asm is included in main ASM via include (not incbin); isBin stays false.
 		case "gfx":
 			outPath, err = s.writeGFX(r, seg, assetDir, false)
 			isBin = true
@@ -331,7 +350,7 @@ func (s *Splitter) writeM68K(r *rom.ROM, seg config.Segment, dir string, syms *s
 	return outPath, os.WriteFile(outPath, []byte(sb.String()), 0644)
 }
 
-func (s *Splitter) writeZ80(r *rom.ROM, seg config.Segment, dir string, syms *symbols.Table) (string, error) {
+func (s *Splitter) writeZ80(r *rom.ROM, seg config.Segment, dir string, syms *symbols.Table, extraBins []incEntry) (string, error) {
 	outPath := s.segPath(seg, dir, ".asm")
 	if s.opts.DryRun {
 		return outPath, nil
@@ -374,6 +393,15 @@ func (s *Splitter) writeZ80(r *rom.ROM, seg config.Segment, dir string, syms *sy
 		sb.WriteByte('\n')
 	}
 	s.log("[SYM]  labels matched: %d / %d symbols", labelHits, len(syms.Ordered))
+
+	// Append incbin directives for embedded data sections (PCM/music data that
+	// immediately follows the Z80 code within the same driver slot).
+	if len(extraBins) > 0 {
+		sb.WriteString("\n; Embedded data\n")
+		for _, e := range extraBins {
+			sb.WriteString(fmt.Sprintf("\tincbin\t'%s'\n", filepath.ToSlash(e.path)))
+		}
+	}
 
 	return outPath, os.WriteFile(outPath, []byte(sb.String()), 0644)
 }
