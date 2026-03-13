@@ -62,6 +62,7 @@ Assembly output compatible with [Clownacy/clownassembler](https://github.com/Clo
   circular history; output is buffered in 4-byte chunks.
 - `itl` – I.T.L. (Sega) non-zero-bytes + XOR block compressor (Bonanza Bros, and other I.T.L.-developed Sega games).
 - `lzfactor5` – Factor 5 LZ (version 1: 11-bit window / version 2: 16-bit window; auto-detected from header). Used in Factor 5 Mega Drive games.
+- `lzbeam` – Beam Software LZ: variable-width Elias-coded counts + absolute back-references with bit-width derived from write position; command bits stored in a separate appended bitstream (Shadowrun, Batman Returns, Judge Dredd …).
 
 **Labels & symbols:**
 - Reads `symbols.txt` in multiple formats (name=addr, addr:name, space-separated)
