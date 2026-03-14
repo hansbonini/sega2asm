@@ -18,25 +18,6 @@ options:
   incbin: true
 
 # ROM: 512 KB original (valid range $000000–$07FFFF)
-# ⚠  CURRENT PROJECT STATE: The Z80 drivers include embedded music data (7–8 KB each),
-#    expanding the total ROM to ~$08C894 bytes (~563 KB). The SHA1 check will fail
-#    until the GFX/audio offsets in the main 68k ASM are reconciled.
-#    Addresses below reflect the REBUILT ROM layout, not the original game ROM.
-#
-# All segment start addresses extracted from hansbonini/smd_alteredbeast Makefile
-# and split.txt. Z80 driver boundaries measured from compiled .bin files.
-#
-# Layout overview:
-#   $000000–$0001FF   ROM header + interrupt vectors
-#   $000200–$000138EB M68K code (palettes + raw gfx embedded within)
-#   $000138EC–$0001FFFF PCM voice samples (6 clips)
-#   $00020000–$02D31E  Z80 drivers (7 programs, ~7-8 KB each, org $0000)
-#   $02D31E–$030894   $FF padding ($3576 bytes)
-#   $030894–$08C894   GFX assets (SegaRD/Nemesis compressed) — shifted +$C894 from original
-#   (original ROM had GFX at $024000–$07FFFF)
-#   $00060B66–$0007E36F Data (unknown structure — level maps / extra GFX)
-#   $0007E370–$0007FFFF GFX assets SegaRD-compressed (fireballs / game-over / font)
-
 segments:
 
   # ── ROM Header ─────────────────────────────────────────────────────────────
@@ -46,11 +27,6 @@ segments:
     end:   0x000200
 
   # ── Main 68000 Code ─────────────────────────────────────────────────────────
-  # Contains inline palette data and raw sprite sheets.
-  # Notable embedded data addresses (all from Makefile / splitrom):
-  #   $00009FB4  raw sprite sheet (1568 bytes, gfxdump palette $00009F94)
-  #   $0000BD72  raw sprite sheet (160 bytes,  gfxdump palette $0000BCB4)
-  #   $0000BCB4–$0000BD69 palette binary blocks (asm68k compiled)
   - name: loc_000200
     type: m68k
     start: 0x000200
@@ -106,16 +82,36 @@ segments:
   - name: loc_000A48  # jsr_target, after_terminator
     type: m68k
     start: 0x000A48
-    end:   0x000CBC
+    end:   0x000C2C
+  - name: pal_00000C2C
+    type: bin
+    start: 0x000C2C
+    end:   0x000C3A
+    subdir: palettes
+  - name: pal_00000C3A
+    type: bin
+    start: 0x000C3A
+    end:   0x000C46
+    subdir: palettes
   - name: loc_000CBC  # jsr_target, after_terminator
     type: m68k
     start: 0x000CBC
+    end:   0x0010C6
+  - name: pal_000010C6
+    type: bin
+    start: 0x0010C6
+    end:   0x0010D0
+    subdir: palettes
+  - name: pal_000010D0
+    type: bin
+    start: 0x0010D0
+    end:   0x0010DA
+    subdir: palettes
+  - name: loc_0010DA  # jsr_target×3, after_terminator
+    type: m68k
+    start: 0x0010DA
     end:   0x00117A
   - name: loc_00117A  # jsr_target×3, after_terminator
-    type: m68k
-    start: 0x00117A
-    end:   0x001180
-  - name: loc_001180  # jsr_target, after_terminator
     type: m68k
     start: 0x001180
     end:   0x0012FA
