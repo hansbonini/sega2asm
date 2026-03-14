@@ -78,10 +78,6 @@ Pal_00009DD6       = $00009DD6
 Pal_00009F6C       = $00009F6C
 Pal_00009F94       = $00009F94
 
-; ── Raw (Uncompressed) GFX embedded in main_code ─────────────────────────────
-GFX_00009FB4       = $00009FB4   ; 1568 bytes; palette Pal_00009F94
-GFX_0000BD72       = $0000BD72   ; 160 bytes;  palette Pal_0000BCB4
-
 ; ── More Palette Data (after GFX_00009FB4 region) ───────────────────────────
 Pal_0000AD54       = $0000AD54
 Pal_0000AD5C       = $0000AD5C
@@ -113,79 +109,3 @@ Pal_0002F1D2       = $0002F1D2
 Pal_00030E4E       = $00030E4E
 Pal_000529E8       = $000529E8
 Pal_000531A0       = $000531A0
-
-; ── PCM Voice Samples ─────────────────────────────────────────────────────────
-; ROM addresses = audio/pcm filenames in smd_alteredbeast repository.
-PCM_PowerUp        = $000138EC   ; "Power Up"         8000 Hz
-PCM_DieScream      = $0001552C   ; "Die Scream"        4000 Hz
-PCM_Transform      = $000173B4   ; "Transformation Scream" 4000 Hz
-PCM_BossLaugh      = $0001AFD4   ; "Boss Laugh"        4000 Hz
-PCM_RiseFromGrave  = $0001CF56   ; "Rise from Your Grave"  4000 Hz
-PCM_WelcomeDoom    = $0001EED8   ; "Welcome to Your Doom"  4000 Hz
-
-; ── GFX — SegaRD Compressed (ROM addresses = gfx/segard/ filenames) ──────────
-GFX_Font           = $00024000   ; Game Font            (palette Pal_0000BD4A)
-GFX_Stage1_BG      = $00027DDA   ; Stage 1 BG elements  (palette Pal_00027DB8)
-GFX_Stage2_BG      = $0002ACEA   ; Stage 2 BG elements  (palette Pal_0002ACC8)
-GFX_Stage3_BG      = $0002D1AA   ; Stage 3 BG elements  (palette Pal_0002D188)
-GFX_Stage4_BG      = $0002F1F4   ; Stage 4 BG elements  (palette Pal_0002F1D2)
-GFX_Stage5_BG      = $00030E70   ; Stage 5 BG elements  (palette Pal_00030E4E)
-GFX_Boss_Stage2    = $00033AAA   ; Boss Stage 2 (Octeyes) (palette Pal_0000B7EC)
-GFX_Boss_Stage5    = $0003565C   ; Boss Stage 5 (Neff)   (palette Pal_0000B846)
-GFX_Boss_Stage1    = $00038A2E   ; Boss Stage 1 (CrocWorm)(palette Pal_0000B7CE)
-GFX_Boss_Stage3    = $0003BA00   ; Boss Stage 3 (GoatHead)(palette Pal_0000B828)
-GFX_Boss_Stage4    = $0003DFE0   ; Boss Stage 4 (Beholder)(palette Pal_0000B80A)
-GFX_Boss_Normal    = $00040A1C   ; Boss normal form + Dogs(palette greyscale)
-GFX_PowerUps       = $0004195C   ; Power-Up orbs        (palette greyscale)
-GFX_Grave          = $00041AB8   ; Grave prop           (palette greyscale)
-GFX_HeadlessHorror2= $00041EC8   ; Enemy Headless Horror 2 (palette greyscale)
-GFX_RattleTail     = $0004270A   ; Enemy Rattle Tail    (palette greyscale)
-GFX_RoundLeech     = $00042E7C   ; Enemy Round Leech    (palette greyscale)
-GFX_Fossils        = $000435E2   ; Fossils prop         (palette greyscale)
-GFX_HeadlessHorror1= $00043F22   ; Enemy Headless Horror 1 (palette greyscale)
-GFX_CaveNeedle     = $0004479E   ; Enemy Cave Needle    (palette greyscale)
-GFX_RockTurtle     = $00044DA2   ; Enemy Rock Turtle    (palette greyscale)
-GFX_SawFish        = $0004547A   ; Enemy Saw Fish       (palette greyscale)
-GFX_GoryGoat       = $00045DAC   ; Enemy Gory Goat      (palette greyscale)
-GFX_BadBoar        = $000463DC   ; Enemy Bad Boar       (palette greyscale)
-GFX_HammerDemon    = $000470D8   ; Enemy Hammer Demon   (palette greyscale)
-GFX_DarkUnicorn    = $000476C6   ; Enemy Dark Unicorn   (palette greyscale)
-GFX_Rock           = $00047F56   ; Rock prop            (palette greyscale)
-GFX_ChickenStinger = $00048452   ; Enemy Chicken Stinger(palette greyscale)
-GFX_GraveMaster    = $00049020   ; Enemy Grave Master   (palette greyscale)
-GFX_SkinnyOrcus    = $0004A30E   ; Enemy Skinny Orcus   (palette greyscale)
-GFX_Smoke          = $0004AAEE   ; Smoke FX             (palette greyscale)
-GFX_PowerUpSteal   = $0004B00A   ; PowerUp Steal Magic  (palette greyscale)
-GFX_FontCredits    = $0004B3A4   ; Font Credits         (palette greyscale)
-
-; ── GFX — Nemesis Compressed ─────────────────────────────────────────────────
-GFX_TitleTiles     = $0004C600   ; Title Screen tiles   (palette Pal_0000BD10, nemesis)
-
-; ── GFX — SegaRD Compressed (continued) ──────────────────────────────────────
-GFX_TitleScreen2   = $0004D24E   ; Title Screen overlay  (palette Pal_0000BD5A)
-GFX_TitleScreen    = $0004D64E   ; Title Screen main     (palette Pal_0000BD4A)
-GFX_Zeus           = $00052A0A   ; Zeus sprites          (palette Pal_0000B864)
-GFX_Flames         = $00058562   ; Flames FX             (palette greyscale)
-GFX_TransformBG    = $00059A74   ; Transformation BG     (palette greyscale)
-GFX_Portrait       = $00059EE8   ; Portrait              (palette greyscale)
-GFX_EyesCutscene2  = $00060280   ; Eyes Cutscene 2       (palette greyscale)
-GFX_EyesCutscene   = $00060B66   ; Eyes Cutscene         (palette greyscale)
-
-; ── GFX — End-of-ROM SegaRD blocks ───────────────────────────────────────────
-GFX_Fireball       = $0007E370   ; Fireball FX           (palette greyscale)
-GFX_Fireball2      = $0007E5EC   ; Fireball 2 FX         (palette greyscale)
-GFX_Fireball3      = $0007EA8C   ; Fireball 3 FX         (palette greyscale)
-GFX_Fireball4      = $0007EF12   ; Fireball 4 FX         (palette greyscale)
-GFX_Bolts          = $0007F00E   ; Bolts FX              (palette greyscale)
-GFX_GameOver       = $0007F4C6   ; Game Over screen      (palette greyscale)
-GFX_FontEnd        = $0007F8B6   ; Font (end of ROM)     (palette Pal_00027DB8)
-
-;
-; Hardware registers accessed from Z80:
-; $4000 YM2612_A0      ; YM2612 part 1 address port
-; $4001 YM2612_D0      ; YM2612 part 1 data port
-; $4002 YM2612_A1      ; YM2612 part 2 address port
-; $4003 YM2612_D1      ; YM2612 part 2 data port
-; $6000 Bank_Register  ; ROM bank register (Z80 $8000 window → 68k ROM)
-; $7F11 PSG_Data       ; SN76489 data port
-; $8000 ROM_Window     ; Z80 banked window into 68k ROM ($8000–$FFFF)

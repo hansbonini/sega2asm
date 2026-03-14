@@ -788,52 +788,6 @@ segments:
     start: 0x00F214
     end:   0x0138EC
 
-  # ── PCM Voice Samples ───────────────────────────────────────────────────────
-  # File names in smd_alteredbeast/audio/pcm/ ARE the ROM offsets.
-  # Sample rates from Makefile wav2pcm / pcm2wav invocations.
-
-  - name: pcm_power_up
-    type: pcm
-    sample_rate: 8000
-    start: 0x000138EC
-    end:   0x0001552C
-    subdir: audio/pcm
-
-  - name: pcm_die_scream
-    type: pcm
-    sample_rate: 4000
-    start: 0x0001552C
-    end:   0x000173B4
-    subdir: audio/pcm
-
-  - name: pcm_transform_scream
-    type: pcm
-    sample_rate: 4000
-    start: 0x000173B4
-    end:   0x0001AFD4
-    subdir: audio/pcm
-
-  - name: pcm_boss_laugh
-    type: pcm
-    sample_rate: 4000
-    start: 0x0001AFD4
-    end:   0x0001CF56
-    subdir: audio/pcm
-
-  - name: pcm_rise_from_grave
-    type: pcm
-    sample_rate: 4000
-    start: 0x0001CF56
-    end:   0x0001EED8
-    subdir: audio/pcm
-
-  - name: pcm_welcome_to_doom
-    type: pcm
-    sample_rate: 4000
-    start: 0x0001EED8
-    end:   0x00020A89
-    subdir: audio/pcm
-
   # ── Z80 Sound Driver block ($020000–$024000) ───────────────────────────────
   # The $4000-byte block contains 7 drivers assembled with sjasmplus, in order:
   #
@@ -847,17 +801,6 @@ segments:
   #   pcm_4       z80/pcm_driver/pcm_driver4.asm $0000
   #   pcm_5       z80/pcm_driver/pcm_driver5.asm $0000
   #
-  # Each driver is a complete standalone Z80 program (org $0000).  The 68k loads
-  # them into Z80 RAM at $A00000 on demand, replacing the previous driver.
-  #
-  # Total code:     $0A8A bytes ($020000–$020A8A)
-  # $FF padding:    $3576 bytes ($020A8A–$024000)
-  #
-  # Individual driver boundaries require the compiled .bin files or the ROM to
-  # measure.  The single z80 segment below disassembles the full code region as
-  # one continuous Z80 stream.  Split into separate segments once each .bin size
-  # is known (run `sjasmplus --lst` on each .asm and check the reported size, or
-  # binary-diff the compiled ROM at $020000 against each .bin file).
 
   # ── Z80 Sound Driver block ───────────────────────────────────────────────────
   # 7 complete Z80 images stored sequentially in ROM (each even-aligned).
@@ -867,117 +810,96 @@ segments:
   # ROM order:  pcm_driver1 · pcm_driver2 · pcm_driver3 · sounddriver
   #             pcm_driver6 · pcm_driver4 · pcm_driver5
 
-  # BGM set 1 — Z80 driver code (org $0000, 384 = $0180 bytes)
   - name: z80_pcm_driver1
     type: z80
-    start: 0x00020000
-    end:   0x00020180
+    start: 0x0001376C
+    end:   0x000138EC
     z80_org: 0x0000
     subdir: z80/pcm_driver1
 
-  # BGM set 1 — embedded PCM/music data (Z80 addr $0180–$1C3F, 6848 = $1AC0 bytes)
-  - name: pcm_pcm_driver1
-    type: bin
-    start: 0x00020180
-    end:   0x00021C40
-    subdir: z80/pcm_driver1
+  - name: pcm_power_up
+    type: pcm
+    sample_rate: 8000
+    start: 0x000138EC
+    end:   0x000153AC
+    subdir: audio/pcm
 
-  # BGM set 2 — Z80 driver code (org $0000, 384 = $0180 bytes)
   - name: z80_pcm_driver2
     type: z80
-    start: 0x00021C40
-    end:   0x00021DC0
+    start: 0x000153AC
+    end:   0x0001552C
     z80_org: 0x0000
     subdir: z80/pcm_driver2
 
-  # BGM set 2 — embedded PCM/music data (Z80 addr $0180–$1E87, 7432 = $1D08 bytes)
-  - name: pcm_pcm_driver2
-    type: bin
-    start: 0x00021DC0
-    end:   0x00023AC8
-    subdir: z80/pcm_driver2
+  - name: pcm_die_scream
+    type: pcm
+    sample_rate: 4000
+    start: 0x0001552C
+    end:   0x00017234
+    subdir: audio/pcm
 
-  # BGM set 3 — Z80 driver code (org $0000, 384 = $0180 bytes)
   - name: z80_pcm_driver3
     type: z80
-    start: 0x00023AC8
-    end:   0x00023C48
+    start: 0x00017234
+    end:   0x000173B4
     z80_org: 0x0000
     subdir: z80/pcm_driver3
 
-  # BGM set 3 — embedded PCM/music data (Z80 addr $0180–$1F68, 7658 = $1DEA bytes)
-  - name: pcm_pcm_driver3
-    type: bin
-    start: 0x00023C48
-    end:   0x00025A32
-    subdir: z80/pcm_driver3
+  - name: pcm_transform_scream
+    type: pcm
+    sample_rate: 4000
+    start: 0x000173B4
+    end:   0x0001919D
+    subdir: audio/pcm
 
-  # main FM/PSG sound driver — Z80 driver code (org $0000, 4595 = $11F3 bytes)
   - name: z80_sounddriver
     type: z80
-    start: 0x00025A32
-    end:   0x00026C25
+    start: 0x0001919E
+    end:   0x0001AE54
     z80_org: 0x0000
     subdir: z80/sounddriver
 
-  # main FM/PSG sound driver — embedded PCM/music data (Z80 addr $11F3–$1CB5, 2755 = $0AC3 bytes)
-  - name: pcm_sounddriver
-    type: bin
-    start: 0x00026C25
-    end:   0x000276E8
-    subdir: z80/sounddriver
-
-  # BGM set 6 — Z80 driver code (org $0000, 384 = $0180 bytes)
   - name: z80_pcm_driver6
     type: z80
-    start: 0x000276E8
-    end:   0x00027868
+    start: 0x0001AE54
+    end:   0x0001AFD4
     z80_org: 0x0000
     subdir: z80/pcm_driver6
 
-  # BGM set 6 — embedded PCM/music data (Z80 addr $0180–$1F80, 7682 = $1E02 bytes)
-  - name: pcm_pcm_driver6
-    type: bin
-    start: 0x00027868
-    end:   0x0002966A
-    subdir: z80/pcm_driver6
+  - name: pcm_boss_laugh
+    type: pcm
+    sample_rate: 4000
+    start: 0x0001AFD4
+    end:   0x0001CDD5
+    subdir: audio/pcm
 
-  # BGM set 4 — Z80 driver code (org $0000, 384 = $0180 bytes)
   - name: z80_pcm_driver4
     type: z80
-    start: 0x0002966A
-    end:   0x000297EA
+    start: 0x0001CDD6
+    end:   0x0001CF56
     z80_org: 0x0000
     subdir: z80/pcm_driver4
 
-  # BGM set 4 — embedded PCM/music data (Z80 addr $0180–$1F80, 7682 = $1E02 bytes)
-  - name: pcm_pcm_driver4
-    type: bin
-    start: 0x000297EA
-    end:   0x0002B5EC
-    subdir: z80/pcm_driver4
+  - name: pcm_rise_from_grave
+    type: pcm
+    sample_rate: 4000
+    start: 0x0001CF56
+    end:   0x0001ED57
+    subdir: audio/pcm
 
-  # BGM set 5 — Z80 driver code (org $0000, 384 = $0180 bytes)
   - name: z80_pcm_driver5
     type: z80
-    start: 0x0002B5EC
-    end:   0x0002B76C
+    start: 0x0001ED58
+    end:   0x0001EED8
     z80_org: 0x0000
     subdir: z80/pcm_driver5
 
-  # BGM set 5 — embedded PCM/music data (Z80 addr $0180–$1D30, 7090 = $1BB2 bytes)
-  - name: pcm_pcm_driver5
-    type: bin
-    start: 0x0002B76C
-    end:   0x0002D31E
-    subdir: z80/pcm_driver5
-
-  # $FF fill separating Z80 block from GFX data
-  - name: z80_padding
-    type: bin
-    start: 0x0002D31E
-    end:   0x00030894   # $3576 bytes
-    subdir: z80
+  - name: pcm_welcome_to_doom
+    type: pcm
+    sample_rate: 4000
+    start: 0x0001EED8
+    end:   0x00020A89
+    subdir: audio/pcm
 
   # ── GFX ─────────────────────────────────────────────────────────────────────
   - name: gfx_font
