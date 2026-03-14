@@ -831,7 +831,7 @@ segments:
     type: pcm
     sample_rate: 4000
     start: 0x0001EED8
-    end:   0x00020000
+    end:   0x00020A89
     subdir: audio/pcm
 
   # ── Z80 Sound Driver block ($020000–$024000) ───────────────────────────────
@@ -979,359 +979,346 @@ segments:
     end:   0x00030894   # $3576 bytes
     subdir: z80
 
-  # ── GFX — SegaRD Compressed ─────────────────────────────────────────────────
-  # All offsets from Makefile segard_decomp targets.
-  # end = start of next segment (SegaRD reader stops at end-of-stream token).
-
+  # ── GFX ─────────────────────────────────────────────────────────────────────
   - name: gfx_font
     type: gfxcomp
     compression: segard
-    start: 0x00030894
-    end:   0x0003466E
+    start: 0x00024000
+    end:   0x000244EF
     subdir: gfx/segard
 
   - name: gfx_stage1_bg
     type: gfxcomp
     compression: segard
-    start: 0x0003466E
-    end:   0x0003757E
+    start: 0x00027DDA
+    end:   0x0002ACC7
     subdir: gfx/segard
 
   - name: gfx_stage2_bg
     type: gfxcomp
     compression: segard
-    start: 0x0003757E
-    end:   0x00039A3E
+    start: 0x0002ACEA
+    end:   0x0002D187
     subdir: gfx/segard
 
   - name: gfx_stage3_bg
     type: gfxcomp
     compression: segard
-    start: 0x00039A3E
-    end:   0x0003BA88
+    start: 0x0002D1AA
+    end:   0x0002F1D1
     subdir: gfx/segard
 
   - name: gfx_stage4_bg
     type: gfxcomp
     compression: segard
-    start: 0x0003BA88
-    end:   0x0003D704
+    start: 0x0002F1F4
+    end:   0x00030E4D
     subdir: gfx/segard
 
   - name: gfx_stage5_bg
     type: gfxcomp
     compression: segard
-    start: 0x0003D704
-    end:   0x0004033E
+    start: 0x00030E70
+    end:   0x00033AA9
     subdir: gfx/segard
 
   - name: gfx_boss_stage2
     type: gfxcomp
     compression: segard
-    start: 0x0004033E
-    end:   0x00041EF0
+    start: 0x00033AAA
+    end:   0x000354E5
     subdir: gfx/segard
 
   - name: gfx_boss_stage5
     type: gfxcomp
     compression: segard
-    start: 0x00041EF0
-    end:   0x000452C2
+    start: 0x0003565C
+    end:   0x000385E6
     subdir: gfx/segard
 
   - name: gfx_boss_stage1
     type: gfxcomp
     compression: segard
-    start: 0x000452C2
-    end:   0x00048294
+    start: 0x00038A2E
+    end:   0x0003B673
     subdir: gfx/segard
 
   - name: gfx_boss_stage3
     type: gfxcomp
     compression: segard
-    start: 0x00048294
-    end:   0x0004A874
+    start: 0x0003BA00
+    end:   0x0003DAF6
     subdir: gfx/segard
 
   - name: gfx_boss_stage4
     type: gfxcomp
     compression: segard
-    start: 0x0004A874
-    end:   0x0004D2B0
+    start: 0x0003DFE0
+    end:   0x0003EF5C
     subdir: gfx/segard
 
   - name: gfx_boss_normal_dogs
     type: gfxcomp
     compression: segard
-    start: 0x0004D2B0
-    end:   0x0004E1F0
+    start: 0x00040A1C
+    end:   0x0004195C
     subdir: gfx/segard
 
   - name: gfx_power_ups
     type: gfxcomp
     compression: segard
-    start: 0x0004E1F0
-    end:   0x0004E34C
+    start: 0x0004195C
+    end:   0x00041AB8
     subdir: gfx/segard
 
   - name: gfx_grave
     type: gfxcomp
     compression: segard
-    start: 0x0004E34C
-    end:   0x0004E75C
+    start: 0x00041AB8
+    end:   0x00041EC8
     subdir: gfx/segard
 
   - name: gfx_enemy_headless_horror2
     type: gfxcomp
     compression: segard
-    start: 0x0004E75C
-    end:   0x0004EF9E
+    start: 0x00041EC8
+    end:   0x0004270A
     subdir: gfx/segard
 
   - name: gfx_enemy_rattle_tail
     type: gfxcomp
     compression: segard
-    start: 0x0004EF9E
-    end:   0x0004F710
+    start: 0x0004270A
+    end:   0x00042E7C
     subdir: gfx/segard
 
   - name: gfx_enemy_round_leech
     type: gfxcomp
     compression: segard
-    start: 0x0004F710
-    end:   0x0004FE76
+    start: 0x00042E7C
+    end:   0x000435E2
     subdir: gfx/segard
 
   - name: gfx_fossils
     type: gfxcomp
     compression: segard
-    start: 0x0004FE76
-    end:   0x000507B6
+    start: 0x000435E2
+    end:   0x00043F22
     subdir: gfx/segard
 
   - name: gfx_enemy_headless_horror1
     type: gfxcomp
     compression: segard
-    start: 0x000507B6
-    end:   0x00051032
+    start: 0x00043F22
+    end:   0x0004479E
     subdir: gfx/segard
 
   - name: gfx_enemy_cave_needle
     type: gfxcomp
     compression: segard
-    start: 0x00051032
-    end:   0x00051636
+    start: 0x0004479E
+    end:   0x00044DA2
     subdir: gfx/segard
 
   - name: gfx_enemy_rock_turtle
     type: gfxcomp
     compression: segard
-    start: 0x00051636
-    end:   0x00051D0E
+    start: 0x00044DA2
+    end:   0x0004547A
     subdir: gfx/segard
 
   - name: gfx_enemy_saw_fish
     type: gfxcomp
     compression: segard
-    start: 0x00051D0E
-    end:   0x00052640
+    start: 0x0004547A
+    end:   0x00045DAB
     subdir: gfx/segard
 
   - name: gfx_enemy_gory_goat
     type: gfxcomp
     compression: segard
-    start: 0x00052640
-    end:   0x00052C70
+    start: 0x00045DAC
+    end:   0x000463DC
     subdir: gfx/segard
 
   - name: gfx_enemy_bad_boar
     type: gfxcomp
     compression: segard
-    start: 0x00052C70
-    end:   0x0005396C
+    start: 0x000463DC
+    end:   0x000470D7
     subdir: gfx/segard
 
   - name: gfx_enemy_hammer_demon
     type: gfxcomp
     compression: segard
-    start: 0x0005396C
-    end:   0x00053F5A
+    start: 0x000470D8
+    end:   0x000476C6
     subdir: gfx/segard
 
   - name: gfx_enemy_dark_unicorn
     type: gfxcomp
     compression: segard
-    start: 0x00053F5A
-    end:   0x000547EA
+    start: 0x000476C6
+    end:   0x00047F56
     subdir: gfx/segard
 
   - name: gfx_rock
     type: gfxcomp
     compression: segard
-    start: 0x000547EA
-    end:   0x00054CE6
+    start: 0x00047F56
+    end:   0x00048451
     subdir: gfx/segard
 
   - name: gfx_enemy_chicken_stinger
     type: gfxcomp
     compression: segard
-    start: 0x00054CE6
-    end:   0x000558B4
+    start: 0x00048452
+    end:   0x00049020
     subdir: gfx/segard
 
   - name: gfx_enemy_grave_master
     type: gfxcomp
     compression: segard
-    start: 0x000558B4
-    end:   0x00056BA2
+    start: 0x00049020
+    end:   0x0004A30D
     subdir: gfx/segard
 
   - name: gfx_enemy_skinny_orcus
     type: gfxcomp
     compression: segard
-    start: 0x00056BA2
-    end:   0x00057382
+    start: 0x0004A30E
+    end:   0x0004AAED
     subdir: gfx/segard
 
   - name: gfx_smoke
     type: gfxcomp
     compression: segard
-    start: 0x00057382
-    end:   0x0005789E
+    start: 0x0004AAEE
+    end:   0x0004B009
     subdir: gfx/segard
 
   - name: gfx_powerup_steal_magic
     type: gfxcomp
     compression: segard
-    start: 0x0005789E
-    end:   0x00057C38
+    start: 0x0004B00A
+    end:   0x0004B3A3
     subdir: gfx/segard
 
   - name: gfx_font_credits
     type: gfxcomp
     compression: segard
-    start: 0x00057C38
-    end:   0x00058E94
+    start: 0x0004B3A4
+    end:   0x0004C096
     subdir: gfx/segard
 
-  # ── GFX — Nemesis Compressed ────────────────────────────────────────────────
-  # From Makefile nemesis_decomp section.
   - name: gfx_title_tiles_nemesis
     type: gfxcomp
     compression: nemesis
-    start: 0x00058E94
-    end:   0x00059AE2
+    start: 0x0004C600
+    end:   0x0004CD17
     subdir: gfx/nemesis
 
-  # ── GFX — SegaRD Compressed (continued) ─────────────────────────────────────
   - name: gfx_title_screen2
     type: gfxcomp
     compression: segard
-    start: 0x00059AE2
-    end:   0x00059EE2
+    start: 0x0004D24E
+    end:   0x0004D64D
     subdir: gfx/segard
 
   - name: gfx_title_screen
     type: gfxcomp
     compression: segard
-    start: 0x00059EE2
-    end:   0x0005F29E
+    start: 0x0004D64E
+    end:   0x000529E7
     subdir: gfx/segard
 
   - name: gfx_zeus_sprites
     type: gfxcomp
     compression: segard
-    start: 0x0005F29E
-    end:   0x00064DF6
+    start: 0x00052A0A
+    end:   0x00052ECD
     subdir: gfx/segard
 
   - name: gfx_flames
     type: gfxcomp
     compression: segard
-    start: 0x00064DF6
-    end:   0x00066308
+    start: 0x00058562
+    end:   0x00059938
     subdir: gfx/segard
 
   - name: gfx_transform_bg
     type: gfxcomp
     compression: segard
-    start: 0x00066308
-    end:   0x0006677C
+    start: 0x00059A74
+    end:   0x00059E87
     subdir: gfx/segard
 
   - name: gfx_portrait
     type: gfxcomp
     compression: segard
-    start: 0x0006677C
-    end:   0x0006CB14
+    start: 0x00059EE8
+    end:   0x0005F1BD
     subdir: gfx/segard
 
   - name: gfx_eyes_cutscene2
     type: gfxcomp
     compression: segard
-    start: 0x0006CB14
-    end:   0x0006D3FA
+    start: 0x00060280
+    end:   0x00060B66
     subdir: gfx/segard
 
-  # ── Unknown Data Region ──────────────────────────────────────────────────────
-  # ~120 KB between last known GFX and end-of-ROM GFX block.
-  # Likely contains: level/chunk maps, tileset tables, additional GFX.
-  # Investigate with debugger / IDA to sub-divide further.
   - name: gfx_eyes_cutscene
     type: gfxcomp
     compression: segard
-    start: 0x0006D3FA
-    end:   0x0008AC04
+    start: 0x00060B66
+    end:   0x0006312F
     subdir: gfx/segard
-
-  # ── GFX — SegaRD Compressed (end of ROM) ─────────────────────────────────────
-  # Addresses $0007E370–$0007FFFF from gfx2png / segard_comp Makefile targets.
 
   - name: gfx_fireball
     type: gfxcomp
     compression: segard
-    start: 0x0008AC04
-    end:   0x0008AE80
+    start: 0x0007E370
+    end:   0x0007E5EB
     subdir: gfx/segard
 
   - name: gfx_fireball2
     type: gfxcomp
     compression: segard
-    start: 0x0008AE80
-    end:   0x0008B320
+    start: 0x0007E5EC
+    end:   0x0007EA8C
     subdir: gfx/segard
 
   - name: gfx_fireball3
     type: gfxcomp
     compression: segard
-    start: 0x0008B320
-    end:   0x0008B7A6
+    start: 0x0007EA8C
+    end:   0x0007EF11
     subdir: gfx/segard
 
   - name: gfx_fireball4
     type: gfxcomp
     compression: segard
-    start: 0x0008B7A6
-    end:   0x0008B8A2
+    start: 0x0007EF12
+    end:   0x0007F00D
     subdir: gfx/segard
 
   - name: gfx_bolts
     type: gfxcomp
     compression: segard
-    start: 0x0008B8A2
-    end:   0x0008BD5A
+    start: 0x0007F00E
+    end:   0x0007F4A2
     subdir: gfx/segard
 
   - name: gfx_game_over
     type: gfxcomp
     compression: segard
-    start: 0x0008BD5A
-    end:   0x0008C14A
+    start: 0x0007F4C6
+    end:   0x0007F8B6
     subdir: gfx/segard
 
   - name: gfx_font_end
     type: gfxcomp
     compression: segard
-    start: 0x0008C14A
-    end:   0x0008C894
+    start: 0x0007F8B6
+    end:   0x0007FBE8
     subdir: gfx/segard
