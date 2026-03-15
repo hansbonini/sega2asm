@@ -31,755 +31,982 @@ segments:
     type: m68k
     start: 0x000200
     end:   0x000236
-  - name: loc_000236  # jsr_target×3
+    hints:
+      - offset: 0x000010
+        type: text
+        length: 4
+        label: string_000210
+      - offset: 0x000016
+        type: text
+        length: 4
+        label: string_000216
+      - offset: 0x00001C
+        type: text
+        length: 4
+        label: string_00021C
+      - offset: 0x000022
+        type: text
+        length: 4
+        label: string_000222
+      - offset: 0x000028
+        type: text
+        length: 4
+        label: string_000228
+      - offset: 0x00002E
+        type: text
+        length: 4
+        label: string_00022E
+      
+  - name: loc_000236
     type: m68k
     start: 0x000236
     end:   0x000240
-  - name: loc_000240  # jsr_target×2
+
+  - name: loc_000240
     type: m68k
     start: 0x000240
     end:   0x000266
-  - name: loc_000266  # jsr_target×2, after_terminator
+
+  - name: loc_000266
     type: m68k
     start: 0x000266
     end:   0x000354
-  - name: loc_000354  # jsr_target×2, after_terminator
+
+  - name: loc_000354
     type: m68k
     start: 0x000354
     end:   0x00063A
-  - name: loc_00063A  # jsr_target×29, after_terminator
+
+  - name: loc_00063A
     type: m68k
     start: 0x00063A
     end:   0x00063C
-  - name: loc_00063C  # jsr_target×2
+
+  - name: loc_00063C
     type: m68k
     start: 0x00063C
     end:   0x000680
-  - name: loc_000680  # jsr_target×3
+
+  - name: loc_000680
     type: m68k
     start: 0x000680
     end:   0x000696
-  - name: loc_000696  # jsr_target×8, after_terminator
+
+  - name: loc_000696
     type: m68k
     start: 0x000696
     end:   0x0006C8
-  - name: loc_0006C8  # jsr_target×2
+
+  - name: loc_0006C8
     type: m68k
     start: 0x0006C8
     end:   0x00075A
-  - name: loc_00075A  # jsr_target, after_terminator
+
+  - name: loc_00075A
     type: m68k
     start: 0x00075A
     end:   0x0007AE
-  - name: loc_0007AE  # jsr_target×2, after_terminator
+
+  - name: loc_0007AE
     type: m68k
     start: 0x0007AE
     end:   0x0007B2
-  - name: loc_0007B2  # jsr_target×2
+
+  - name: loc_0007B2
     type: m68k
     start: 0x0007B2
     end:   0x000A48
-  - name: loc_000A48  # jsr_target, after_terminator
+
+  - name: loc_000A48 
     type: m68k
     start: 0x000A48
     end:   0x000C2C
+
   - name: pal_00000C2C
     type: bin
     start: 0x000C2C
     end:   0x000C3A
     subdir: palettes
+
   - name: pal_00000C3A
     type: bin
     start: 0x000C3A
     end:   0x000C46
     subdir: palettes
-  - name: loc_000CBC  # jsr_target, after_terminator
+
+  - name: loc_000C46
+    type: m68k
+    start: 0x000C46
+    end:   0x000CBA
+
+  - name: loc_000CBC
     type: m68k
     start: 0x000CBC
+    end:   0x000D24
+    
+  - name: loc_000D24
+    type: m68k
+    start: 0x000D24
     end:   0x0010C6
+    hints:
+      - offset: 0x0302
+        type: data_byte
+        length: 160
+        label: byte_001026
+
   - name: pal_000010C6
     type: bin
     start: 0x0010C6
     end:   0x0010D0
     subdir: palettes
+
   - name: pal_000010D0
     type: bin
     start: 0x0010D0
     end:   0x0010DA
     subdir: palettes
-  - name: loc_0010DA  # jsr_target×3, after_terminator
+
+  - name: loc_0010DA
     type: m68k
     start: 0x0010DA
     end:   0x00117A
-  - name: loc_00117A  # jsr_target×3, after_terminator
+
+  - name: loc_00117A
     type: m68k
     start: 0x001180
     end:   0x0012FA
-  - name: loc_0012FA  # jsr_target, after_terminator
+
+  - name: loc_0012FA
     type: m68k
     start: 0x0012FA
     end:   0x001560
-  - name: loc_001560  # jsr_target, after_terminator
+
+  - name: loc_001560
     type: m68k
     start: 0x001560
     end:   0x001A62
-  - name: loc_001A62  # jsr_target×2, after_terminator
+
+  - name: loc_001A62
     type: m68k
     start: 0x001A62
     end:   0x00224C
-  - name: loc_00224C  # jsr_target×45
+
+  - name: loc_00224C
     type: m68k
     start: 0x00224C
     end:   0x00224E
-  - name: loc_00224E  # jsr_target×6
+
+  - name: loc_00224E
     type: m68k
     start: 0x00224E
     end:   0x002374
-  - name: loc_002374  # jsr_target×4
+
+  - name: loc_002374
     type: m68k
     start: 0x002374
     end:   0x0023B2
-  - name: loc_0023B2  # jsr_target×4
+
+  - name: loc_0023B2
     type: m68k
     start: 0x0023B2
     end:   0x00253C
-  - name: loc_00253C  # jsr_target×2
+
+  - name: loc_00253C
     type: m68k
     start: 0x00253C
     end:   0x0025E0
-  - name: loc_0025E0  # jsr_target, after_terminator
+
+  - name: loc_0025E0
     type: m68k
     start: 0x0025E0
     end:   0x002638
-  - name: loc_002638  # jsr_target×3, after_terminator
+
+  - name: loc_002638
     type: m68k
     start: 0x002638
     end:   0x00301E
-  - name: loc_00301E  # jsr_target×3
+
+  - name: loc_00301E
     type: m68k
     start: 0x00301E
     end:   0x003020
-  - name: loc_003020  # jsr_target×3
+
+  - name: loc_003020
     type: m68k
     start: 0x003020
     end:   0x003168
-  - name: loc_003168  # jsr_target, after_terminator
+
+  - name: loc_003168
     type: m68k
     start: 0x003168
     end:   0x003240
-  - name: loc_003240  # jsr_target, after_terminator
+
+  - name: loc_003240
     type: m68k
     start: 0x003240
     end:   0x0033EA
-  - name: loc_0033EA  # jsr_target, after_terminator
+
+  - name: loc_0033EA
     type: m68k
     start: 0x0033EA
     end:   0x003B48
-  - name: loc_003B48  # jsr_target×7
+
+  - name: loc_003B48
     type: m68k
     start: 0x003B48
     end:   0x003B52
-  - name: loc_003B52  # jsr_target×3
+
+  - name: loc_003B52
     type: m68k
     start: 0x003B52
     end:   0x003BB8
-  - name: loc_003BB8  # jsr_target×8
+
+  - name: loc_003BB8
     type: m68k
     start: 0x003BB8
     end:   0x003BFE
-  - name: loc_003BFE  # jsr_target×3, after_terminator
+
+  - name: loc_003BFE
     type: m68k
     start: 0x003BFE
     end:   0x003C00
-  - name: loc_003C00  # jsr_target×4
+
+  - name: loc_003C00
     type: m68k
     start: 0x003C00
     end:   0x003C50
-  - name: loc_003C50  # jsr_target×6
+
+  - name: loc_003C50
     type: m68k
     start: 0x003C50
     end:   0x003C52
-  - name: loc_003C52  # jsr_target×4
+
+  - name: loc_003C52
     type: m68k
     start: 0x003C52
     end:   0x003C7E
-  - name: loc_003C7E  # jsr_target×4
+
+  - name: loc_003C7E
     type: m68k
     start: 0x003C7E
     end:   0x003C9C
-  - name: loc_003C9C  # jsr_target×5
+
+  - name: loc_003C9C
     type: m68k
     start: 0x003C9C
     end:   0x003CA6
-  - name: loc_003CA6  # jsr_target×2
+
+  - name: loc_003CA6
     type: m68k
     start: 0x003CA6
     end:   0x003CDA
-  - name: loc_003CDA  # jsr_target×6
+
+  - name: loc_003CDA
     type: m68k
     start: 0x003CDA
     end:   0x003CE4
-  - name: loc_003CE4  # jsr_target×2, after_terminator
+
+  - name: loc_003CE4
     type: m68k
     start: 0x003CE4
     end:   0x003D1C
-  - name: loc_003D1C  # jsr_target×3
+
+  - name: loc_003D1C
     type: m68k
     start: 0x003D1C
     end:   0x003D1E
-  - name: loc_003D1E  # jsr_target×4
+
+  - name: loc_003D1E
     type: m68k
     start: 0x003D1E
     end:   0x003DD2
-  - name: loc_003DD2  # jsr_target×8, after_terminator
+
+  - name: loc_003DD2
     type: m68k
     start: 0x003DD2
     end:   0x0040D6
-  - name: loc_0040D6  # jsr_target×3
+
+  - name: loc_0040D6
     type: m68k
     start: 0x0040D6
     end:   0x0040EE
-  - name: loc_0040EE  # jsr_target×3
+
+  - name: loc_0040EE
     type: m68k
     start: 0x0040EE
     end:   0x004120
-  - name: loc_004120  # jsr_target×8, after_terminator
+
+  - name: loc_004120
     type: m68k
     start: 0x004120
     end:   0x004180
-  - name: loc_004180  # jsr_target, after_terminator
+
+  - name: loc_004180
     type: m68k
     start: 0x004180
     end:   0x00419A
-  - name: loc_00419A  # jsr_target×42, after_terminator
+
+  - name: loc_00419A
     type: m68k
     start: 0x00419A
     end:   0x00419C
-  - name: loc_00419C  # jsr_target×13
+
+  - name: loc_00419C
     type: m68k
     start: 0x00419C
     end:   0x0041D2
-  - name: loc_0041D2  # jsr_target, after_terminator
+
+  - name: loc_0041D2
     type: m68k
     start: 0x0041D2
     end:   0x0041D4
-  - name: loc_0041D4  # jsr_target×3
+
+  - name: loc_0041D4
     type: m68k
     start: 0x0041D4
     end:   0x00426C
-  - name: loc_00426C  # jsr_target, after_terminator
+
+  - name: loc_00426C
     type: m68k
     start: 0x00426C
     end:   0x004364
-  - name: loc_004364  # jsr_target×2, after_terminator
+
+  - name: loc_004364
     type: m68k
     start: 0x004364
     end:   0x004388
-  - name: loc_004388  # jsr_target×5
+
+  - name: loc_004388
     type: m68k
     start: 0x004388
     end:   0x0044FC
-  - name: loc_0044FC  # jsr_target, after_terminator
+
+  - name: loc_0044FC
     type: m68k
     start: 0x0044FC
     end:   0x0045BE
-  - name: loc_0045BE  # jsr_target, after_terminator
+
+  - name: loc_0045BE
     type: m68k
     start: 0x0045BE
     end:   0x0045CC
-  - name: loc_0045CC  # jsr_target, after_terminator
+
+  - name: loc_0045CC
     type: m68k
     start: 0x0045CC
     end:   0x0045EE
-  - name: loc_0045EE  # jsr_target, after_terminator
+
+  - name: loc_0045EE
     type: m68k
     start: 0x0045EE
     end:   0x0045F8
-  - name: loc_0045F8  # jsr_target, after_terminator
+
+  - name: loc_0045F8
     type: m68k
     start: 0x0045F8
     end:   0x004606
-  - name: loc_004606  # jsr_target, after_terminator
+
+  - name: loc_004606
     type: m68k
     start: 0x004606
     end:   0x004616
-  - name: loc_004616  # jsr_target×4
+
+  - name: loc_004616
     type: m68k
     start: 0x004616
     end:   0x004656
-  - name: loc_004656  # jsr_target×2, after_terminator
+
+  - name: loc_004656
     type: m68k
     start: 0x004656
     end:   0x00467A
-  - name: loc_00467A  # jsr_target, after_terminator
+
+  - name: loc_00467A
     type: m68k
     start: 0x00467A
     end:   0x0046BC
-  - name: loc_0046BC  # jsr_target×7
+
+  - name: loc_0046BC
     type: m68k
     start: 0x0046BC
     end:   0x0046DC
-  - name: loc_0046DC  # jsr_target×7, after_terminator
+
+  - name: loc_0046DC
     type: m68k
     start: 0x0046DC
     end:   0x0046E4
-  - name: loc_0046E4  # jsr_target×4, after_terminator
+
+  - name: loc_0046E4
     type: m68k
     start: 0x0046E4
     end:   0x0046F4
-  - name: loc_0046F4  # jsr_target×14, after_terminator
+
+  - name: loc_0046F4
     type: m68k
     start: 0x0046F4
     end:   0x0046F6
-  - name: loc_0046F6  # jsr_target×3
+
+  - name: loc_0046F6
     type: m68k
     start: 0x0046F6
     end:   0x004764
-  - name: loc_004764  # jsr_target×4
+
+  - name: loc_004764
     type: m68k
     start: 0x004764
     end:   0x0047B0
-  - name: loc_0047B0  # jsr_target×12, after_terminator
+
+  - name: loc_0047B0
     type: m68k
     start: 0x0047B0
     end:   0x0047B2
-  - name: loc_0047B2  # jsr_target×7
+    
+  - name: loc_0047B2
     type: m68k
     start: 0x0047B2
     end:   0x0047B6
-  - name: loc_0047B6  # jsr_target×5
+
+  - name: loc_0047B6
     type: m68k
     start: 0x0047B6
     end:   0x0047CC
-  - name: loc_0047CC  # jsr_target, after_terminator
+
+  - name: loc_0047CC
     type: m68k
     start: 0x0047CC
     end:   0x0047F0
-  - name: loc_0047F0  # jsr_target×2, after_terminator
+
+  - name: loc_0047F0
     type: m68k
     start: 0x0047F0
     end:   0x00480A
-  - name: loc_00480A  # jsr_target, after_terminator
+
+  - name: loc_00480A
     type: m68k
     start: 0x00480A
     end:   0x004824
-  - name: loc_004824  # jsr_target, after_terminator
+
+  - name: loc_004824
     type: m68k
     start: 0x004824
     end:   0x00483A
-  - name: loc_00483A  # jsr_target, after_terminator
+
+  - name: loc_00483A
     type: m68k
     start: 0x00483A
     end:   0x0048C0
-  - name: loc_0048C0  # jsr_target×3, after_terminator
+
+  - name: loc_0048C0
     type: m68k
     start: 0x0048C0
     end:   0x0048C2
-  - name: loc_0048C2  # jsr_target×2
+
+  - name: loc_0048C2
     type: m68k
     start: 0x0048C2
     end:   0x0048F2
-  - name: loc_0048F2  # jsr_target, after_terminator
+
+  - name: loc_0048F2
     type: m68k
     start: 0x0048F2
     end:   0x0048F4
-  - name: loc_0048F4  # jsr_target×2
+
+  - name: loc_0048F4
     type: m68k
     start: 0x0048F4
     end:   0x00491C
-  - name: loc_00491C  # jsr_target×2, after_terminator
+
+  - name: loc_00491C
     type: m68k
     start: 0x00491C
     end:   0x00499A
-  - name: loc_00499A  # jsr_target, after_terminator
+
+  - name: loc_00499A
     type: m68k
     start: 0x00499A
     end:   0x004A8E
-  - name: loc_004A8E  # jsr_target, after_terminator
+
+  - name: loc_004A8E
     type: m68k
     start: 0x004A8E
     end:   0x004A9A
-  - name: loc_004A9A  # jsr_target, after_terminator
+
+  - name: loc_004A9A
     type: m68k
     start: 0x004A9A
     end:   0x004AA8
-  - name: loc_004AA8  # jsr_target, after_terminator
+
+  - name: loc_004AA8
     type: m68k
     start: 0x004AA8
     end:   0x004AB6
-  - name: loc_004AB6  # jsr_target, after_terminator
+
+  - name: loc_004AB6
     type: m68k
     start: 0x004AB6
     end:   0x004AC6
-  - name: loc_004AC6  # jsr_target×2
+    
+  - name: loc_004AC6
     type: m68k
     start: 0x004AC6
     end:   0x004AF2
-  - name: loc_004AF2  # jsr_target×28, after_terminator
+
+  - name: loc_004AF2
     type: m68k
     start: 0x004AF2
     end:   0x004B1A
-  - name: loc_004B1A  # jsr_target, after_terminator
+
+  - name: loc_004B1A
     type: m68k
     start: 0x004B1A
     end:   0x004B1C
-  - name: loc_004B1C  # jsr_target×12
+
+  - name: loc_004B1C
     type: m68k
     start: 0x004B1C
     end:   0x004B44
-  - name: loc_004B44  # jsr_target×3
+
+  - name: loc_004B44
     type: m68k
     start: 0x004B44
     end:   0x004B58
-  - name: loc_004B58  # jsr_target×2, after_terminator
+
+  - name: loc_004B58
     type: m68k
     start: 0x004B58
     end:   0x004B6E
-  - name: loc_004B6E  # jsr_target, after_terminator
+
+  - name: loc_004B6E
     type: m68k
     start: 0x004B6E
     end:   0x004B70
-  - name: loc_004B70  # jsr_target×10
+
+  - name: loc_004B70
     type: m68k
     start: 0x004B70
     end:   0x004BB6
-  - name: loc_004BB6  # jsr_target×3
+
+  - name: loc_004BB6
     type: m68k
     start: 0x004BB6
     end:   0x004BF0
-  - name: loc_004BF0  # jsr_target, after_terminator
+
+  - name: loc_004BF0
     type: m68k
     start: 0x004BF0
     end:   0x004C02
-  - name: loc_004C02  # jsr_target×2, after_terminator
+
+  - name: loc_004C02
     type: m68k
     start: 0x004C02
     end:   0x004C32
-  - name: loc_004C32  # jsr_target, after_terminator
+
+  - name: loc_004C32
     type: m68k
     start: 0x004C32
     end:   0x004C7C
-  - name: loc_004C7C  # jsr_target×2
+
+  - name: loc_004C7C
     type: m68k
     start: 0x004C7C
     end:   0x004CBA
-  - name: loc_004CBA  # jsr_target×24, after_terminator
+
+  - name: loc_004CBA
     type: m68k
     start: 0x004CBA
     end:   0x004CBC
-  - name: loc_004CBC  # jsr_target×12
+
+  - name: loc_004CBC
     type: m68k
     start: 0x004CBC
     end:   0x005132
-  - name: loc_005132  # jsr_target, after_terminator
+
+  - name: loc_005132
     type: m68k
     start: 0x005132
     end:   0x00532C
-  - name: loc_00532C  # jsr_target, after_terminator
+
+  - name: loc_00532C
     type: m68k
     start: 0x00532C
     end:   0x005464
-  - name: loc_005464  # jsr_target×4, after_terminator
+
+  - name: loc_005464
     type: m68k
     start: 0x005464
     end:   0x005718
-  - name: loc_005718  # jsr_target, after_terminator
+
+  - name: loc_005718
     type: m68k
     start: 0x005718
     end:   0x005B22
-  - name: loc_005B22  # jsr_target, after_terminator
+
+  - name: loc_005B22
     type: m68k
     start: 0x005B22
     end:   0x005D10
-  - name: loc_005D10  # jsr_target, after_terminator
+
+  - name: loc_005D10
     type: m68k
     start: 0x005D10
     end:   0x005EA6
-  - name: loc_005EA6  # jsr_target, after_terminator
+
+  - name: loc_005EA6
     type: m68k
     start: 0x005EA6
     end:   0x006076
-  - name: loc_006076  # jsr_target×2
+
+  - name: loc_006076
     type: m68k
     start: 0x006076
     end:   0x006160
-  - name: loc_006160  # jsr_target×2, after_terminator
+
+  - name: loc_006160
     type: m68k
     start: 0x006160
     end:   0x00623A
-  - name: loc_00623A  # jsr_target×3
+
+  - name: loc_00623A
     type: m68k
     start: 0x00623A
     end:   0x00625A
-  - name: loc_00625A  # jsr_target, after_terminator
+
+  - name: loc_00625A
     type: m68k
     start: 0x00625A
     end:   0x00627A
-  - name: loc_00627A  # jsr_target×18, after_terminator
+
+  - name: loc_00627A
     type: m68k
     start: 0x00627A
     end:   0x0062B0
-  - name: loc_0062B0  # jsr_target×16, after_terminator
+
+  - name: loc_0062B0
     type: m68k
     start: 0x0062B0
     end:   0x0062BC
-  - name: loc_0062BC  # jsr_target×17, after_terminator
+
+  - name: loc_0062BC
     type: m68k
     start: 0x0062BC
     end:   0x0062DA
-  - name: loc_0062DA  # jsr_target×11, after_terminator
+
+  - name: loc_0062DA
     type: m68k
     start: 0x0062DA
     end:   0x00637C
-  - name: loc_00637C  # jsr_target×14, after_terminator
+
+  - name: loc_00637C
     type: m68k
     start: 0x00637C
     end:   0x00642E
-  - name: loc_00642E  # jsr_target×19, after_terminator
+
+  - name: loc_00642E
     type: m68k
     start: 0x00642E
     end:   0x006430
-  - name: loc_006430  # jsr_target×2
+
+  - name: loc_006430
     type: m68k
     start: 0x006430
     end:   0x00645E
-  - name: loc_00645E  # jsr_target, after_terminator
+
+  - name: loc_00645E
     type: m68k
     start: 0x00645E
     end:   0x0067CC
-  - name: loc_0067CC  # jsr_target×2
+
+  - name: loc_0067CC
     type: m68k
     start: 0x0067CC
     end:   0x0068D0
-  - name: loc_0068D0  # jsr_target, after_terminator
+
+  - name: loc_0068D0
     type: m68k
     start: 0x0068D0
     end:   0x00698A
-  - name: loc_00698A  # jsr_target, after_terminator
+
+  - name: loc_00698A
     type: m68k
     start: 0x00698A
     end:   0x006A9C
-  - name: loc_006A9C  # jsr_target×2, after_terminator
+
+  - name: loc_006A9C
     type: m68k
     start: 0x006A9C
     end:   0x006AD2
-  - name: loc_006AD2  # jsr_target, after_terminator
+
+  - name: loc_006AD2
     type: m68k
     start: 0x006AD2
     end:   0x006D1E
-  - name: loc_006D1E  # jsr_target×2, after_terminator
+
+  - name: loc_006D1E
     type: m68k
     start: 0x006D1E
     end:   0x006D56
-  - name: loc_006D56  # jsr_target, after_terminator
+    
+  - name: loc_006D56
     type: m68k
     start: 0x006D56
     end:   0x006E66
-  - name: loc_006E66  # jsr_target, after_terminator
+
+  - name: loc_006E66
     type: m68k
     start: 0x006E66
     end:   0x006E78
-  - name: loc_006E78  # jsr_target, after_terminator
+
+  - name: loc_006E78
     type: m68k
     start: 0x006E78
     end:   0x007098
-  - name: loc_007098  # jsr_target×2, after_terminator
+
+  - name: loc_007098
     type: m68k
     start: 0x007098
     end:   0x00711C
-  - name: loc_00711C  # jsr_target, after_terminator
+
+  - name: loc_00711C
     type: m68k
     start: 0x00711C
     end:   0x00747A
-  - name: loc_00747A  # jsr_target×2, after_terminator
+    
+  - name: loc_00747A
     type: m68k
     start: 0x00747A
     end:   0x0077B0
-  - name: loc_0077B0  # jsr_target, after_terminator
+
+  - name: loc_0077B0
     type: m68k
     start: 0x0077B0
     end:   0x008000
-  - name: loc_008000  # jsr_target×2, after_terminator
+
+  - name: loc_008000
     type: m68k
     start: 0x008000
     end:   0x008092
-  - name: loc_008092  # jsr_target, after_terminator
+
+  - name: loc_008092
     type: m68k
     start: 0x008092
     end:   0x008642
-  - name: loc_008642  # jsr_target, after_terminator
+
+  - name: loc_008642
     type: m68k
     start: 0x008642
     end:   0x0089B8
-  - name: loc_0089B8  # jsr_target, after_terminator
+
+  - name: loc_0089B8
     type: m68k
     start: 0x0089B8
     end:   0x008D16
-  - name: loc_008D16  # jsr_target, after_terminator
+
+  - name: loc_008D16
     type: m68k
     start: 0x008D16
     end:   0x008D84
-  - name: loc_008D84  # jsr_target, after_terminator
+
+  - name: loc_008D84
     type: m68k
     start: 0x008D84
     end:   0x008DC8
-  - name: loc_008DC8  # jsr_target, after_terminator
+
+  - name: loc_008DC8
     type: m68k
     start: 0x008DC8
     end:   0x008E40
-  - name: loc_008E40  # jsr_target, after_terminator
+
+  - name: loc_008E40
     type: m68k
     start: 0x008E40
     end:   0x0097C8
-  - name: loc_0097C8  # jsr_target, after_terminator
+
+  - name: loc_0097C8
     type: m68k
     start: 0x0097C8
     end:   0x0097FC
-  - name: loc_0097FC  # jsr_target, after_terminator
+
+  - name: loc_0097FC
     type: m68k
     start: 0x0097FC
     end:   0x009B4C
-  - name: loc_009B4C  # jsr_target×2, after_terminator
+
+  - name: loc_009B4C
     type: m68k
     start: 0x009B4C
     end:   0x009B4E
-  - name: loc_009B4E  # jsr_target×4
+
+  - name: loc_009B4E
     type: m68k
     start: 0x009B4E
     end:   0x009B6E
-  - name: loc_009B6E  # jsr_target×2, after_terminator
+
+  - name: loc_009B6E
     type: m68k
     start: 0x009B6E
     end:   0x009F0A
-  - name: loc_009F0A  # jsr_target×2, after_terminator
+
+  - name: loc_009F0A
     type: m68k
     start: 0x009F0A
     end:   0x009F26
-  - name: loc_009F26  # jsr_target×2, after_terminator
+
+  - name: loc_009F26
     type: m68k
     start: 0x009F26
     end:   0x009F30
-  - name: loc_009F30  # jsr_target×5, after_terminator
+
+  - name: loc_009F30
     type: m68k
     start: 0x009F30
     end:   0x009F3E
-  - name: loc_009F3E  # jsr_target, after_terminator
+
+  - name: loc_009F3E
     type: m68k
     start: 0x009F3E
     end:   0x00A81C
-  - name: loc_00A81C  # jsr_target×3
+
+  - name: loc_00A81C
     type: m68k
     start: 0x00A81C
     end:   0x00A83A
-  - name: loc_00A83A  # jsr_target×3
+
+  - name: vdp_setup
     type: m68k
     start: 0x00A83A
-    end:   0x00A86E
-  - name: loc_00A86E  # jsr_target×4
+    end:   0x00A8B4
+    hints:
+      - offset: 0x0058
+        type: data_word
+        length: 34
+        label: vdpregs_A892
+
+  - name: loc_00A8b4
     type: m68k
-    start: 0x00A86E
-    end:   0x00A8E8
-  - name: loc_00A8E8  # jsr_target, after_terminator
-    type: m68k
-    start: 0x00A8E8
+    start: 0x00A8B4
     end:   0x00AB86
-  - name: loc_00AB86  # jsr_target, after_terminator
+
+  - name: loc_00AB86
     type: m68k
     start: 0x00AB86
     end:   0x00ADA6
-  - name: loc_00ADA6  # jsr_target×2
+
+  - name: loc_00ADA6
     type: m68k
     start: 0x00ADA6
     end:   0x00AE6A
-  - name: loc_00AE6A  # jsr_target, after_terminator
+
+  - name: loc_00AE6A
     type: m68k
     start: 0x00AE6A
     end:   0x00AF0C
-  - name: loc_00AF0C  # jsr_target, after_terminator
+
+  - name: loc_00AF0C
     type: m68k
     start: 0x00AF0C
     end:   0x00AFBA
-  - name: loc_00AFBA  # jsr_target, after_terminator
+
+  - name: loc_00AFBA
     type: m68k
     start: 0x00AFBA
     end:   0x00B036
-  - name: loc_00B036  # jsr_target×2, after_terminator
+
+  - name: loc_00B036
     type: m68k
     start: 0x00B036
     end:   0x00B058
-  - name: loc_00B058  # jsr_target×3, after_terminator
+
+  - name: loc_00B058
     type: m68k
     start: 0x00B058
     end:   0x00B076
-  - name: loc_00B076  # jsr_target×3
+
+  - name: loc_00B076
     type: m68k
     start: 0x00B076
     end:   0x00B1F8
-  - name: loc_00B1F8  # jsr_target×2, after_terminator
+
+  - name: loc_00B1F8
     type: m68k
     start: 0x00B1F8
     end:   0x00B214
-  - name: loc_00B214  # jsr_target×2, after_terminator
+
+  - name: loc_00B214
     type: m68k
     start: 0x00B214
     end:   0x00B230
-  - name: loc_00B230  # jsr_target×2, after_terminator
+    
+  - name: loc_00B230
     type: m68k
     start: 0x00B230
     end:   0x00B2D4
-  - name: loc_00B2D4  # jsr_target×2
+
+  - name: loc_00B2D4
     type: m68k
     start: 0x00B2D4
     end:   0x00B420
-  - name: loc_00B420  # jsr_target×2
+
+  - name: loc_00B420
     type: m68k
     start: 0x00B420
     end:   0x00B52A
-  - name: loc_00B52A  # jsr_target×2, after_terminator
+
+  - name: loc_00B52A
     type: m68k
     start: 0x00B52A
     end:   0x00BF3E
-  - name: loc_00BF3E  # jsr_target×3
+
+  - name: loc_00BF3E
     type: m68k
     start: 0x00BF3E
     end:   0x00BFC8
-  - name: loc_00BFC8  # jsr_target, after_terminator
+
+  - name: loc_00BFC8
     type: m68k
     start: 0x00BFC8
     end:   0x00BFCC
-  - name: loc_00BFCC  # jsr_target, after_terminator
+
+  - name: loc_00BFCC
     type: m68k
     start: 0x00BFCC
     end:   0x00C0EE
-  - name: loc_00C0EE  # jsr_target×4, after_terminator
+
+  - name: loc_00C0EE
     type: m68k
     start: 0x00C0EE
     end:   0x00C1EC
-  - name: loc_00C1EC  # jsr_target×4
+
+  - name: loc_00C1EC
     type: m68k
     start: 0x00C1EC
     end:   0x00C358
-  - name: loc_00C358  # jsr_target, after_terminator
+
+  - name: loc_00C358
     type: m68k
     start: 0x00C358
     end:   0x00C3BA
-  - name: loc_00C3BA  # jsr_target×2
+
+  - name: loc_00C3BA
     type: m68k
     start: 0x00C3BA
     end:   0x00C3CA
-  - name: loc_00C3CA  # jsr_target, after_terminator
+
+  - name: loc_00C3CA
     type: m68k
     start: 0x00C3CA
     end:   0x00C5AA
-  - name: loc_00C5AA  # jsr_target×2
+
+  - name: loc_00C5AA
     type: m68k
     start: 0x00C5AA
     end:   0x00F200
-  - name: loc_00F200  # jsr_target×6
+
+  - name: loc_00F200
     type: m68k
     start: 0x00F200
     end:   0x00F214
-  - name: loc_00F214  # jsr_target×6
+
+  - name: loc_00F214
     type: m68k
     start: 0x00F214
     end:   0x0138EC
@@ -1191,6 +1418,42 @@ segments:
     start: 0x00060B66
     end:   0x0006312F
     subdir: gfx/segard
+
+  - name: gfx_sprt_human
+    type: gfx
+    start: 0x00063B96
+    end:   0x00068505
+    subdir: gfx/characters
+
+  - name: gfx_sprt_human2
+    type: gfx
+    start: 0x0006851C
+    end:   0x0006D62B
+    subdir: gfx/characters
+
+  - name: gfx_sprt_wolf
+    type: gfx
+    start: 0x0006E308
+    end:   0x00072169
+    subdir: gfx/characters
+
+  - name: gfx_sprt_bear
+    type: gfx
+    start: 0x0007271C
+    end:   0x0007656D
+    subdir: gfx/characters
+
+  - name: gfx_sprt_tiger
+    type: gfx
+    start: 0x00076A22
+    end:   0x0007ADB3
+    subdir: gfx/characters
+
+  - name: gfx_sprt_dragon
+    type: gfx
+    start: 0x0007B37C
+    end:   0x0007DBED
+    subdir: gfx/characters
 
   - name: gfx_fireball
     type: gfxcomp

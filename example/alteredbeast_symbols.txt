@@ -59,6 +59,13 @@ NemBCT_Loop	                        = $0000c364 ;
 NemBCT_ShortCode	                = $0000c38e ;
 NemBCT_ShortCode_Loop	            = $0000c39e ;
 
+gfx_sprt_human                      = $00063B96 ;
+gfx_sprt_human2                     = $0006851C ;
+gfx_sprt_wolf                       = $0006E308 ;
+gfx_sprt_tiger                      = $00076A22 ;
+gfx_sprt_bear                       = $0007271C ;
+gfx_sprt_dragon                     = $0007B37C ;
+
 DIFFICULTY                          = $FFFFFE04 ;
 LIVES	                            = $FFFFFE06 ;
 BEAST                               = $FFFFFE08 ;

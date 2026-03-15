@@ -340,6 +340,7 @@ func (s *Splitter) writeM68K(r *rom.ROM, seg config.Segment, dir string, syms *s
 	sb.WriteString(fmt.Sprintf("\torg\t$%06X\n\n", start))
 
 	labelHits := 0
+	lastHintEnd := uint32(0)
 	for _, res := range results {
 		addr := res.Addr
 
@@ -373,6 +374,12 @@ func (s *Splitter) writeM68K(r *rom.ROM, seg config.Segment, dir string, syms *s
 		// Check hints: override with explicit data directives.
 		if hint, ok := hints[addr-start]; ok {
 			s.emitHint(&sb, hint, data, addr-start, cmap)
+			lastHintEnd = addr - start + uint32(hint.Length)
+			continue
+		}
+
+		// Don't emit disassembly for instructions that overlap with a hint's data
+		if addr-start < lastHintEnd {
 			continue
 		}
 
@@ -544,7 +551,7 @@ func (s *Splitter) writePSG(r *rom.ROM, seg config.Segment, dir string) (string,
 		for i := 0; i+1 < len(data); i += 2 {
 			events = append(events, audio.PSGEvent{
 				Tick:     uint32(i / 2),
-				Register: data[i] >> 5 & 0x3 * 2 + data[i]>>4&1,
+				Register: data[i]>>5&0x3*2 + data[i]>>4&1,
 				Value:    uint16(data[i+1]),
 			})
 		}
@@ -778,5 +785,3 @@ func sanitiseASCII(b []byte) string {
 	}
 	return string(s)
 }
-
-
