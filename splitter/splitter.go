@@ -529,7 +529,7 @@ func (s *Splitter) writePCM(r *rom.ROM, seg config.Segment, dir string) (string,
 
 func (s *Splitter) writePSG(r *rom.ROM, seg config.Segment, dir string) (string, error) {
 	binPath := s.segPath(seg, dir, ".bin")
-	midPath := s.segPath(seg, dir, ".mid")
+	midPath := s.segPath(seg, dir, ".midi")
 	if s.opts.DryRun {
 		return binPath, nil
 	}
