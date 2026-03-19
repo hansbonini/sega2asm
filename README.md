@@ -54,7 +54,7 @@ Assembly output compatible with [Clownacy/clownassembler](https://github.com/Clo
 | `rlesc` | RLE | Software Creations RLE compressor | Maximum Carnage, Venom, The Tick, Cutthroat Island |
 | `rnc` / `rnc1` / `rnc2` | LZH | Rob Northen Compression methods 1 & 2 | Various multiplatform ports and publisher tools |
 | `lzcompile` | LZ | Compile Co. Ltd. command-byte LZ; 256-byte circular history, 4-byte output chunks | Puyo Puyo, Aleste / MUSHA, GG Aleste, Puyo Puyo 2, Power Strike II |
-| `lzitl` | Mixed | I.T.L. (Sega) non-zero-byte copy + XOR block compressor | Bonanza Bros and other I.T.L.-developed Sega games |
+| `ITL` | Mixed | I.T.L. (Sega) non-zero-byte copy + XOR block compressor | Bonanza Bros and other I.T.L.-developed Sega games |
 | `lzfactor5` | LZ | Factor 5 LZ; v1 = 11-bit window, v2 = 16-bit window (auto-detected from header) | Factor 5 Mega Drive titles |
 | `lzbeam` | LZ | Beam Software LZ; Elias-coded counts, absolute back-references, command bits in appended bitstream | Shadowrun, Batman Returns, Judge Dredd |
 | `lztreasure` | LZ | Treasure Co. Ltd. multi-mode LZ; 2-byte size header, back-references + RLE single/pairs/alternating + literal runs | Gunstar Heroes, Alien Soldier, Dynamite Headdy, McDonald's Treasure Land Adventure |

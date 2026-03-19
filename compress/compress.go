@@ -1963,10 +1963,10 @@ func DecompressLZFactor5(src []byte) ([]byte, error) {
 	return out, nil
 }
 
-// DecompressLZITL decompresses data using the LZ I.T.L (Sega) format:
+// DecompressITL decompresses data using the LZ I.T.L (Sega) format:
 // non-zero-byte literal selection + running XOR chain, operating on 32-byte blocks.
 // Reference: https://github.com/lab313ru/itl_comp/blob/master/main.c
-func DecompressLZITL(src []byte) ([]byte, error) {
+func DecompressITL(src []byte) ([]byte, error) {
 	rpos := 0
 	var out []byte
 
@@ -2178,8 +2178,8 @@ func Decompress(compression string, src []byte) ([]byte, error) {
 		return DecompressRNC2(src)
 	case "lzcompile":
 		return DecompressLZCompile(src)
-	case "lzitl":
-		return DecompressLZITL(src)
+	case "itl":
+		return DecompressITL(src)
 	case "lzfactor5":
 		return DecompressLZFactor5(src)
 	case "lzbeam":
