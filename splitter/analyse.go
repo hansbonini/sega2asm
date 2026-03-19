@@ -16,12 +16,12 @@ type splitSuggestion struct {
 	reasons []string
 }
 
-// suggestM68KSplits analyses disassembly results and prints YAML-ready split
-// suggestions to stdout. A boundary is suggested when an address is:
+// suggestM68KSplits analyses disassembly results and returns YAML-ready split
+// suggestion lines. A boundary is suggested when an address is:
 //
 //   - a JSR/BSR target that immediately follows a flow terminator (strong), or
 //   - a JSR/BSR target called more than once (medium).
-func (s *Splitter) suggestM68KSplits(results []m68k.Result, seg config.Segment, syms *symbols.Table) {
+func (s *Splitter) suggestM68KSplits(results []m68k.Result, seg config.Segment, syms *symbols.Table) []string {
 	segStart := uint32(seg.Start)
 	segEnd := uint32(seg.End)
 
@@ -93,16 +93,16 @@ func (s *Splitter) suggestM68KSplits(results []m68k.Result, seg config.Segment, 
 	}
 
 	if len(suggestions) == 0 {
-		s.log("[HINT] No split suggestions for %q", seg.Name)
-		return
+		return nil
 	}
 
 	sort.Slice(suggestions, func(i, j int) bool {
 		return suggestions[i].addr < suggestions[j].addr
 	})
 
-	s.log("[HINT] Split suggestions for %q ($%06X–$%06X) — %d boundaries:",
-		seg.Name, segStart, segEnd, len(suggestions))
+	var lines []string
+	lines = append(lines, fmt.Sprintf("[HINT] Split suggestions for %q ($%06X–$%06X) — %d boundaries:",
+		seg.Name, segStart, segEnd, len(suggestions)))
 
 	// Build ordered boundary list: segStart + suggested + segEnd.
 	boundaries := make([]uint32, 0, len(suggestions)+2)
@@ -125,9 +125,10 @@ func (s *Splitter) suggestM68KSplits(results []m68k.Result, seg config.Segment, 
 			comment = "  # " + strings.Join(h.reasons, ", ")
 		}
 
-		s.log("  - name: %s%s", name, comment)
-		s.log("    type: m68k")
-		s.log("    start: 0x%06X", start)
-		s.log("    end:   0x%06X", end)
+		lines = append(lines, fmt.Sprintf("  - name: %s%s", name, comment))
+		lines = append(lines, "    type: m68k")
+		lines = append(lines, fmt.Sprintf("    start: 0x%06X", start))
+		lines = append(lines, fmt.Sprintf("    end:   0x%06X", end))
 	}
+	return lines
 }

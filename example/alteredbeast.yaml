@@ -124,14 +124,14 @@ segments:
 
   - name: pal_00000C2C
     type: bin
-    start: 0x000C2C
-    end:   0x000C3A
+    start: 0x00000C2C
+    end:   0x00000C3A
     subdir: palettes
 
   - name: pal_00000C3A
     type: bin
-    start: 0x000C3A
-    end:   0x000C46
+    start: 0x00000C3A
+    end:   0x00000C46
     subdir: palettes
 
   - name: loc_000C46
@@ -156,14 +156,14 @@ segments:
 
   - name: pal_000010C6
     type: bin
-    start: 0x0010C6
-    end:   0x0010D0
+    start: 0x000010C6
+    end:   0x000010D0
     subdir: palettes
 
   - name: pal_000010D0
     type: bin
-    start: 0x0010D0
-    end:   0x0010DA
+    start: 0x000010D0
+    end:   0x000010DA
     subdir: palettes
 
   - name: loc_0010DA
@@ -184,12 +184,141 @@ segments:
   - name: loc_001560
     type: m68k
     start: 0x001560
-    end:   0x001A62
+    end:   0x0015BC
+
+  - name: pal_000015BC
+    type: bin
+    start: 0x000015BC
+    end:   0x000015CA
+    subdir: palettes
+
+  - name: pal_000015CA
+    type: bin
+    start: 0x000015CA
+    end:   0x000015D8
+    subdir: palettes
+
+  - name: pal_000015D8
+    type: bin
+    start: 0x000015D8
+    end:   0x000015E6
+    subdir: palettes
+
+  - name: pal_000015E6
+    type: bin
+    start: 0x000015E6
+    end:   0x000015F4
+    subdir: palettes
+
+  - name: pal_000015F4
+    type: bin
+    start: 0x000015F4
+    end:   0x00001602
+    subdir: palettes
+
+  - name: pal_00001602
+    type: bin
+    start: 0x00001602
+    end:   0x00001610
+    subdir: palettes
+
+  - name: loc_001610
+    type: m68k
+    start: 0x001610
+    end:   0x001A62    
 
   - name: loc_001A62
     type: m68k
     start: 0x001A62
-    end:   0x00224C
+    end:   0x001B56
+    hints:
+      - offset: 0x000D4
+        type: ptr_table
+        length: 32
+        label: ptr_001B36
+
+  - name: pal_00001B56
+    type: bin
+    start: 0x00001B56
+    end:   0x00001B66
+    subdir: palettes
+
+  - name: pal_00001B66
+    type: bin
+    start: 0x00001B66
+    end:   0x00001B76
+    subdir: palettes
+
+  - name: pal_00001B76
+    type: bin
+    start: 0x00001B76
+    end:   0x00001B86
+    subdir: palettes
+
+  - name: pal_00001B86
+    type: bin
+    start: 0x00001B86
+    end:   0x00001B96
+    subdir: palettes
+
+  - name: pal_00001B96
+    type: bin
+    start: 0x00001B96
+    end:   0x00001BA6
+    subdir: palettes
+
+  - name: pal_00001BA6
+    type: bin
+    start: 0x00001BA6
+    end:   0x00001BB6
+    subdir: palettes
+
+  - name: pal_00001BB6
+    type: bin
+    start: 0x00001BB6
+    end:   0x00001BC6
+    subdir: palettes
+
+  - name: pal_00001BC6
+    type: bin
+    start: 0x00001BC6
+    end:   0x00001BD6
+    subdir: palettes
+
+  - name: pal_00001BD6
+    type: bin
+    start: 0x00001BD6
+    end:   0x00001BE6
+    subdir: palettes
+
+  - name: loc_001BE6
+    type: m68k
+    start: 0x001BE6
+    end:   0x0021D4
+
+  - name: pal_000021D4
+    type: bin
+    start: 0x000021D4
+    end:   0x000021F2
+    subdir: palettes
+
+  - name: pal_000021F2
+    type: bin
+    start: 0x000021F2
+    end:   0x00002210
+    subdir: palettes
+
+  - name: pal_00002210
+    type: bin
+    start: 0x00002210
+    end:   0x0000222E
+    subdir: palettes
+
+  - name: pal_0000222E
+    type: bin
+    start: 0x0000222E
+    end:   0x0000224C
+    subdir: palettes
 
   - name: loc_00224C
     type: m68k
@@ -324,11 +453,83 @@ segments:
   - name: loc_003DD2
     type: m68k
     start: 0x003DD2
-    end:   0x0040D6
+    end:   0x003FDC
 
-  - name: loc_0040D6
+  - name: pal_00003FDC
+    type: bin
+    start: 0x00003FDC
+    end:   0x00003FF2
+    subdir: palettes
+
+  - name: pal_00003FF2
+    type: bin
+    start: 0x00003FF2
+    end:   0x00004008
+    subdir: palettes
+
+  - name: pal_00004008
+    type: bin
+    start: 0x00004008
+    end:   0x0000401E
+    subdir: palettes
+
+  - name: pal_0000401E
+    type: bin
+    start: 0x0000401E
+    end:   0x00004034
+    subdir: palettes
+
+  - name: pal_00004034
+    type: bin
+    start: 0x00004034
+    end:   0x00004048
+    subdir: palettes
+
+  - name: pal_00004048
+    type: bin
+    start: 0x00004048
+    end:   0x0000405C
+    subdir: palettes
+
+  - name: pal_0000405C
+    type: bin
+    start: 0x0000405C
+    end:   0x00004070
+    subdir: palettes
+
+  - name: pal_00004070
+    type: bin
+    start: 0x00004070
+    end:   0x00004082
+    subdir: palettes
+
+  - name: pal_00004082
+    type: bin
+    start: 0x00004082
+    end:   0x00004094
+    subdir: palettes
+
+  - name: pal_00004094
+    type: bin
+    start: 0x00004094
+    end:   0x000040A8
+    subdir: palettes
+
+  - name: pal_000040A8
+    type: bin
+    start: 0x000040A8
+    end:   0x000040BE
+    subdir: palettes
+
+  - name: pal_000040BE
+    type: bin
+    start: 0x000040BE
+    end:   0x000040D4
+    subdir: palettes
+
+  - name: loc_0040D4
     type: m68k
-    start: 0x0040D6
+    start: 0x0040D4
     end:   0x0040EE
 
   - name: loc_0040EE
@@ -664,11 +865,17 @@ segments:
   - name: loc_006160
     type: m68k
     start: 0x006160
-    end:   0x00623A
+    end:   0x00618E
 
-  - name: loc_00623A
+  - name: pal_0000618E
+    type: bin
+    start: 0x0000618E
+    end:   0x0000619A
+    subdir: palettes
+
+  - name: loc_00619A
     type: m68k
-    start: 0x00623A
+    start: 0x00619A
     end:   0x00625A
 
   - name: loc_00625A
@@ -819,6 +1026,95 @@ segments:
   - name: loc_008E40
     type: m68k
     start: 0x008E40
+    end:   0x008EBE
+
+  - name: pal_00008EBE
+    type: bin
+    start: 0x00008EBE
+    end:   0x00008ECE
+    subdir: palettes
+
+  - name: pal_00008ECE
+    type: bin
+    start: 0x00008ECE
+    end:   0x00008EDC
+    subdir: palettes
+
+  - name: pal_00008EDC
+    type: bin
+    start: 0x00008EDC
+    end:   0x00008EE8
+    subdir: palettes
+
+  - name: pal_00008EE8
+    type: bin
+    start: 0x00008EE8
+    end:   0x00008EF2
+    subdir: palettes
+
+  - name: pal_00008EF2
+    type: bin
+    start: 0x00008EF2
+    end:   0x00008EFA
+    subdir: palettes
+
+  - name: pal_00008EFA
+    type: bin
+    start: 0x00008EFA
+    end:   0x00008F00
+    subdir: palettes
+
+  - name: pal_00008F00
+    type: bin
+    start: 0x00008F00
+    end:   0x00008F04
+    subdir: palettes
+
+  - name: pal_00008F22
+    type: bin
+    start: 0x00008F22
+    end:   0x00008F32
+    subdir: palettes
+
+  - name: pal_00008F32
+    type: bin
+    start: 0x00008F32
+    end:   0x00008F42
+    subdir: palettes
+
+  - name: pal_00008F42
+    type: bin
+    start: 0x00008F42
+    end:   0x00008F52
+    subdir: palettes
+
+  - name: pal_00008F52
+    type: bin
+    start: 0x00008F52
+    end:   0x00008F62
+    subdir: palettes
+
+  - name: pal_00008F62
+    type: bin
+    start: 0x00008F62
+    end:   0x00008F72
+    subdir: palettes
+
+  - name: pal_00008F72
+    type: bin
+    start: 0x00008F72
+    end:   0x00008F82
+    subdir: palettes
+
+  - name: pal_00008F82
+    type: bin
+    start: 0x00008F82
+    end:   0x00008F92
+    subdir: palettes
+
+  - name: loc_008F92
+    type: m68k
+    start: 0x008F92
     end:   0x0097C8
 
   - name: loc_0097C8
@@ -844,31 +1140,139 @@ segments:
   - name: loc_009B6E
     type: m68k
     start: 0x009B6E
-    end:   0x009F0A
+    end:   0x009D00
 
-  - name: loc_009F0A
-    type: m68k
-    start: 0x009F0A
-    end:   0x009F26
+  - name: pal_00009D00
+    type: bin
+    start: 0x00009D00
+    end:   0x00009D04
+    subdir: palettes
 
-  - name: loc_009F26
-    type: m68k
-    start: 0x009F26
-    end:   0x009F30
+  - name: pal_00009D04
+    type: bin
+    start: 0x00009D04
+    end:   0x00009D14
+    subdir: palettes
 
-  - name: loc_009F30
-    type: m68k
-    start: 0x009F30
-    end:   0x009F3E
+  - name: pal_00009D14
+    type: bin
+    start: 0x00009D14
+    end:   0x00009D22
+    subdir: palettes
+
+  - name: pal_00009D22
+    type: bin
+    start: 0x00009D22
+    end:   0x00009D30
+    subdir: palettes
+
+  - name: pal_00009D30
+    type: bin
+    start: 0x00009D30
+    end:   0x00009D3E
+    subdir: palettes
+
+  - name: pal_00009D3E
+    type: bin
+    start: 0x00009D3E
+    end:   0x00009D4C
+    subdir: palettes
+
+  - name: pal_00009D4C
+    type: bin
+    start: 0x00009D4C
+    end:   0x00009D5A
+    subdir: palettes
+
+  - name: pal_00009D5A
+    type: bin
+    start: 0x00009D5A
+    end:   0x00009D68
+    subdir: palettes
+
+  - name: pal_00009D68
+    type: bin
+    start: 0x00009D68
+    end:   0x00009D76
+    subdir: palettes
+
+  - name: pal_00009D76
+    type: bin
+    start: 0x00009D76
+    end:   0x00009D7A
+    subdir: palettes
+
+  - name: pal_00009D7A
+    type: bin
+    start: 0x00009D7A
+    end:   0x00009D9C
+    subdir: palettes
+
+  - name: pal_00009D9C
+    type: bin
+    start: 0x00009D9C
+    end:   0x00009DB0
+    subdir: palettes
+
+  - name: pal_00009DB0
+    type: bin
+    start: 0x00009DB0
+    end:   0x00009DC2
+    subdir: palettes
+
+  - name: pal_00009DC2
+    type: bin
+    start: 0x00009DC2
+    end:   0x00009DD6
+    subdir: palettes
+
+  - name: pal_00009DD6
+    type: bin
+    start: 0x00009DD6
+    end:   0x00009DEA
+    subdir: palettes
+
+  - name: pal_00009F6C
+    type: bin
+    start: 0x00009F6C
+    end:   0x00009F94
+    subdir: palettes
+
+  - name: pal_00009F94
+    type: bin
+    start: 0x00009F94
+    end:   0x00009FB4
+    subdir: palettes
 
   - name: loc_009F3E
     type: m68k
-    start: 0x009F3E
+    start: 0x009FB4
     end:   0x00A81C
 
-  - name: loc_00A81C
+  - name: gfx_segalogo
+    type: gfx
+    start: 0x009FB4
+    end:   0x00A5D4
+    subdir: gfx
+
+  - name: main
     type: m68k
-    start: 0x00A81C
+    start: 0x00A5D4
+    end:   0x00A760
+
+  - name: hblank
+    type: m68k
+    start: 0x00A760
+    end:   0x00A770
+
+  - name: vblank
+    type: m68k
+    start: 0x00A770
+    end:   0x00A81A
+
+  - name: loc_00A81A
+    type: m68k
+    start: 0x00A81A
     end:   0x00A83A
 
   - name: vdp_setup
@@ -881,19 +1285,36 @@ segments:
         length: 34
         label: vdpregs_A892
 
-  - name: loc_00A8b4
+  - name: loc_00A8B4
     type: m68k
     start: 0x00A8B4
+    end:   0x00A8E8
+
+  - name: loc_00A8E8
+    type: m68k
+    start: 0x00A8E8
     end:   0x00AB86
 
   - name: loc_00AB86
     type: m68k
     start: 0x00AB86
-    end:   0x00ADA6
+    end:   0x00AD54
 
-  - name: loc_00ADA6
+  - name: pal_0000AD54
+    type: bin
+    start: 0x0000AD54
+    end:   0x0000AD5C
+    subdir: palettes
+
+  - name: pal_0000AD5C
+    type: bin
+    start: 0x0000AD5C
+    end:   0x0000AD64
+    subdir: palettes
+
+  - name: loc_00AD64
     type: m68k
-    start: 0x00ADA6
+    start: 0x00AD64
     end:   0x00AE6A
 
   - name: loc_00AE6A
@@ -954,11 +1375,167 @@ segments:
   - name: loc_00B52A
     type: m68k
     start: 0x00B52A
+    end:   0x00B7CE
+
+  - name: pal_0000B7CE
+    type: bin
+    start: 0x0000B7CE
+    end:   0x0000B7EC
+    subdir: palettes
+
+  - name: pal_0000B7EC
+    type: bin
+    start: 0x0000B7EC
+    end:   0x0000B80A
+    subdir: palettes
+
+  - name: pal_0000B80A
+    type: bin
+    start: 0x0000B80A
+    end:   0x0000B828
+    subdir: palettes
+
+  - name: pal_0000B828
+    type: bin
+    start: 0x0000B828
+    end:   0x0000B846
+    subdir: palettes
+
+  - name: pal_0000B846
+    type: bin
+    start: 0x0000B846
+    end:   0x0000B864
+    subdir: palettes
+
+  - name: pal_0000B864
+    type: bin
+    start: 0x0000B864
+    end:   0x0000B884
+    subdir: palettes
+
+  - name: pal_0000B884
+    type: bin
+    start: 0x0000B884
+    end:   0x0000B8A4
+    subdir: palettes
+
+  - name: pal_0000B8A4
+    type: bin
+    start: 0x0000B8A4
+    end:   0x0000B8C4
+    subdir: palettes
+
+  - name: pal_0000B8C4
+    type: bin
+    start: 0x0000B8C4
+    end:   0x0000B8E4
+    subdir: palettes
+
+  - name: pal_0000B8E4
+    type: bin
+    start: 0x0000B8E4
+    end:   0x0000B904
+    subdir: palettes
+
+  - name: pal_0000B904
+    type: bin
+    start: 0x0000B904
+    end:   0x0000B912
+    subdir: palettes
+
+  - name: pal_0000B912
+    type: bin
+    start: 0x0000B912
+    end:   0x0000B91E
+    subdir: palettes
+
+  - name: loc_00B91E
+    type: m68k
+    start: 0x00B91E
+    end:   0x00BCB4
+
+  - name: pal_0000BCB4
+    type: bin
+    start: 0x0000BCB4
+    end:   0x0000BCC4
+    subdir: palettes
+
+  - name: pal_0000BCC4
+    type: bin
+    start: 0x0000BCC4
+    end:   0x0000BD06
+    subdir: palettes
+
+  - name: pal_0000BD06
+    type: bin
+    start: 0x0000BD06
+    end:   0x0000BD10
+    subdir: palettes
+
+  - name: pal_0000BD10
+    type: bin
+    start: 0x0000BD10
+    end:   0x0000BD1A
+    subdir: palettes
+
+  - name: pal_0000BD1A
+    type: bin
+    start: 0x0000BD1A
+    end:   0x0000BD2A
+    subdir: palettes
+
+  - name: pal_0000BD2A
+    type: bin
+    start: 0x0000BD2A
+    end:   0x0000BD3A
+    subdir: palettes
+
+  - name: pal_0000BD3A
+    type: bin
+    start: 0x0000BD3A
+    end:   0x0000BD4A
+    subdir: palettes
+
+  - name: pal_0000BD4A
+    type: bin
+    start: 0x0000BD4A
+    end:   0x0000BD5A
+    subdir: palettes
+
+  - name: pal_0000BD5A
+    type: bin
+    start: 0x0000BD5A
+    end:   0x0000BD72
+    subdir: palettes
+
+  - name: gfx_copyright
+    type: gfx
+    start: 0x00BD72
+    end:   0x00BE12
+    subdir: gfx
+
+  - name: screen_soundtest
+    type: m68k
+    start: 0x00BE12
     end:   0x00BF3E
 
   - name: loc_00BF3E
     type: m68k
     start: 0x00BF3E
+    end:   0x00BF80
+    hints:
+      - offset: 0x000032
+        type: data_long
+        length: 4
+        label: long_00BF70
+      - offset: 0x000036
+        type: text
+        length: 10
+        label: string_00BF74
+
+  - name: loc_00BF80
+    type: m68k
+    start: 0x00BF80
     end:   0x00BFC8
 
   - name: loc_00BFC8
@@ -979,9 +1556,20 @@ segments:
   - name: loc_00C1EC
     type: m68k
     start: 0x00C1EC
+    end:   0x00C26E
+
+  - name: pal_0000C26E
+    type: bin
+    start: 0x0000C26E
+    end:   0x0000C2A8
+    subdir: palettes
+
+  - name: loc_00C2A8
+    type: m68k
+    start: 0x00C2A8
     end:   0x00C358
 
-  - name: loc_00C358
+  - name: NemDec_BuildCodeTable
     type: m68k
     start: 0x00C358
     end:   0x00C3BA
@@ -1009,7 +1597,7 @@ segments:
   - name: loc_00F214
     type: m68k
     start: 0x00F214
-    end:   0x0138EC
+    end:   0x010000
 
   # ── Z80 Sound Driver block ($020000–$024000) ───────────────────────────────
   # The $4000-byte block contains 7 drivers assembled with sjasmplus, in order:
@@ -1032,6 +1620,13 @@ segments:
   #
   # ROM order:  pcm_driver1 · pcm_driver2 · pcm_driver3 · sounddriver
   #             pcm_driver6 · pcm_driver4 · pcm_driver5
+
+  # - name: psg_test
+  #   type: psg
+  #   sample_rate: 44100
+  #   start: 0x00010000
+  #   end:   0x0001177E
+  #   subdir: audio/psg
 
   - name: z80_pcm_driver1
     type: z80
@@ -1132,12 +1727,24 @@ segments:
     end:   0x000244EF
     subdir: gfx/segard
 
+  - name: pal_00027DB8
+    type: bin
+    start: 0x00027DB8
+    end:   0x00027DDA
+    subdir: palettes
+
   - name: gfx_stage1_bg
     type: gfxcomp
     compression: segard
     start: 0x00027DDA
     end:   0x0002ACC7
     subdir: gfx/segard
+
+  - name: pal_0002AAC8
+    type: bin
+    start: 0x0002AAC8
+    end:   0x0002ACEA
+    subdir: palettes
 
   - name: gfx_stage2_bg
     type: gfxcomp
@@ -1146,6 +1753,12 @@ segments:
     end:   0x0002D187
     subdir: gfx/segard
 
+  - name: pal_0002D188
+    type: bin
+    start: 0x0002D188
+    end:   0x0002D1AA
+    subdir: palettes
+
   - name: gfx_stage3_bg
     type: gfxcomp
     compression: segard
@@ -1153,12 +1766,24 @@ segments:
     end:   0x0002F1D1
     subdir: gfx/segard
 
+  - name: pal_0002F1D2
+    type: bin
+    start: 0x0002F1D2
+    end:   0x0002F1F4
+    subdir: palettes
+
   - name: gfx_stage4_bg
     type: gfxcomp
     compression: segard
     start: 0x0002F1F4
     end:   0x00030E4D
     subdir: gfx/segard
+
+  - name: pal_00030E4E
+    type: bin
+    start: 0x00030E4E
+    end:   0x00030E70
+    subdir: palettes
 
   - name: gfx_stage5_bg
     type: gfxcomp
@@ -1356,7 +1981,7 @@ segments:
     end:   0x0004C096
     subdir: gfx/segard
 
-  - name: gfx_title_tiles_nemesis
+  - name: gfx_title_logo
     type: gfxcomp
     compression: nemesis
     start: 0x0004C600
@@ -1377,12 +2002,24 @@ segments:
     end:   0x000529E7
     subdir: gfx/segard
 
+  - name: pal_000529E8
+    type: bin
+    start: 0x000529E8
+    end:   0x00052A0A
+    subdir: palettes
+
   - name: gfx_zeus_sprites
     type: gfxcomp
     compression: segard
     start: 0x00052A0A
     end:   0x00052ECD
     subdir: gfx/segard
+
+  - name: pal_000531A0
+    type: bin
+    start: 0x000531A0
+    end:   0x000531C0
+    subdir: palettes
 
   - name: gfx_flames
     type: gfxcomp

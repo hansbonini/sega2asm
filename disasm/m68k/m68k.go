@@ -385,6 +385,8 @@ func (d *Disassembler) decodeGroup5(op uint16) (string, bool) {
 			// DBcc
 			disp := int16(d.readImmU16())
 			target := d.PC() + uint32(disp) - 2
+			d.lastFlow = FlowBranch
+			d.lastTarget = target
 			return fmt.Sprintf("\tdb%s\td%d,%s", condName(cond), op&7, d.labelOrHex(target)), true
 		}
 		ea := d.decodeEA(op&0x3F, 1)
@@ -656,7 +658,10 @@ func (d *Disassembler) decodeEAReg(mode, reg uint16, bytes int) string {
 		return fmt.Sprintf("-(a%d)", reg)
 	case 5:
 		disp := int16(d.readImmU16())
-		return fmt.Sprintf("(%d,a%d)", disp, reg)
+		if disp < 0 {
+			return fmt.Sprintf("-$%X(a%d)", -disp, reg)
+		}
+		return fmt.Sprintf("$%X(a%d)", disp, reg)
 	case 6:
 		ext := d.readImmU16()
 		disp := int8(ext & 0xFF)
@@ -669,11 +674,15 @@ func (d *Disassembler) decodeEAReg(mode, reg uint16, bytes int) string {
 		if ext&0x0800 != 0 {
 			idxSz = "l"
 		}
-		return fmt.Sprintf("(%d,a%d,%s%d.%s)", disp, reg, idxKind, idxReg, idxSz)
+		if disp < 0 {
+			return fmt.Sprintf("(-$%X,a%d,%s%d.%s)", -disp, reg, idxKind, idxReg, idxSz)
+		}
+		return fmt.Sprintf("($%X,a%d,%s%d.%s)", disp, reg, idxKind, idxReg, idxSz)
 	case 7:
 		switch reg {
 		case 0:
-			addr := uint32(d.readImmU16())
+			// Absolute short: sign-extend 16→32, mask to 24-bit Genesis address space.
+			addr := uint32(int32(int16(d.readImmU16()))) & 0x00FFFFFF
 			return d.labelOrHex16(addr)
 		case 1:
 			addr := d.readImmU32()
@@ -694,7 +703,10 @@ func (d *Disassembler) decodeEAReg(mode, reg uint16, bytes int) string {
 			if ext&0x0800 != 0 {
 				idxSz = "l"
 			}
-			return fmt.Sprintf("(%d,pc,%s%d.%s)", disp, idxKind, idxReg, idxSz)
+			if disp < 0 {
+				return fmt.Sprintf("(-$%X,pc,%s%d.%s)", -disp, idxKind, idxReg, idxSz)
+			}
+			return fmt.Sprintf("($%X,pc,%s%d.%s)", disp, idxKind, idxReg, idxSz)
 		case 4:
 			switch bytes {
 			case 1:
@@ -781,14 +793,14 @@ func (d *Disassembler) labelOrHex16(addr uint32) string {
 	if name, ok := d.Labels[addr]; ok {
 		return name
 	}
-	return fmt.Sprintf("$%04X.w", addr)
+	return fmt.Sprintf("($%06X).w", addr)
 }
 
 func (d *Disassembler) labelOrHex32(addr uint32) string {
 	if name, ok := d.Labels[addr]; ok {
 		return name
 	}
-	return fmt.Sprintf("$%06X", addr)
+	return fmt.Sprintf("($%06X).l", addr)
 }
 
 // eaAbsTarget extracts the resolved absolute address from a JSR/JMP EA field

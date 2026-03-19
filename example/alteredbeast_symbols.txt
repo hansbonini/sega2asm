@@ -17,7 +17,6 @@ write_z80ram_1d03	                = $00004ac6 ;
 write_z80ram_1d06	                = $00004af2 ;
 write_z80ram_1d05	                = $00004b1a ;
 draw_segalogo	                    = $00009dea ;
-Reset	                            = $0000a5d4 ;
 SkipSecurity	                    = $0000a5ea ;
 ChecksumLoop	                    = $0000a60a ;
 ChecksumError	                    = $0000a61e ;

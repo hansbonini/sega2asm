@@ -27,8 +27,10 @@ type Options struct {
 
 // Splitter is the main splitting engine.
 type Splitter struct {
-	cfg  *config.Config
-	opts Options
+	cfg        *config.Config
+	opts       Options
+	labelHits  int
+	labelTotal int
 }
 
 // New creates a Splitter.
@@ -94,6 +96,7 @@ func (s *Splitter) Run() error {
 
 	// ── Build global include list ─────────────────────────────────────────
 	var includes []incEntry
+	var splitHints []string
 
 	// ── Process segments ─────────────────────────────────────────────────
 	segs := cfg.Segments
@@ -120,7 +123,7 @@ func (s *Splitter) Run() error {
 		switch strings.ToLower(seg.Type) {
 		case "header":
 			var paths []string
-			paths, err = s.writeHeader(r, seg, asmDir)
+			paths, err = s.writeHeader(r, seg, asmDir, syms)
 			if err != nil {
 				s.warn("  error: %v", err)
 				continue
@@ -132,7 +135,9 @@ func (s *Splitter) Run() error {
 			}
 			continue
 		case "m68k":
-			outPath, err = s.writeM68K(r, seg, asmDir, syms, cmap)
+			var segHints []string
+			outPath, segHints, err = s.writeM68K(r, seg, asmDir, syms, cmap)
+			splitHints = append(splitHints, segHints...)
 		case "z80":
 			// Collect consecutive bin segments that share the same subdir — they
 			// are embedded data sections (PCM/music) logically belonging to this
@@ -202,10 +207,23 @@ func (s *Splitter) Run() error {
 	// ── Write main assembly include file ──────────────────────────────────
 	if cfg.Options.HeaderOutput && !s.opts.DryRun {
 		mainFile := filepath.Join(asmDir, cfg.Options.Basename+".asm")
-		if err := s.writeMainASM(mainFile, includes); err != nil {
+		if err := s.writeMainASM(mainFile, includes, r.Header.ROMEnd); err != nil {
 			return err
 		}
 		s.log("[OUT] Main ASM: %s", mainFile)
+	}
+
+	// ── Unified symbol report ─────────────────────────────────────────────
+	s.log("")
+	s.log("[SYM] Labels matched: %d / %d", s.labelHits, s.labelTotal)
+
+	// ── Print all split suggestions grouped at the end ────────────────────
+	if len(splitHints) > 0 {
+		s.log("")
+		s.log("[HINT] Split suggestions:")
+		for _, line := range splitHints {
+			s.log("%s", line)
+		}
 	}
 
 	return nil
@@ -215,7 +233,7 @@ func (s *Splitter) Run() error {
 // Segment writers
 // ---------------------------------------------------------------------------
 
-func (s *Splitter) writeHeader(r *rom.ROM, seg config.Segment, dir string) ([]string, error) {
+func (s *Splitter) writeHeader(r *rom.ROM, seg config.Segment, dir string, syms *symbols.Table) ([]string, error) {
 	segDir := filepath.Join(dir, func() string {
 		if seg.SubDir != "" {
 			return seg.SubDir
@@ -248,13 +266,19 @@ func (s *Splitter) writeHeader(r *rom.ROM, seg config.Segment, dir string) ([]st
 		"SpuriousIRQ", "IRQ1", "EXT_IRQ", "IRQ3",
 		"HBLANK_IRQ", "IRQ5", "VBLANK_IRQ", "IRQ7",
 	}
+	resolveVec := func(addr uint32) string {
+		if name := syms.Label(addr); name != "" {
+			return name
+		}
+		return fmt.Sprintf("$%08X", addr)
+	}
 	for i, label := range vectorLabels {
 		v := r.Read32(uint32(i * 4))
-		iv.WriteString(fmt.Sprintf("%-24s\tdc.l\t$%08X\n", label+":", v))
+		iv.WriteString(fmt.Sprintf("%-24s\tdc.l\t%s\n", label+":", resolveVec(v)))
 	}
 	for i := 32; i < 64; i++ {
 		v := r.Read32(uint32(i * 4))
-		iv.WriteString(fmt.Sprintf("TRAP_%02d:\t\t\tdc.l\t$%08X\n", i-32, v))
+		iv.WriteString(fmt.Sprintf("TRAP_%02d:\t\t\tdc.l\t%s\n", i-32, resolveVec(v)))
 	}
 	if err := os.WriteFile(interruptsPath, []byte(iv.String()), 0644); err != nil {
 		return nil, err
@@ -275,10 +299,10 @@ func (s *Splitter) writeHeader(r *rom.ROM, seg config.Segment, dir string) ([]st
 	hb.WriteString(fmt.Sprintf("\tdc.b\t'%-12s'\n", h.Serial))
 	hb.WriteString(fmt.Sprintf("\tdc.w\t$%04X\t; Checksum\n", h.Checksum))
 	hb.WriteString(fmt.Sprintf("\tdc.b\t'%-16s'\n", h.DeviceSupport))
-	hb.WriteString(fmt.Sprintf("\tdc.l\t$%08X\t; ROM start\n", h.ROMStart))
-	hb.WriteString(fmt.Sprintf("\tdc.l\t$%08X\t; ROM end\n", h.ROMEnd))
-	hb.WriteString(fmt.Sprintf("\tdc.l\t$%08X\t; RAM start\n", h.RAMStart))
-	hb.WriteString(fmt.Sprintf("\tdc.l\t$%08X\t; RAM end\n", h.RAMEnd))
+	hb.WriteString("\tdc.l\tRomStart\n")
+	hb.WriteString("\tdc.l\tRomEnd\n")
+	hb.WriteString("\tdc.l\tRAM_START\n")
+	hb.WriteString("\tdc.l\tRAM_END\n")
 	hb.WriteString(fmt.Sprintf("\tdc.b\t'%-12s'\n", h.SRAMInfo))
 	hb.WriteString(fmt.Sprintf("\tdc.b\t'%-52s'\n", h.Notes))
 	hb.WriteString(fmt.Sprintf("\tdc.b\t'%-16s'\t; Region\n", h.RegionCodes))
@@ -290,13 +314,13 @@ func (s *Splitter) writeHeader(r *rom.ROM, seg config.Segment, dir string) ([]st
 	return []string{interruptsPath, headerPath}, nil
 }
 
-func (s *Splitter) writeM68K(r *rom.ROM, seg config.Segment, dir string, syms *symbols.Table, cmap *charmap.Map) (string, error) {
+func (s *Splitter) writeM68K(r *rom.ROM, seg config.Segment, dir string, syms *symbols.Table, cmap *charmap.Map) (string, []string, error) {
 	outPath := s.segPath(seg, dir, ".asm")
 	if s.opts.DryRun {
-		return outPath, nil
+		return outPath, nil, nil
 	}
 	if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil {
-		return "", err
+		return "", nil, err
 	}
 
 	start := uint32(seg.Start)
@@ -390,10 +414,11 @@ func (s *Splitter) writeM68K(r *rom.ROM, seg config.Segment, dir string, syms *s
 		sb.WriteString(vdp.annotate(res.Text))
 		sb.WriteByte('\n')
 	}
-	s.log("[SYM]  labels matched: %d / %d symbols", labelHits, len(syms.Ordered))
-	s.suggestM68KSplits(results, seg, syms)
+	s.labelHits += labelHits
+	s.labelTotal = len(syms.Ordered)
+	hints2 := s.suggestM68KSplits(results, seg, syms)
 
-	return outPath, os.WriteFile(outPath, []byte(sb.String()), 0644)
+	return outPath, hints2, os.WriteFile(outPath, []byte(sb.String()), 0644)
 }
 
 func (s *Splitter) writeZ80(r *rom.ROM, seg config.Segment, dir string, syms *symbols.Table, extraBins []incEntry) (string, error) {
@@ -443,7 +468,8 @@ func (s *Splitter) writeZ80(r *rom.ROM, seg config.Segment, dir string, syms *sy
 		sb.WriteString(res.Text)
 		sb.WriteByte('\n')
 	}
-	s.log("[SYM]  labels matched: %d / %d symbols", labelHits, len(syms.Ordered))
+	s.labelHits += labelHits
+	s.labelTotal = len(syms.Ordered)
 
 	// Append incbin directives for embedded data sections (PCM/music data that
 	// immediately follows the Z80 code within the same driver slot).
@@ -674,10 +700,12 @@ type incEntry struct {
 	name string // segment name, used as label for bin entries
 }
 
-func (s *Splitter) writeMainASM(path string, includes []incEntry) error {
+func (s *Splitter) writeMainASM(path string, includes []incEntry, romEnd uint32) error {
 	var sb strings.Builder
 	sb.WriteString("; Auto-generated by sega2asm\n")
 	sb.WriteString(fmt.Sprintf("; Project: %s\n\n", s.cfg.Name))
+	sb.WriteString("\torg\t$00000000\n")
+	sb.WriteString("RomStart:\n\n")
 	for _, inc := range includes {
 		if strings.HasSuffix(inc.path, ".asm") {
 			sb.WriteString(fmt.Sprintf("\tinclude\t'%s'\n", inc.path))
@@ -689,6 +717,8 @@ func (s *Splitter) writeMainASM(path string, includes []incEntry) error {
 			sb.WriteString(fmt.Sprintf("\tincbin\t'%s'\n", inc.path))
 		}
 	}
+	sb.WriteString(fmt.Sprintf("\n\torg\t$%08X\n", romEnd))
+	sb.WriteString("RomEnd:\n")
 	return os.WriteFile(path, []byte(sb.String()), 0644)
 }
 
