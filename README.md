@@ -60,6 +60,7 @@
 | `lztreasure` | LZ + RLE | Treasure Co. Ltd. multi-mode LZ; 2-byte size header, back-references + RLE single/pairs/alternating + literal runs | Alien Soldier, Dynamite Headdy, Gunstar Heroes, Light Crusader, McDonald's Treasure Land Adventure, Yu Yu Hakusho: Makyo Toitsuken |
 | `lzblizzard` | LZSS | Okumura 1989 LZSS; 4096-byte ring buffer (zero-filled), 8-bit control flags LSB-first, 12-bit absolute offset + 4-bit length | Rock N Roll Racing, The Death and Return of Superman |
 | `lzhlucasarts` | LZH | Adaptive Huffman + LZ sliding window (LZHUF variant); N=4096, F=60, ring buffer pre-filled 0x20; BE16 output size header; position via d_code/d_len tables | Zombies Ate My Neighbors |
+| `lzclimax` | LZ77 | Climax LZ77; control byte MSB-first (1=literal, 0=back-ref), 12-bit offset + 4-bit length (3..18), offset=0 ends stream | Landstalker, Shining in the Darkness, Shining Force, Shining Force II |
 
 **Labels & symbols:**
 - Reads `symbols.txt` in multiple formats (name=addr, addr:name, space-separated)
