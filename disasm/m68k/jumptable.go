@@ -1,6 +1,11 @@
 package m68k
 
-import "fmt"
+import (
+	"fmt"
+
+	"sega2asm/disasm"
+	"sega2asm/types"
+)
 
 // detectJumpTables performs a post-disassembly pass and replaces bytes that
 // immediately follow a flow terminator with dc.l entries when those bytes look
@@ -12,7 +17,7 @@ import "fmt"
 // Minimum 2 consecutive valid entries required to trigger.
 //
 // After a detected table, disassembly continues as normal code.
-func detectJumpTables(results []Result, data []byte, segBase uint32, labels map[uint32]string) []Result {
+func detectJumpTables(results []Result, data []byte, segBase uint32, labels types.LabelMap) []Result {
 	if len(results) == 0 {
 		return results
 	}
@@ -62,11 +67,13 @@ func detectJumpTables(results []Result, data []byte, segBase uint32, labels map[
 			}
 			name := resolveLabel(addr, labels)
 			dcls = append(dcls, Result{
-				Addr:    entryAddr,
-				Bytes:   rawBytes,
-				Text:    fmt.Sprintf("\tdc.l\t%s", name),
-				IsValid: true,
-				Flow:    FlowNone,
+				BaseResult: disasm.BaseResult{
+					Addr:    entryAddr,
+					Bytes:   rawBytes,
+					Text:    fmt.Sprintf("\tdc.l\t%s", name),
+					IsValid: true,
+				},
+				Flow: FlowNone,
 			})
 		}
 
@@ -117,7 +124,7 @@ func isJumpTableEntry(addr uint32) bool {
 
 // resolveLabel returns the symbolic name for addr from the labels map, or a
 // hex literal if addr is not a known label.
-func resolveLabel(addr uint32, labels map[uint32]string) string {
+func resolveLabel(addr uint32, labels types.LabelMap) string {
 	if name, ok := labels[addr]; ok {
 		return name
 	}

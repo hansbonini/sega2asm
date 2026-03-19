@@ -6,23 +6,16 @@ package z80
 import (
 	"fmt"
 
+	"sega2asm/disasm"
 	"sega2asm/types"
 )
 
 // Result holds one disassembled Z80 instruction.
-type Result struct {
-	Addr    uint32
-	Bytes   []byte
-	Text    string
-	IsValid bool
-}
+type Result = disasm.BaseResult
 
 // Disassembler disassembles Z80 code from a byte slice.
 type Disassembler struct {
-	data   []byte
-	base   uint32
-	labels types.LabelMap
-	pos    int
+	disasm.Cursor
 }
 
 // New creates a Z80 Disassembler.
@@ -30,38 +23,35 @@ func New(data []byte, baseAddr uint32, labels types.LabelMap) *Disassembler {
 	if labels == nil {
 		labels = make(types.LabelMap)
 	}
-	return &Disassembler{data: data, base: baseAddr, labels: labels}
+	return &Disassembler{Cursor: disasm.Cursor{Data: data, Base: baseAddr, Labels: labels}}
 }
-
-func (d *Disassembler) PC() uint32    { return d.base + uint32(d.pos) }
-func (d *Disassembler) Remaining() int { return len(d.data) - d.pos }
 
 // Next disassembles the instruction at the current position.
 func (d *Disassembler) Next() Result {
-	if d.pos >= len(d.data) {
+	if d.Pos >= len(d.Data) {
 		return Result{Addr: d.PC(), IsValid: false}
 	}
-	startPos := d.pos
+	startPos := d.Pos
 	startPC := d.PC()
 	text, ok := d.decode()
 	if !ok {
-		d.pos = startPos + 1
-		text = fmt.Sprintf("\tdefb\t$%02X", d.data[startPos])
+		d.Pos = startPos + 1
+		text = fmt.Sprintf("\tdefb\t$%02X", d.Data[startPos])
 	}
 	return Result{
 		Addr:    startPC,
-		Bytes:   append([]byte(nil), d.data[startPos:d.pos]...),
+		Bytes:   append([]byte(nil), d.Data[startPos:d.Pos]...),
 		Text:    text,
 		IsValid: ok,
 	}
 }
 
 func (d *Disassembler) rb() byte {
-	if d.pos >= len(d.data) {
+	if d.Pos >= len(d.Data) {
 		return 0
 	}
-	b := d.data[d.pos]
-	d.pos++
+	b := d.Data[d.Pos]
+	d.Pos++
 	return b
 }
 
@@ -77,7 +67,7 @@ func (d *Disassembler) rel() uint32 {
 }
 
 func (d *Disassembler) label(addr uint32) string {
-	if name, ok := d.labels[addr]; ok {
+	if name, ok := d.Labels[addr]; ok {
 		return name
 	}
 	return fmt.Sprintf("$%04X", addr)

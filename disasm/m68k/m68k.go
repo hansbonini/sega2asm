@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 
+	"sega2asm/disasm"
 	"sega2asm/helpers"
 	"sega2asm/types"
 )
@@ -27,22 +28,16 @@ const (
 	FlowHalt               // illegal, stop — execution stops
 )
 
-// Result holds a single disassembled instruction.
+// Result holds a single disassembled M68K instruction.
 type Result struct {
-	Addr    uint32
-	Bytes   []byte
-	Text    string   // formatted instruction text
-	IsValid bool
-	Flow    FlowKind // control-flow classification
-	Target  uint32   // resolved target address for Call/Jump/Branch (0 = indirect/unknown)
+	disasm.BaseResult
+	Flow   FlowKind // control-flow classification
+	Target uint32   // resolved target address for Call/Jump/Branch (0 = indirect/unknown)
 }
 
 // Disassembler holds state needed for a disassembly pass.
 type Disassembler struct {
-	data       []byte
-	base       uint32         // ROM base address (usually 0)
-	labels     types.LabelMap // address → label name
-	pos        int
+	disasm.Cursor
 	lastFlow   FlowKind
 	lastTarget uint32
 }
@@ -58,21 +53,15 @@ func New(data []byte, baseAddr uint32, labels types.LabelMap) *Disassembler {
 	for k, v := range labels {
 		merged[k] = v
 	}
-	return &Disassembler{data: data, base: baseAddr, labels: merged}
+	return &Disassembler{Cursor: disasm.Cursor{Data: data, Base: baseAddr, Labels: merged}}
 }
-
-// PC returns the current program counter (base + position).
-func (d *Disassembler) PC() uint32 { return d.base + uint32(d.pos) }
-
-// Remaining returns the number of bytes left to disassemble.
-func (d *Disassembler) Remaining() int { return len(d.data) - d.pos }
 
 // Next disassembles the instruction at the current position and advances pos.
 func (d *Disassembler) Next() Result {
-	if d.pos+2 > len(d.data) {
-		return Result{Addr: d.PC(), IsValid: false}
+	if d.Pos+2 > len(d.Data) {
+		return Result{BaseResult: disasm.BaseResult{Addr: d.PC(), IsValid: false}}
 	}
-	startPos := d.pos
+	startPos := d.Pos
 	startPC := d.PC()
 
 	d.lastFlow = FlowNone
@@ -80,22 +69,24 @@ func (d *Disassembler) Next() Result {
 
 	text, ok := d.decode()
 
-	end := d.pos
+	end := d.Pos
 	if !ok {
 		// Emit as DC.W
-		d.pos = startPos + 2
-		end = d.pos
-		word := helpers.ReadBEU16(d.data, startPos)
+		d.Pos = startPos + 2
+		end = d.Pos
+		word := helpers.ReadBEU16(d.Data, startPos)
 		text = fmt.Sprintf("\tdc.w\t$%04X", word)
 	}
 
 	return Result{
-		Addr:    startPC,
-		Bytes:   append([]byte(nil), d.data[startPos:end]...),
-		Text:    text,
-		IsValid: ok,
-		Flow:    d.lastFlow,
-		Target:  d.lastTarget,
+		BaseResult: disasm.BaseResult{
+			Addr:    startPC,
+			Bytes:   append([]byte(nil), d.Data[startPos:end]...),
+			Text:    text,
+			IsValid: ok,
+		},
+		Flow:   d.lastFlow,
+		Target: d.lastTarget,
 	}
 }
 
@@ -104,8 +95,8 @@ func (d *Disassembler) Next() Result {
 // ---------------------------------------------------------------------------
 
 func (d *Disassembler) decode() (string, bool) {
-	op := helpers.ReadBEU16(d.data, d.pos)
-	d.pos += 2
+	op := helpers.ReadBEU16(d.Data, d.Pos)
+	d.Pos += 2
 
 	switch op >> 12 {
 	case 0x0:
@@ -204,11 +195,11 @@ func (d *Disassembler) decodeBit(op uint16) (string, bool) {
 	} else {
 		// Static: bit number is in the low byte of the next extension word.
 		// Guard against reading past end of segment.
-		if d.pos+2 > len(d.data) {
+		if d.Pos+2 > len(d.Data) {
 			return fmt.Sprintf("\tdc.w\t$%04X\t; truncated bit-op", op), false
 		}
-		d.pos += 2
-		bit = fmt.Sprintf("#%d", d.data[d.pos-1])
+		d.Pos += 2
+		bit = fmt.Sprintf("#%d", d.Data[d.Pos-1])
 	}
 	ea := d.decodeEA(eaReg, 1)
 	return fmt.Sprintf("\t%s\t%s,%s", name, bit, ea), true
@@ -292,16 +283,16 @@ func (d *Disassembler) decodeGroup4(op uint16) (string, bool) {
 	}
 	if op&0xFFC0 == 0x4E80 {
 		d.lastFlow = FlowCall
-		posBeforeEA := d.pos
+		posBeforeEA := d.Pos
 		ea := d.decodeEA(op&0x3F, 4)
-		d.lastTarget = eaAbsTarget(op&0x3F, d.data, posBeforeEA, d.base)
+		d.lastTarget = eaAbsTarget(op&0x3F, d.Data, posBeforeEA, d.Base)
 		return fmt.Sprintf("\tjsr\t%s", ea), true
 	}
 	if op&0xFFC0 == 0x4EC0 {
 		d.lastFlow = FlowJump
-		posBeforeEA := d.pos
+		posBeforeEA := d.Pos
 		ea := d.decodeEA(op&0x3F, 4)
-		d.lastTarget = eaAbsTarget(op&0x3F, d.data, posBeforeEA, d.base)
+		d.lastTarget = eaAbsTarget(op&0x3F, d.Data, posBeforeEA, d.Base)
 		return fmt.Sprintf("\tjmp\t%s", ea), true
 	}
 	if op&0xFB80 == 0x4880 {
@@ -726,45 +717,45 @@ func (d *Disassembler) decodeEAReg(mode, reg uint16, bytes int) string {
 // ---------------------------------------------------------------------------
 
 func (d *Disassembler) readImmU16() uint16 {
-	if d.pos+2 > len(d.data) {
+	if d.Pos+2 > len(d.Data) {
 		return 0
 	}
-	v := helpers.ReadBEU16(d.data, d.pos)
-	d.pos += 2
+	v := helpers.ReadBEU16(d.Data, d.Pos)
+	d.Pos += 2
 	return v
 }
 
 func (d *Disassembler) readImmU32() uint32 {
-	if d.pos+4 > len(d.data) {
+	if d.Pos+4 > len(d.Data) {
 		return 0
 	}
-	v := helpers.ReadBEU32(d.data, d.pos)
-	d.pos += 4
+	v := helpers.ReadBEU32(d.Data, d.Pos)
+	d.Pos += 4
 	return v
 }
 
 func (d *Disassembler) readImm(n int) uint32 {
 	switch n {
 	case 1:
-		if d.pos+2 > len(d.data) {
+		if d.Pos+2 > len(d.Data) {
 			return 0
 		}
-		v := helpers.ReadBEU16(d.data, d.pos)
-		d.pos += 2
+		v := helpers.ReadBEU16(d.Data, d.Pos)
+		d.Pos += 2
 		return uint32(v & 0xFF)
 	case 2:
-		if d.pos+2 > len(d.data) {
+		if d.Pos+2 > len(d.Data) {
 			return 0
 		}
-		v := helpers.ReadBEU16(d.data, d.pos)
-		d.pos += 2
+		v := helpers.ReadBEU16(d.Data, d.Pos)
+		d.Pos += 2
 		return uint32(v)
 	case 4:
-		if d.pos+4 > len(d.data) {
+		if d.Pos+4 > len(d.Data) {
 			return 0
 		}
-		v := helpers.ReadBEU32(d.data, d.pos)
-		d.pos += 4
+		v := helpers.ReadBEU32(d.Data, d.Pos)
+		d.Pos += 4
 		return v
 	}
 	return 0
@@ -783,18 +774,18 @@ func (d *Disassembler) fmtImm(sz string) string {
 }
 
 func (d *Disassembler) labelOrHex(addr uint32) string {
-	return types.LookupOrHex(d.labels, addr)
+	return types.LookupOrHex(d.Labels, addr)
 }
 
 func (d *Disassembler) labelOrHex16(addr uint32) string {
-	if name, ok := d.labels[addr]; ok {
+	if name, ok := d.Labels[addr]; ok {
 		return name
 	}
 	return fmt.Sprintf("$%04X.w", addr)
 }
 
 func (d *Disassembler) labelOrHex32(addr uint32) string {
-	if name, ok := d.labels[addr]; ok {
+	if name, ok := d.Labels[addr]; ok {
 		return name
 	}
 	return fmt.Sprintf("$%06X", addr)
@@ -890,6 +881,6 @@ func DisassembleBlock(data []byte, baseAddr, start, end uint32, labels types.Lab
 	for d.Remaining() >= 2 {
 		results = append(results, d.Next())
 	}
-	results = detectJumpTables(results, segData, segBase, d.labels)
+	results = detectJumpTables(results, segData, segBase, d.Labels)
 	return results
 }
