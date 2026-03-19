@@ -2,8 +2,16 @@ package compress
 
 import "fmt"
 
-// ── SegaRD ────────────────────────────────────────────────────────────────────
-
+// DecompressSegaRD decompresses data using the Sega RD (Resource Data) format.
+//
+// Stream structure: sequence of blocks terminated by a count byte of 0xFF.
+// Each block:
+//
+//	count byte                        — number of color/mask pairs in this block
+//	count × (color byte + BE32 mask)  — each mask bit selects positions in the 32-byte window for that color
+//	remaining literal bytes           — fill any bit positions not covered by the combined mask
+//
+// Output is always a multiple of 32 bytes; each block emits one 32-byte tile row.
 func DecompressSegaRD(src []byte) ([]byte, error) {
 	var out []byte
 	pos := 0

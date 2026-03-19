@@ -2,9 +2,17 @@ package compress
 
 import "fmt"
 
-// ── RLESoftwareCreations — Maximum Carnage, Venom, The Tick, Cutthroat Island ──
-// src[0] = escape byte. Whenever escape appears twice → (value, count) follows.
-
+// DecompressRLESoftwareCreations decompresses data using the Software Creations
+// RLE format (Maximum Carnage, Venom, The Tick, Cutthroat Island).
+//
+// Header:
+//
+//	[0] escape byte — the trigger value for run-length encoding
+//
+// Encoding: when the escape byte appears, the next two bytes form a run:
+//
+//	escape, value, count → emit count bytes of value
+//	any other byte       → emit verbatim
 func DecompressRLESoftwareCreations(src []byte) ([]byte, error) {
 	if len(src) < 1 {
 		return nil, fmt.Errorf("rlesc: too short")

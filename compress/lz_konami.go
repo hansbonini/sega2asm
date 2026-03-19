@@ -6,11 +6,22 @@ import (
 	"fmt"
 )
 
-// ── LZKonami1 — Animaniacs, Contra Hard Corps, Lethal Enforcers II, Sparkster ─
-// Window 0x400 cursor 0x3C0 fill 0x20. Header: BE16 uncompressed size.
-// 8-bit ctrl (LSB first). For each bit: always read one byte.
-//   bit=0 → literal; bit=1, byte=0x1F → end; >0x80 → long ref (+1); 0x80 → short ref.
-
+// DecompressLZKonami1 decompresses data using the LZKonami variant 1 format
+// (Animaniacs, Contra Hard Corps, Lethal Enforcers II, Sparkster).
+//
+// Window: 0x400 bytes, cursor at 0x3C0, fill 0x20.
+//
+// Header:
+//
+//	[0..1] big-endian word — uncompressed size
+//
+// Control stream: 8-bit descriptor byte, LSB first. For each descriptor bit,
+// one byte is always consumed from the stream:
+//
+//	bit=0              → literal byte
+//	bit=1, byte=0x1F   → end of stream
+//	bit=1, byte > 0x80 → long back-reference: high bits of byte + next byte encode offset; count from byte + 1
+//	bit=1, byte = 0x80 → short back-reference: next byte encodes offset and count
 func DecompressLZKonami1(src []byte) ([]byte, error) {
 	if len(src) < 2 {
 		return nil, fmt.Errorf("lzkonami1: too short")
@@ -59,10 +70,21 @@ outer1:
 	return out, nil
 }
 
-// ── LZKonami2 — Castlevania Bloodlines, Rocket Knight, TMNT Hyperstone, SunsetRiders …
-// Window 0x400 cursor 0x3C0 fill 0x20. Header: BE16 compressed size.
-// 8-bit ctrl (LSB first). bit=1→literal; bit=0→BE16: len=((word&0xFC00)>>10)+1; offset=word&0x3FF.
-
+// DecompressLZKonami2 decompresses data using the LZKonami variant 2 format
+// (Castlevania: Bloodlines, Rocket Knight Adventures, TMNT: The Hyperstone Heist, Sunset Riders).
+//
+// Window: 0x400 bytes, cursor at 0x3C0, fill 0x20.
+//
+// Header:
+//
+//	[0..1] big-endian word — compressed size
+//
+// Control stream: 8-bit descriptor byte, LSB first.
+//
+//	bit=1 → literal byte
+//	bit=0 → back-reference: big-endian word
+//	          length = ((word & 0xFC00) >> 10) + 1
+//	          offset = word & 0x3FF
 func DecompressLZKonami2(src []byte) ([]byte, error) {
 	if len(src) < 2 {
 		return nil, fmt.Errorf("lzkonami2: too short")
@@ -102,11 +124,23 @@ func DecompressLZKonami2(src []byte) ([]byte, error) {
 	return out, nil
 }
 
-// ── LZKonami3 — Castlevania Bloodlines, Lethal Enforcers, TMNT Tournament Fighters …
-// Window 0x400 cursor 0x3DF. Header: BE16 uncompressed size.
-// bit=0→literal; bit=1:
-//   0x1F→end; <0x80→long ref(+1); 0x80–0xBF→short ref; 0xC0–0xFF→run from stream.
-
+// DecompressLZKonami3 decompresses data using the LZKonami variant 3 format
+// (Castlevania: Bloodlines, Lethal Enforcers, TMNT: Tournament Fighters).
+//
+// Window: 0x400 bytes, cursor at 0x3DF, fill 0x00.
+//
+// Header:
+//
+//	[0..1] big-endian word — uncompressed size
+//
+// Control stream: 8-bit descriptor byte, LSB first. For each descriptor bit,
+// one byte is always consumed from the stream:
+//
+//	bit=0              → literal byte
+//	bit=1, byte=0x1F   → end of stream
+//	bit=1, byte < 0x80 → long back-reference: high bits of byte + next byte encode offset; count from byte + 1
+//	bit=1, 0x80–0xBF   → short back-reference: low bits encode offset and count
+//	bit=1, 0xC0–0xFF   → repeat run: byte encodes count; values read from stream
 func DecompressLZKonami3(src []byte) ([]byte, error) {
 	if len(src) < 2 {
 		return nil, fmt.Errorf("lzkonami3: too short")

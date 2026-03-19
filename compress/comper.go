@@ -2,10 +2,17 @@ package compress
 
 import "sega2asm/helpers"
 
-// ── Comper (clownlzss) ────────────────────────────────────────────────────────
-// Word-oriented: raw=2 bytes; match=(raw_dist,raw_count); raw_count==0 → end.
-// distance=(0x100-raw_dist)*2; count=(raw_count+1)*2.
-
+// DecompressComper decompresses data using the Comper (clownlzss) format.
+//
+// Word-oriented: all operations work on 16-bit units.
+// No size header; stream terminates when a back-reference with raw_count == 0 is encountered.
+//
+// Control stream: 16-bit big-endian descriptor word, MSB first. For each bit:
+//
+//	bit=1 → literal word (2 bytes verbatim)
+//	bit=0 → back-reference word pair (raw_dist, raw_count):
+//	          distance = (0x100 - raw_dist) × 2 bytes
+//	          length   = (raw_count + 1) × 2 bytes; raw_count == 0 → end of stream
 func DecompressComper(src []byte) ([]byte, error) {
 	pos := 0
 	var out []byte

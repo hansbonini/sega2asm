@@ -5,9 +5,22 @@ import (
 	"fmt"
 )
 
-// ── Saxman (clownlzss) ────────────────────────────────────────────────────────
+// DecompressSaxman decompresses data using the Saxman (clownlzss) format.
+//
+// Header:
+//
+//	[0..1] little-endian word — compressed payload size
+//	[2..]  payload
+//
+// Control stream: 8-bit descriptor byte, LSB first.
+//
+//	bit=1 → literal byte
+//	bit=0 → back-reference: 2 bytes
+//	          ring index = (b0 | ((b1 & 0xF0) << 4)) + 18   (absolute, mod 0x1000)
+//	          length     = (b1 & 0x0F) + 3
+func DecompressSaxman(src []byte) ([]byte, error) { return decompressSaxman(src, true) }
 
-func DecompressSaxman(src []byte) ([]byte, error)         { return decompressSaxman(src, true) }
+// DecompressSaxmanNoHeader decompresses Saxman-encoded data with no leading size header.
 func DecompressSaxmanNoHeader(src []byte) ([]byte, error) { return decompressSaxman(src, false) }
 
 func decompressSaxman(src []byte, hasHeader bool) ([]byte, error) {

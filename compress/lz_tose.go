@@ -6,10 +6,21 @@ import (
 	"fmt"
 )
 
-// ── LZTose — Dragon Ball Z: Buyuu Retsuden ────────────────────────────────────
-// Window 0x2000 cursor 0. Header: LE16 (uncompressed_size-1)|bit15.
-// 8-bit ctrl (LSB first). Match: 2 bytes LE; len=(lo&0xF)+3; offset=word>>4.
-
+// DecompressLZTose decompresses data using the LZTose format
+// (Dragon Ball Z: Buyuu Retsuden).
+//
+// Window: 0x2000 bytes, cursor at 0x00, fill 0x00.
+//
+// Header:
+//
+//	[0..1] little-endian word — (uncompressed_size - 1) | bit 15 (bit 15 always set)
+//
+// Control stream: 8-bit descriptor byte, LSB first.
+//
+//	bit=1 → literal byte
+//	bit=0 → back-reference: 2 bytes little-endian (word)
+//	          length = (lo & 0x0F) + 3
+//	          offset = word >> 4
 func DecompressLZTose(src []byte) ([]byte, error) {
 	if len(src) < 2 {
 		return nil, fmt.Errorf("lztose: too short")

@@ -5,10 +5,20 @@ import (
 	"fmt"
 )
 
-// ── LZAncient — Beyond Oasis, Streets of Rage 2 ───────────────────────────────
-// Header: LE16 compressed size. byte[2]==0 → empty. No descriptor bitstream;
-// control byte bits7:6 encode type: 0b10=LZ, 0b01=RLE, 0b00=RAW.
-
+// DecompressLZAncient decompresses data using the LZAncient format
+// (Beyond Oasis, Streets of Rage 2).
+//
+// Header:
+//
+//	[0..1] little-endian word — compressed data size
+//	[2]    if 0 → empty output, return immediately
+//
+// No descriptor bitstream; each block begins with a control byte
+// whose bits 7:6 select the operation:
+//
+//	0b10 → LZ back-reference: remaining bits encode distance and length
+//	0b01 → RLE: repeat one byte N times
+//	0b00 → literal run: copy N bytes verbatim
 func DecompressLZAncient(src []byte) ([]byte, error) {
 	if len(src) < 2 {
 		return nil, fmt.Errorf("lzancient: too short")

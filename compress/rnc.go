@@ -7,18 +7,6 @@ import (
 	"sort"
 )
 
-// ── RNC — Rob Northen Compression  (Method 1 & 2) ────────────────────────────
-//
-// 18-byte header:
-//   [0..2]  "RNC"
-//   [3]     method (0x01 or 0x02)
-//   [4..7]  unpacked size  BE32
-//   [8..11] packed size    BE32
-//   [12..13] unpacked CRC16 (not verified)
-//   [14..15] packed CRC16  (not verified)
-//   [16]    leeway
-//   [17]    pack_chunks  (Method 1 only)
-
 // rncBR is a byte-by-byte bit reader that pops from LSB first.
 type rncBR struct {
 	src   []byte
@@ -116,7 +104,23 @@ func decodeRNC(br *rncBR, table []rncHuff) int {
 	return 0
 }
 
-// DecompressRNC1 decompresses RNC Method 1 (Huffman + LZ).
+// DecompressRNC1 decompresses data using Rob Northen Compression Method 1
+// (Huffman + LZ back-references).
+//
+// Header layout (18 bytes):
+//
+//	[0..2]  ASCII "RNC"
+//	[3]     method byte (0x01)
+//	[4..7]  unpacked size   — big-endian uint32
+//	[8..11] packed size     — big-endian uint32
+//	[12..13] unpacked CRC16 (not verified)
+//	[14..15] packed CRC16   (not verified)
+//	[16]    leeway byte
+//	[17]    pack_chunks     — number of Huffman-coded chunks
+//
+// Each chunk rebuilds three Huffman tables (raw lengths, distances, copy counts)
+// then emits raw bytes and back-references until the chunk is exhausted.
+// Reference: https://segaretro.org/Rob_Northen_compression
 func DecompressRNC1(src []byte) ([]byte, error) {
 	if len(src) < 18 {
 		return nil, fmt.Errorf("rnc1: header too short")
@@ -152,8 +156,13 @@ func DecompressRNC1(src []byte) ([]byte, error) {
 	return out, nil
 }
 
-// DecompressRNC2 decompresses RNC Method 2 (variable-length LZ, no Huffman).
-// Stream after header: 2 bits initial raw count; then loop: dist bits, back-ref, raw count bits.
+// DecompressRNC2 decompresses data using Rob Northen Compression Method 2
+// (variable-length LZ, no Huffman tables).
+//
+// Uses the same 18-byte header as Method 1 (see DecompressRNC1), with method byte 0x02.
+//
+// Stream after header: 2-bit initial raw count, then repeating blocks of:
+// back-reference distance bits, back-reference, raw count bits, raw bytes.
 func DecompressRNC2(src []byte) ([]byte, error) {
 	if len(src) < 18 {
 		return nil, fmt.Errorf("rnc2: header too short")

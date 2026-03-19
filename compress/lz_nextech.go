@@ -6,12 +6,21 @@ import (
 	"fmt"
 )
 
-// ── LZNextech — Crusader of Centy ────────────────────────────────────────────
-// ── LZWolfteam — El Viento, Granada, Earnest Evans, Final Zone, Ranger-X, Zan Yasha
-// Both: window 0x1000 cursor 0xFEE, special init. Header: LE32 compSize + LE32 uncompSize.
-// Same back-ref encoding as LZNamco.
+// DecompressLZNextech decompresses data using the LZNextech format
+// (Crusader of Centy). Window 0x1000 with a special non-uniform initialization pattern.
+//
+// Header:
+//
+//	[0..3] little-endian dword — compressed size
+//	[4..7] little-endian dword — uncompressed size
+//
+// Back-reference encoding is identical to LZNamco (8-bit ctrl LSB first,
+// bit=1 → literal, bit=0 → big-endian word match).
+func DecompressLZNextech(src []byte) ([]byte, error) { return decompressNextech(src) }
 
-func DecompressLZNextech(src []byte) ([]byte, error)  { return decompressNextech(src) }
+// DecompressLZWolfteam decompresses data using the LZWolfteam format
+// (El Viento, Granada, Earnest Evans, Final Zone, Ranger-X, Zan Yasha).
+// Uses the same algorithm and window initialization as LZNextech.
 func DecompressLZWolfteam(src []byte) ([]byte, error) { return decompressNextech(src) }
 
 func decompressNextech(src []byte) ([]byte, error) {

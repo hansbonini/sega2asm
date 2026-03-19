@@ -6,9 +6,21 @@ import (
 	"fmt"
 )
 
-// ── Rage (clownlzss) — Streets of Rage ───────────────────────────────────────
-// Header: LE16 compressed size. Command byte bits7:5 encode action.
-
+// DecompressRage decompresses data using the Rage (clownlzss) format
+// (Streets of Rage series).
+//
+// Header:
+//
+//	[0..1] little-endian word — compressed size
+//
+// Command byte stream; bits 7:5 select the operation:
+//
+//	0b000 → literal run:       emit (cmd & 0x1F) bytes verbatim
+//	0b001 → extended run:      emit ((cmd & 0x1F) << 8 | next) bytes verbatim
+//	0b010 → RLE:               repeat next byte (count + 4) times
+//	                             count = (cmd & 0x10) ? (cmd & 0xF) << 8 | next : cmd & 0xF
+//	0b011 → repeat last dist:  copy (cmd & 0x1F) bytes using the previous back-reference distance
+//	0b1xx → back-reference:    length = ((cmd >> 5) & 3) + 4; distance = (cmd & 0x1F) << 8 | next
 func DecompressRage(src []byte) ([]byte, error) {
 	if len(src) < 2 {
 		return nil, fmt.Errorf("rage: too short")

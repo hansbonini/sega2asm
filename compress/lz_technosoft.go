@@ -2,7 +2,9 @@ package compress
 
 import "sega2asm/helpers"
 
-// LZTechnosoft — Elemental Master. Same encoding but NO size header; consumes all src.
+// DecompressLZTechnosoft decompresses data using the LZTechnosoft format
+// (Elemental Master). Same encoding as LZNamco (window 0x1000, cursor 0xFEE, fill 0x00)
+// but with no size header; the decompressor consumes all input bytes.
 func DecompressLZTechnosoft(src []byte) ([]byte, error) {
 	pos := 0
 	win := helpers.NewWin(0x1000, 0xFEE, 0)

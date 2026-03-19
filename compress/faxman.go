@@ -6,10 +6,21 @@ import (
 	"fmt"
 )
 
-// ── Faxman (clownlzss) ────────────────────────────────────────────────────────
-// Header: LE16 descriptor-bit count. BitField 1-byte LE, LSB first.
-// Out-of-bounds refs → zero-fill.
-
+// DecompressFaxman decompresses data using the Faxman (clownlzss) format.
+//
+// Header:
+//
+//	[0..1] little-endian word — total descriptor bit count
+//	[2..]  payload
+//
+// Control stream: 8-bit descriptor byte, LSB first.
+//
+//	bit=1 → literal byte
+//	bit=0 → back-reference: 2 bytes little-endian
+//	          ring index = (b0 | ((b1 & 0xF0) << 4)) + 18   (12-bit absolute ring buffer index)
+//	          length     = (b1 & 0x0F) + 3
+//
+// Out-of-bounds back-references emit zero bytes.
 func DecompressFaxman(src []byte) ([]byte, error) {
 	if len(src) < 2 {
 		return nil, fmt.Errorf("faxman: too short")

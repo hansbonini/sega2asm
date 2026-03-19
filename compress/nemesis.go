@@ -5,8 +5,21 @@ import (
 	"fmt"
 )
 
-// ── Nemesis ───────────────────────────────────────────────────────────────────
-
+// DecompressNemesis decompresses data using the Nemesis tile compression format.
+//
+// Header:
+//
+//	[0..1] big-endian word — bit 15: XOR mode flag; bits 14:0: tile count (0 = 256)
+//	[2..]  codebook entries (variable-length, terminated by byte 0xFF)
+//	[..]   Huffman-encoded bitstream
+//
+// Codebook entry encoding:
+//
+//	byte & 0x80 != 0  → set current nibble value to byte & 0x0F
+//	byte & 0x80 == 0  → run_length = ((byte >> 4) & 7) + 1; code_bits = byte & 0x0F; next byte = Huffman code
+//
+// In XOR mode each output nibble is XOR'd with the preceding nibble.
+// Reference: https://segaretro.org/Nemesis_compression
 func DecompressNemesis(src []byte) ([]byte, error) {
 	if len(src) < 2 {
 		return nil, fmt.Errorf("nemesis: data too short")

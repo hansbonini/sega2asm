@@ -6,10 +6,20 @@ import (
 	"fmt"
 )
 
-// ── LZSTI — Comix Zone ────────────────────────────────────────────────────────
-// Window 0x400 cursor 0. Header: BE16 uncompressed size. Bit-packed stream (MSB first).
-// bit=1→8-bit literal; bit=0→10-bit offset, 4-bit (len-2).
-
+// DecompressLZSTI decompresses data using the LZSTI format (Comix Zone).
+//
+// Window: 0x400 bytes, cursor at 0x00, fill 0x00.
+//
+// Header:
+//
+//	[0..1] big-endian word — uncompressed size
+//
+// Control stream: bit-packed MSB first (no byte-boundary alignment).
+//
+//	bit=1 → literal: read 8 bits verbatim
+//	bit=0 → back-reference:
+//	          offset = next 10 bits   (absolute ring buffer index)
+//	          length = next 4 bits + 2
 func DecompressLZSTI(src []byte) ([]byte, error) {
 	if len(src) < 2 {
 		return nil, fmt.Errorf("lzsti: too short")

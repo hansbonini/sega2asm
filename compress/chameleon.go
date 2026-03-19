@@ -6,9 +6,20 @@ import (
 	"fmt"
 )
 
-// ── Chameleon (clownlzss) ─────────────────────────────────────────────────────
-// Header: BE16 offset from pos+2 to literal stream. Descriptor and data in separate sub-streams.
-
+// DecompressChameleon decompresses data using the Chameleon (clownlzss) format.
+//
+// Header:
+//
+//	[0..1] big-endian word — byte offset from src[2] to the literal data sub-stream
+//	[2..]  descriptor/back-reference sub-stream
+//	[2+offset..] literal data sub-stream
+//
+// Control stream: 8-bit descriptor byte, MSB first. For each bit:
+//
+//	bit=1 → literal: read 1 byte from the literal sub-stream
+//	bit=0 → back-reference: read 2 bytes from the descriptor sub-stream
+//	          ring index = b0 | ((b1 & 0xF0) << 4)   (12-bit absolute ring buffer index)
+//	          length     = (b1 & 0x0F) + 3; ring index == 0 && length == 3 → end of stream
 func DecompressChameleon(src []byte) ([]byte, error) {
 	if len(src) < 2 {
 		return nil, fmt.Errorf("chameleon: too short")

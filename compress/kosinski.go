@@ -2,8 +2,19 @@ package compress
 
 import "fmt"
 
-// ── Kosinski ──────────────────────────────────────────────────────────────────
-
+// DecompressKosinski decompresses data using the Kosinski compression format.
+//
+// No size header; stream is self-terminating via an end-of-stream token.
+//
+// Control stream: 16-bit little-endian descriptor word, LSB first.
+//
+//	bit=1                → literal byte
+//	bit=0, next bit=1    → full back-reference: 2 bytes
+//	                          offset = -( 0x1FFF - ((b0 >> 3) | (b1 << 5)) )  (13-bit)
+//	                          length = b0 & 7; 0 → read next byte + 1; 1 → end of stream
+//	bit=0, next bit=0    → short back-reference: next 2 bits = length-2 (1..3), next byte = distance
+//
+// Reference: https://segaretro.org/Kosinski_compression
 func DecompressKosinski(src []byte) ([]byte, error) {
 	if len(src) < 2 {
 		return nil, fmt.Errorf("kosinski: too short")

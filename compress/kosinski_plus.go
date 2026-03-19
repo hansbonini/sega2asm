@@ -2,8 +2,18 @@ package compress
 
 import "sega2asm/helpers"
 
-// ── KosinskiPlus (clownlzss) ──────────────────────────────────────────────────
-
+// DecompressKosinskiPlus decompresses data using the KosinskiPlus (clownlzss) format,
+// a variant of Kosinski with 8-bit descriptors and updated match encodings.
+//
+// No size header; stream is self-terminating.
+//
+// Control stream: 8-bit descriptor byte, MSB first.
+//
+//	bit=1              → literal byte
+//	bit=0, next bit=1  → full back-reference: 2 bytes
+//	                        offset = 0x2000 - (((b0 & 0xF8) << 5) | b1)  (13-bit)
+//	                        length = b0 & 7; 0 → read next byte + 9; 1 → end of stream
+//	bit=0, next bit=0  → short back-reference: next 2 bits = length-2 (1..3), next byte = distance
 func DecompressKosinskiPlus(src []byte) ([]byte, error) {
 	pos := 0
 	read := func() byte {

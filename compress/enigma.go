@@ -2,8 +2,24 @@ package compress
 
 import "fmt"
 
-// ── Enigma (clownlzss) ────────────────────────────────────────────────────────
-
+// DecompressEnigma decompresses data using the Enigma (clownlzss) format,
+// designed for encoding Mega Drive VDP block map data as incrementing or literal words.
+//
+// Header:
+//
+//	[0]    inline_bits  — number of bits inlined per symbol
+//	[1]    render_flags — bitmask applied during inline-bit blending
+//	[2..3] incr_word    — big-endian initial value for the auto-incrementing counter
+//	[4..5] lit_word     — big-endian initial literal word value
+//
+// Control stream: 8-bit descriptor byte, MSB first. For each bit:
+//
+//	bit=1 → read inline_bits from stream, blend into incr_word (masked by render_flags), emit result
+//	bit=0 → read 3 sub-bits:
+//	          00 = emit current lit_word
+//	          01 = emit incr_word
+//	          10 = read 2 bytes → new lit_word, emit it
+//	          11 = read 2 bytes → new incr_word
 func DecompressEnigma(src []byte) ([]byte, error) {
 	if len(src) < 6 {
 		return nil, fmt.Errorf("enigma: too short")

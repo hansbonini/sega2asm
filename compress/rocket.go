@@ -6,10 +6,19 @@ import (
 	"fmt"
 )
 
-// ── Rocket (clownlzss) ────────────────────────────────────────────────────────
-// Header: BE16 uncompressed size, BE16 compressed size.
-// BitField 1-byte, LSB first. Match: BE16; dict=(word+0x40)%0x400; count=(word>>10)+1.
-
+// DecompressRocket decompresses data using the Rocket (clownlzss) format.
+//
+// Header:
+//
+//	[0..1] big-endian word — uncompressed size
+//	[2..3] big-endian word — compressed size
+//
+// Control stream: 8-bit descriptor byte, LSB first.
+//
+//	bit=1 → literal byte
+//	bit=0 → back-reference: big-endian word
+//	          ring index = (word + 0x40) & 0x3FF   (10-bit absolute ring buffer index)
+//	          length     = (word >> 10) + 1
 func DecompressRocket(src []byte) ([]byte, error) {
 	if len(src) < 4 {
 		return nil, fmt.Errorf("rocket: too short")
