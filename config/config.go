@@ -60,7 +60,7 @@ type Segment struct {
 // Hint provides inline disassembly information for a segment.
 type Hint struct {
 	Offset uint32 `yaml:"offset"` // ROM offset
-	Type   string `yaml:"type"`   // data_byte, data_word, data_long, code, text, skip
+	Type   string `yaml:"type"`   // data_byte, data_word, data_long, ptr_table, code, text, skip
 	Length int    `yaml:"length"` // number of bytes to treat this way
 	Label  string `yaml:"label"`  // optional label name
 }

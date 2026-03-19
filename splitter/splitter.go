@@ -373,7 +373,7 @@ func (s *Splitter) writeM68K(r *rom.ROM, seg config.Segment, dir string, syms *s
 
 		// Check hints: override with explicit data directives.
 		if hint, ok := hints[addr-start]; ok {
-			s.emitHint(&sb, hint, data, addr-start, cmap)
+			s.emitHint(&sb, hint, data, addr-start, cmap, syms)
 			lastHintEnd = addr - start + uint32(hint.Length)
 			continue
 		}
@@ -732,7 +732,7 @@ func buildHintsMap(hints []config.Hint) map[uint32]config.Hint {
 }
 
 // emitHint writes data directive bytes based on a hint.
-func (s *Splitter) emitHint(sb *strings.Builder, hint config.Hint, data []byte, offset uint32, cmap *charmap.Map) {
+func (s *Splitter) emitHint(sb *strings.Builder, hint config.Hint, data []byte, offset uint32, cmap *charmap.Map, syms *symbols.Table) {
 	if hint.Label != "" {
 		sb.WriteString(hint.Label + ":\n")
 	}
@@ -759,6 +759,15 @@ func (s *Splitter) emitHint(sb *strings.Builder, hint config.Hint, data []byte, 
 		for i := int(offset); i < end-3; i += 4 {
 			l := uint32(data[i])<<24 | uint32(data[i+1])<<16 | uint32(data[i+2])<<8 | uint32(data[i+3])
 			sb.WriteString(fmt.Sprintf("\tdc.l\t$%08X\n", l))
+		}
+	case "ptr_table":
+		for i := int(offset); i < end-3; i += 4 {
+			addr := uint32(data[i])<<24 | uint32(data[i+1])<<16 | uint32(data[i+2])<<8 | uint32(data[i+3])
+			label := syms.Label(addr)
+			if label == "" {
+				label = fmt.Sprintf("$%06X", addr)
+			}
+			sb.WriteString(fmt.Sprintf("\tdc.l\t%s\n", label))
 		}
 	case "text":
 		if !cmap.Empty() {
