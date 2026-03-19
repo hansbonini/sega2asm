@@ -23,7 +23,7 @@ Assembly output compatible with [Clownacy/clownassembler](https://github.com/Clo
 | `text`     | `.txt` | Text with optional charmap decode |
 | `bin`      | `.bin` | Raw binary blob |
 
-…
+
 **Compression formats supported:**
 
 | Code | Type | Description | Compatible Games |
@@ -47,14 +47,14 @@ Assembly output compatible with [Clownacy/clownassembler](https://github.com/Clo
 | `lzkonami1` | LZ | Konami first-generation LZ | Animaniacs, Contra: Hard Corps, Lethal Enforcers II - Gun Fighters, Sparkster |
 | `lzkonami2` | LZ | Konami second-generation LZ | Animaniacs, Castlevania Bloodlines, Contra: Hard Corps, Rocket Knight Adventures, Sunset Riders, Teenage Mutant Ninja Turtles: The Hyperstone Heist, Tiny Toon Adventures: Acme Allstars, Tiny Toon Adventures: Buster Hidden Treasure |
 | `lzkonami3` | LZ | Konami third-generation LZ | Castlevania Bloodlines, Hyper Dunk - The Playoff Edition, Lethal Enforcers, Teenage Mutant Ninja Turtles: Tournament Fighters, Tiny Toon Adventures: Acme Allstars |
-| `lzancient` | LZ + RLE | Ancient LZ compressor | Beyond Oasis, Streets of Rage 2 |
-| `lztose` | LZ | Tose LZ compressor | Dragon Ball Z: Buyuu Retsuden |
-| `lznextech` / `lzwolfteam` | LZ | Nextech / WolfTeam shared LZ compressor | Crusader of Centy, El Viento, Granada, Earnest Evans, Final Zone, Ranger-X, Zan Yasha Enbuden |
-| `lzsti` | LZ | STI LZ compressor | Comix Zone |
-| `rlesc` | RLE | Software Creations RLE compressor | Cutthroat Island, Spiderman & Venom: Maximum Carnage, Spiderman & Venom: Separation Anxiety, The Tick  |
+| `lzancient` | LZ + RLE | Ancient LZ compression | Beyond Oasis, Streets of Rage 2 |
+| `lztose` | LZ | Tose LZ compression | Dragon Ball Z: Buyuu Retsuden |
+| `lznextech` / `lzwolfteam` | LZ | Nextech / WolfTeam shared LZ compression | Crusader of Centy, El Viento, Granada, Earnest Evans, Final Zone, Ranger-X, Zan Yasha Enbuden |
+| `lzsti` | LZ | STI LZ compression | Comix Zone |
+| `rlesc` | RLE | Software Creations RLE compression | Cutthroat Island, Spiderman & Venom: Maximum Carnage, Spiderman & Venom: Separation Anxiety, The Tick  |
 | `rnc` / `rnc1` / `rnc2` | LZH | Rob Northen Compression methods 1 & 2 | Various multiplatform ports and publisher tools |
 | `lzcompile` | LZ | Compile Co. Ltd. command-byte LZ; 256-byte circular history, 4-byte output chunks | Dr. Robotnik's Mean Bean Machine, Mado Monogatari I, MUSHA Aleste, Puyo Puyo, Puyo Puyo 2 |
-| `ITL` | Mixed | I.T.L. (Sega) non-zero-byte copy + XOR block compressor | Arrow Flash, Bonanza Bros., Chase HQ II, Growl, Ultimate Qix |
+| `ITL` | Mixed | I.T.L. (Sega) non-zero-byte copy + XOR block compression | Arrow Flash, Bonanza Bros., Chase HQ II, Growl, Ultimate Qix |
 | `lzfactor5` | LZ | Factor 5 LZ; v1 = 11-bit window, v2 = 16-bit window (auto-detected from header) | International Superstar Soccer Deluxe, Mega Turrican |
 | `lzbeam` | LZ | Beam Software LZ; Elias-coded counts, absolute back-references, command bits in appended bitstream | Blades of Vengeance, George Foreman's KO Boxing, NBA All-Star Challenge, Radical Rex, Super High Impact, Tom and Jerry - Frantic Antics, True Lies |
 | `lztreasure` | LZ + RLE | Treasure Co. Ltd. multi-mode LZ; 2-byte size header, back-references + RLE single/pairs/alternating + literal runs | Alien Soldier, Dynamite Headdy, Gunstar Heroes, Light Crusader, McDonald's Treasure Land Adventure, Yu Yu Hakusho: Makyo Toitsuken |
