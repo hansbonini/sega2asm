@@ -1,0 +1,73 @@
+package compress
+
+import (
+	"encoding/binary"
+	"fmt"
+)
+
+// ── Saxman (clownlzss) ────────────────────────────────────────────────────────
+
+func DecompressSaxman(src []byte) ([]byte, error)         { return decompressSaxman(src, true) }
+func DecompressSaxmanNoHeader(src []byte) ([]byte, error) { return decompressSaxman(src, false) }
+
+func decompressSaxman(src []byte, hasHeader bool) ([]byte, error) {
+	var data []byte
+	if hasHeader {
+		if len(src) < 2 {
+			return nil, fmt.Errorf("saxman: too short")
+		}
+		n := int(binary.LittleEndian.Uint16(src[0:2]))
+		end := 2 + n
+		if end > len(src) {
+			end = len(src)
+		}
+		data = src[2:end]
+	} else {
+		data = src
+	}
+	pos := 0
+	var out []byte
+	var descByte byte
+	descBitsLeft := 0
+	read := func() byte {
+		if pos >= len(data) {
+			return 0
+		}
+		b := data[pos]
+		pos++
+		return b
+	}
+	popBit := func() int {
+		if descBitsLeft == 0 {
+			descByte = read()
+			descBitsLeft = 8
+		}
+		bit := int(descByte & 1)
+		descByte >>= 1
+		descBitsLeft--
+		return bit
+	}
+	for pos < len(data) {
+		if popBit() == 1 {
+			out = append(out, read())
+		} else {
+			b1 := int(read())
+			b2 := int(read())
+			dictIdx := (b1 | ((b2 << 4) & 0xF00)) + 18
+			count := (b2 & 0xF) + 3
+			outPos := len(out)
+			dist := (outPos - dictIdx%0x1000 + 0x1000) % 0x1000
+			if dist == 0 || dist > outPos {
+				for i := 0; i < count; i++ {
+					out = append(out, 0)
+				}
+			} else {
+				base := outPos - dist
+				for i := 0; i < count; i++ {
+					out = append(out, out[base+i])
+				}
+			}
+		}
+	}
+	return out, nil
+}

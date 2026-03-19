@@ -1,0 +1,76 @@
+package compress
+
+import (
+	"encoding/binary"
+	"fmt"
+)
+
+// ── LZNextech — Crusader of Centy ────────────────────────────────────────────
+// ── LZWolfteam — El Viento, Granada, Earnest Evans, Final Zone, Ranger-X, Zan Yasha
+// Both: window 0x1000 cursor 0xFEE, special init. Header: LE32 compSize + LE32 uncompSize.
+// Same back-ref encoding as LZNamco.
+
+func DecompressLZNextech(src []byte) ([]byte, error)  { return decompressNextech(src) }
+func DecompressLZWolfteam(src []byte) ([]byte, error) { return decompressNextech(src) }
+
+func decompressNextech(src []byte) ([]byte, error) {
+	if len(src) < 8 {
+		return nil, fmt.Errorf("lznextech: too short")
+	}
+	uncompSize := int(binary.LittleEndian.Uint32(src[4:8]))
+	pos := 8
+	win := newWin(0x1000, 0xFEE, 0)
+	initWindowNextech(win)
+	var out []byte
+	decoded := 0
+	read := func() byte {
+		if pos >= len(src) {
+			return 0
+		}
+		b := src[pos]
+		pos++
+		return b
+	}
+	for decoded < uncompSize {
+		ctrl := read()
+		for bit := 0; bit < 8 && decoded < uncompSize; bit++ {
+			if (ctrl>>uint(bit))&1 == 1 {
+				b := read()
+				win.emit(b, &out)
+				decoded++
+			} else {
+				hi := int(read())
+				lo := int(read())
+				length := (lo & 0xF) + 3
+				offset := ((lo & 0xF0) << 4) | hi
+				win.copyFrom(offset, length, &out)
+				decoded += length
+			}
+		}
+	}
+	if len(out) > uncompSize {
+		out = out[:uncompSize]
+	}
+	return out, nil
+}
+
+func initWindowNextech(w *winBuf) {
+	for i := 0; i < 0x100; i++ {
+		for j := 0; j < 0x0D && i*0x0D+j < w.size; j++ {
+			w.data[i*0x0D+j] = byte(i)
+		}
+		if 0xD00+i < w.size {
+			w.data[0xD00+i] = byte(i)
+		}
+		if 0xE00+i < w.size {
+			w.data[0xE00+i] = byte(0xFF - i)
+		}
+		if i < 0x80 && 0xF00+i < w.size {
+			w.data[0xF00+i] = 0x00
+		}
+		if i < 0x6E {
+			w.data[i] = 0x20
+		}
+	}
+	w.cursor = 0xFEE
+}
