@@ -61,6 +61,8 @@
 | `lzblizzard` | LZSS | Okumura 1989 LZSS; 4096-byte ring buffer (zero-filled), 8-bit control flags LSB-first, 12-bit absolute offset + 4-bit length | Rock N Roll Racing, The Death and Return of Superman |
 | `lzhlucasarts` | LZH | Adaptive Huffman + LZ sliding window (LZHUF variant); N=4096, F=60, ring buffer pre-filled 0x20; BE16 output size header; position via d_code/d_len tables | Zombies Ate My Neighbors |
 | `lzclimax` | LZ77 | Climax LZ77; control byte MSB-first (1=literal, 0=back-ref), 12-bit offset + 4-bit length (3..18), offset=0 ends stream | Landstalker, Shining in the Darkness, Shining Force, Shining Force II |
+| `lzwestone` | LZH | Westone Huffman+LZ tile decompressor (type 0x02); adaptive Huffman tree built from bitstream, symbols 0x000–0x0FF=literal, 0x100–0x11F=back-reference; always outputs 1024 bytes | Monster World IV |
+| `lzwestone_block` | Mixed | Westone block-based tile decompressor (type 0x00); 32 blocks × 32 bytes; mode 0=literal, mode 1=sparse color-group bitmap, mode 2=XOR+planar bit-spread; always outputs 1024 bytes | Mega Bomberman, Monster World IV, Wonder Boy in Monster World |
 
 **Labels & symbols:**
 - Reads `symbols.txt` in multiple formats (name=addr, addr:name, space-separated)

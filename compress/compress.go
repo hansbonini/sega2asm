@@ -15,6 +15,7 @@ import "fmt"
 //   Blizzard:     lzblizzard
 //   LucasArts:    lzhlucasarts
 //   Climax:       lzclimax
+//   Westone:      lzwestone  lzwestone_block
 //   Pass-through: none  (empty)
 func Decompress(compression string, src []byte) ([]byte, error) {
 	switch compression {
@@ -88,6 +89,10 @@ func Decompress(compression string, src []byte) ([]byte, error) {
 		return DecompressLZHLucasArts(src)
 	case "lzclimax":
 		return DecompressLZClimax(src)
+	case "lzwestone":
+		return DecompressLZWestone(src)
+	case "lzwestone_block":
+		return DecompressLZWestoneBlock(src)
 	case "none", "":
 		dst := make([]byte, len(src))
 		copy(dst, src)
