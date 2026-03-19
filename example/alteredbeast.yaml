@@ -75,16 +75,11 @@ segments:
   - name: loc_00063A
     type: m68k
     start: 0x00063A
-    end:   0x00063C
+    end:   0x00067A
 
-  - name: loc_00063C
+  - name: loc_00067A
     type: m68k
-    start: 0x00063C
-    end:   0x000680
-
-  - name: loc_000680
-    type: m68k
-    start: 0x000680
+    start: 0x00067A
     end:   0x000696
 
   - name: loc_000696
@@ -105,11 +100,11 @@ segments:
   - name: loc_0007AE
     type: m68k
     start: 0x0007AE
-    end:   0x0007B2
+    end:   0x0007D2
 
-  - name: loc_0007B2
+  - name: loc_0007D2
     type: m68k
-    start: 0x0007B2
+    start: 0x0007D2
     end:   0x000A48
 
   - name: loc_000A48 
