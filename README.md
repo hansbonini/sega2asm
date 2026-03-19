@@ -2,9 +2,9 @@
 
 **Sega Mega Drive / Genesis ROM disassembler & splitter**
 
-Inspired by [ethteck/splat](https://github.com/ethteck/splat) and [nathancassano/snes2asm](https://github.com/nathancassano/snes2asm).  
-68000 disassembler based on [Clownacy/clown68000](https://github.com/Clownacy/clown68000).  
-Z80 disassembler based on [Clownacy/clownz80](https://github.com/Clownacy/clownz80).  
+Inspired by [ethteck/splat](https://github.com/ethteck/splat) and [nathancassano/snes2asm](https://github.com/nathancassano/snes2asm).
+68000 disassembler based on [Clownacy/clown68000](https://github.com/Clownacy/clown68000).
+Z80 disassembler based on [Clownacy/clownz80](https://github.com/Clownacy/clownz80).
 Assembly output compatible with [Clownacy/clownassembler](https://github.com/Clownacy/clownassembler) (asm68k clone).
 
 ---
@@ -23,46 +23,41 @@ Assembly output compatible with [Clownacy/clownassembler](https://github.com/Clo
 | `text`     | `.txt` | Text with optional charmap decode |
 | `bin`      | `.bin` | Raw binary blob |
 
-…  
+…
 **Compression formats supported:**
 
-- `none` – no compression, data is copied verbatim.
-- `nemesis` – Konami “Nemesis” tile compressor.
-- `kosinski` – Kosinski LZ‑style scheme.
-- `kosinskiplus` – extended Kosinski variant.
-- `enigma` – Enigma bit‑packed compressor.
-- `segard` – SegaRD graphics compression. (used in Altered Beast).
-- `saxman`, `saxman_noheader` – format used by Sonic the Hedgehog 2, to compress its sound engine and music data (is actually a lightly-modified version of Haruhiko Okumura's 1989 LZSS format).
-- `comper` – other community-developed format, which is designed from the ground up with a focus on decompression speed on the Motorola 68000. This comes at a significant cost to compression ratio.
-- `rocket` – Rocket Knight compression.
-- `faxman` – a modified version of Saxman designed to produce smaller files when used to compress SMPS music data
-- `rage` – Streets of Rage‑style bit‑stream compressor (used in SOR, etc.).
-- `chameleon` – Kid Chameleon compression.
-- `lznamco` – Namco LZ (Ball Jacks, Klax, Marvel Land, Pac‑Attack, PacMan 2,
-  Phelios …).
-- `lzstrike` – same as Namco but with 0x800 window (Desert/Jungle/Urban Strike).
-- `lztechnosoft` – Technosoft variant with no size header (Elemental Master).
-- `lzkonami1` – Konami’s first LZ (Animaniacs, Contra Hard Corps, Lethal Enforcers II,
-  Sparkster …).
-- `lzkonami2` – Konami’s second LZ (Castlevania Bloodlines, Rocket Knight,
-  TMNT Hyperstone, Sunset Riders …).
-- `lzkonami3` – Konami’s third LZ (Castlevania Bloodlines, Lethal Enforcers,
-  TMNT Tournament Fighters …).
-- `lzancient` – Ancient/LucasArts compressor (Beyond Oasis, Streets of Rage 2).
-- `lztose` – Tose LZ (Dragon Ball Z: Buyuu Retsuden).
-- `lznextech` / `lzwolfteam` – Nextech/WolfTeam LZ (Crusader of Centy,
-  El Viento, Granada, Earnest Evans, Final Zone, Ranger‑X, Zan Yasha …).
-- `lzsti` – STI LZ used by Comix Zone.
-- `rlesc` – Software Creations RLE (Maximum Carnage, Venom, The Tick,
-  Cutthroat Island …).
-- `rnc`, `rnc1`, `rnc2` – Rob Northen Compression method 1/2 (generic,
-  found in various ports and utilities).
-- `lzcompile` – Compile Co. Ltd. command-byte scheme (Puyo Puyo, Aleste / MUSHA,
-  GG Aleste, Puyo Puyo 2, Power Strike II …). Back-references use a 256-byte
-  circular history; output is buffered in 4-byte chunks.
-- `itl` – I.T.L. (Sega) non-zero-bytes + XOR block compressor (Bonanza Bros, and other I.T.L.-developed Sega games).
-- `lzfactor5` – Factor 5 LZ (version 1: 11-bit window / version 2: 16-bit window; auto-detected from header). Used in Factor 5 Mega Drive games.
-- `lzbeam` – Beam Software LZ: variable-width Elias-coded counts + absolute back-references with bit-width derived from write position; command bits stored in a separate appended bitstream (Shadowrun, Batman Returns, Judge Dredd …).
+| Code | Type | Description | Games |
+|---|---|---|---|
+| `none` | — | No compression; data copied verbatim | — |
+| `nemesis` | Huffman | Konami tile compressor; Huffman-coded nybble runs per tile | Sonic series, many Konami MD titles |
+| `kosinski` | LZ | Kosinski LZ-style scheme with sliding-window back-references | Sonic series and community tools |
+| `kosinskiplus` | LZ | Extended Kosinski with larger offset/count fields | Sonic 3 & Knuckles |
+| `enigma` | Mixed | Bit-packed compressor for mappings/tilemaps | Sonic 2, Sonic 3 & Knuckles |
+| `segard` | RLE | SegaRD block-based RLE graphics compressor | Altered Beast |
+| `saxman` | LZSS | Lightly-modified Okumura 1989 LZSS; 2-byte decompressed-size header | Sonic the Hedgehog 2 |
+| `saxman_noheader` | LZSS | Same as `saxman` without the size header | Sonic the Hedgehog 2 |
+| `comper` | LZ | Community format optimised for 68000 decompression speed at the cost of ratio | Community / Sonic hacks |
+| `rocket` | LZ | Konami Rocket Knight compression | Rocket Knight Adventures |
+| `faxman` | LZSS | Modified Saxman tuned to compress SMPS music data | Sonic hacks / SMPS tools |
+| `rage` | LZ | Bit-stream LZ compressor | Streets of Rage series |
+| `chameleon` | LZ | Kid Chameleon compressor | Kid Chameleon |
+| `lznamco` | LZ | Namco LZ; 0x400-byte sliding window | Ball Jacks, Klax, Marvel Land, Pac-Attack, PacMan 2, Phelios |
+| `lzstrike` | LZ | Same as `lznamco` but with 0x800-byte window | Desert Strike, Jungle Strike, Urban Strike |
+| `lztechnosoft` | LZ | Technosoft LZ variant; no size header | Elemental Master |
+| `lzkonami1` | LZ | Konami first-generation LZ | Animaniacs, Contra Hard Corps, Lethal Enforcers II, Sparkster |
+| `lzkonami2` | LZ | Konami second-generation LZ | Castlevania Bloodlines, Rocket Knight, TMNT Hyperstone Heist, Sunset Riders |
+| `lzkonami3` | LZ | Konami third-generation LZ | Castlevania Bloodlines, Lethal Enforcers, TMNT Tournament Fighters |
+| `lzancient` | LZ + RLE | Ancient LZ compressor | Beyond Oasis, Streets of Rage 2 |
+| `lztose` | LZ | Tose LZ compressor | Dragon Ball Z: Buyuu Retsuden |
+| `lznextech` / `lzwolfteam` | LZ | Nextech / WolfTeam shared LZ compressor | Crusader of Centy, El Viento, Granada, Earnest Evans, Final Zone, Ranger-X, Zan Yasha |
+| `lzsti` | LZ | STI LZ compressor | Comix Zone |
+| `rlesc` | RLE | Software Creations RLE compressor | Maximum Carnage, Venom, The Tick, Cutthroat Island |
+| `rnc` / `rnc1` / `rnc2` | LZH | Rob Northen Compression methods 1 & 2 | Various multiplatform ports and publisher tools |
+| `lzcompile` | LZ | Compile Co. Ltd. command-byte LZ; 256-byte circular history, 4-byte output chunks | Puyo Puyo, Aleste / MUSHA, GG Aleste, Puyo Puyo 2, Power Strike II |
+| `lzitl` | Mixed | I.T.L. (Sega) non-zero-byte copy + XOR block compressor | Bonanza Bros and other I.T.L.-developed Sega games |
+| `lzfactor5` | LZ | Factor 5 LZ; v1 = 11-bit window, v2 = 16-bit window (auto-detected from header) | Factor 5 Mega Drive titles |
+| `lzbeam` | LZ | Beam Software LZ; Elias-coded counts, absolute back-references, command bits in appended bitstream | Shadowrun, Batman Returns, Judge Dredd |
+| `lztreasure` | LZ | Treasure Co. Ltd. multi-mode LZ; 2-byte size header, back-references + RLE single/pairs/alternating + literal runs | Gunstar Heroes, Alien Soldier, Dynamite Headdy, McDonald's Treasure Land Adventure |
 
 **Labels & symbols:**
 - Reads `symbols.txt` in multiple formats (name=addr, addr:name, space-separated)
