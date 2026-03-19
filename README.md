@@ -26,14 +26,14 @@ Assembly output compatible with [Clownacy/clownassembler](https://github.com/Clo
 …
 **Compression formats supported:**
 
-| Code | Type | Description | Games |
+| Code | Type | Description | Compatible Games |
 |---|---|---|---|
 | `none` | — | No compression; data copied verbatim | — |
-| `nemesis` | Huffman | Konami tile compressor; Huffman-coded nybble runs per tile | Sonic series, many Konami MD titles |
-| `kosinski` | LZ | Kosinski LZ-style scheme with sliding-window back-references | Sonic series and community tools |
+| `nemesis` | Huffman | Konami tile compressor; Huffman-coded nybble runs per tile | Alien Storm, ATP Tour Championship Tennis, Ayrton Senna's Super Monaco GP II, Castle of Illusion, Chou Yakyuu Miracle Nine, Classic Collection, Columns, Disney Collection - Castle of Illusion & Quack Shot, Dr. Robotinik's Mean Bean Machine, ESWAT Cyber Police - City Under Siege, Fatal Labyrinth, Flicky, Forgotten Worlds, Genesis 6-Pak, Ghostbusters, Ghouls n Ghosts, Golden Axe, Golden Axe 2, Golden Axe 3, Jewel Master, Magical Taruruto-Kun, Mega Games 10 , Mega Games 2, Mega Games 3, Mega Games 6, Mega Games 6, Mega Games 6, Mega Games I, Mercs, Metal Fangs, Mighty Morphin Power Rangers - The Movie, MLBPA Sports Talk Baseball, Moonwalker, Musha, Phantasy Star 2, Phantasy Star 2 Text Adventures, Phantasy Star 3, Phantasy Star 4, Psy-O-Blade, Pulseman, Quackshot starring Donald Duck, Rent A Hero, Revenge of Shinobi, Ristar, Sega Mega Anser, Sega Sports 1, Sega Top 5, Shadow Dancer - The Secret of Shinobi, Sonic and Knuckles, Sonic Classics, Sonic Compilation, Sonic Crackers, Sonic Eraser, Sonic The Hedgehog, Sonic the Hedgehog 2, Sonic the Hedgehog 3, Streets of Rage, Streets of Rage 2, Streets of Rage 3, Strider, Super Hang-On, Super Monaco GP, Tecmo Super Bowl II SE, Tecmo Super Bowl III Final Edition, Twin Cobra, Virtua Racing, Wimbledon Championship Tennis, World Cup Italia '90, World of Illusion, Wrestle War |
+| `kosinski` | LZ | Kosinski LZ-style scheme with sliding-window back-references | 16 Ton (SegaNet), Aworg (SegaNet) , Ayrton Senna's Super Monaco GP II, Battletoads, Bishoujo Senshi Sailor Moon, Disney Collection - Castle of Illusion & Quack Shot, Doki Doki Penguin Land MD (SegaNet), Flux for Mega-CD, Genesis 6-Pak, J. League Pro Striker - Perfect Edition, J. League Pro Striker 2, J. League Pro Striker Final Stage, Mega Games 10, Mega Games 2, Mega Games 3, Mega Games 6 (Vol 1) , Mega Games 6 (Vol 3) , Phantasy Star 4, Phantom 2040, Quackshot starring Donald Duck, Shinobi III - Return of the Ninja Master, Sonic and Knuckles, Sonic Classics , Sonic Crackers, Sonic The Hedgehog, Sonic The Hedgehog 2, Sonic The Hedgehog 3, Streets of Rage, Streets of Rage 3, Teddy Boy Blues (SegaNet), Virtua Racing, World of Illusion |
 | `kosinskiplus` | LZ | Extended Kosinski with larger offset/count fields | Sonic 3 & Knuckles |
 | `enigma` | Mixed | Bit-packed compressor for mappings/tilemaps | Sonic 2, Sonic 3 & Knuckles |
-| `segard` | RLE | SegaRD block-based RLE graphics compressor | Altered Beast |
+| `segard` | RLE | SegaRD block-based RLE graphics compressor | Alex Kidd in Enchanted Castle, Altered Beast, Columns, Golden Axe, Hokuto no Ken: Shin Seikimatsu Kyuuseishu Densetsu, Last Battle, Osomatsu-kun - Hachamecha Gekijou, World Championship Soccer |
 | `saxman` | LZSS | Lightly-modified Okumura 1989 LZSS; 2-byte decompressed-size header | Sonic the Hedgehog 2 |
 | `saxman_noheader` | LZSS | Same as `saxman` without the size header | Sonic the Hedgehog 2 |
 | `comper` | LZ | Community format optimised for 68000 decompression speed at the cost of ratio | Community / Sonic hacks |
@@ -41,23 +41,23 @@ Assembly output compatible with [Clownacy/clownassembler](https://github.com/Clo
 | `faxman` | LZSS | Modified Saxman tuned to compress SMPS music data | Sonic hacks / SMPS tools |
 | `rage` | LZ | Bit-stream LZ compressor | Streets of Rage series |
 | `chameleon` | LZ | Kid Chameleon compressor | Kid Chameleon |
-| `lznamco` | LZ | Namco LZ; 0x400-byte sliding window | Ball Jacks, Klax, Marvel Land, Pac-Attack, PacMan 2, Phelios |
+| `lznamco` | LZ | Namco LZ; 0x400-byte sliding window | Ball Jacks, Buning Force, Chibi Maruko-Chan: Waku Waku Shopping, Fushigi Umi No Nadia, Klax, Kyuukai Douchuuki, Marvel Land , Megapanel, Pac-Attack, PacMan2: The New Adventures, Phelios, Powerball, Rolling Thunder 2 |
 | `lzstrike` | LZ | Same as `lznamco` but with 0x800-byte window | Desert Strike, Jungle Strike, Urban Strike |
 | `lztechnosoft` | LZ | Technosoft LZ variant; no size header | Elemental Master |
-| `lzkonami1` | LZ | Konami first-generation LZ | Animaniacs, Contra Hard Corps, Lethal Enforcers II, Sparkster |
-| `lzkonami2` | LZ | Konami second-generation LZ | Castlevania Bloodlines, Rocket Knight, TMNT Hyperstone Heist, Sunset Riders |
-| `lzkonami3` | LZ | Konami third-generation LZ | Castlevania Bloodlines, Lethal Enforcers, TMNT Tournament Fighters |
+| `lzkonami1` | LZ | Konami first-generation LZ | Animaniacs, Contra: Hard Corps, Lethal Enforcers II - Gun Fighters, Sparkster |
+| `lzkonami2` | LZ | Konami second-generation LZ | Animaniacs, Castlevania Bloodlines, Contra: Hard Corps, Rocket Knight Adventures, Sunset Riders, Teenage Mutant Ninja Turtles: The Hyperstone Heist, Tiny Toon Adventures: Acme Allstars, Tiny Toon Adventures: Buster Hidden Treasure |
+| `lzkonami3` | LZ | Konami third-generation LZ | Castlevania Bloodlines, Hyper Dunk - The Playoff Edition, Lethal Enforcers, Teenage Mutant Ninja Turtles: Tournament Fighters, Tiny Toon Adventures: Acme Allstars |
 | `lzancient` | LZ + RLE | Ancient LZ compressor | Beyond Oasis, Streets of Rage 2 |
 | `lztose` | LZ | Tose LZ compressor | Dragon Ball Z: Buyuu Retsuden |
-| `lznextech` / `lzwolfteam` | LZ | Nextech / WolfTeam shared LZ compressor | Crusader of Centy, El Viento, Granada, Earnest Evans, Final Zone, Ranger-X, Zan Yasha |
+| `lznextech` / `lzwolfteam` | LZ | Nextech / WolfTeam shared LZ compressor | Crusader of Centy, El Viento, Granada, Earnest Evans, Final Zone, Ranger-X, Zan Yasha Enbuden |
 | `lzsti` | LZ | STI LZ compressor | Comix Zone |
-| `rlesc` | RLE | Software Creations RLE compressor | Maximum Carnage, Venom, The Tick, Cutthroat Island |
+| `rlesc` | RLE | Software Creations RLE compressor | Cutthroat Island, Spiderman & Venom: Maximum Carnage, Spiderman & Venom: Separation Anxiety, The Tick  |
 | `rnc` / `rnc1` / `rnc2` | LZH | Rob Northen Compression methods 1 & 2 | Various multiplatform ports and publisher tools |
-| `lzcompile` | LZ | Compile Co. Ltd. command-byte LZ; 256-byte circular history, 4-byte output chunks | Puyo Puyo, Aleste / MUSHA, GG Aleste, Puyo Puyo 2, Power Strike II |
-| `ITL` | Mixed | I.T.L. (Sega) non-zero-byte copy + XOR block compressor | Bonanza Bros and other I.T.L.-developed Sega games |
-| `lzfactor5` | LZ | Factor 5 LZ; v1 = 11-bit window, v2 = 16-bit window (auto-detected from header) | Factor 5 Mega Drive titles |
-| `lzbeam` | LZ | Beam Software LZ; Elias-coded counts, absolute back-references, command bits in appended bitstream | Shadowrun, Batman Returns, Judge Dredd |
-| `lztreasure` | LZ | Treasure Co. Ltd. multi-mode LZ; 2-byte size header, back-references + RLE single/pairs/alternating + literal runs | Gunstar Heroes, Alien Soldier, Dynamite Headdy, McDonald's Treasure Land Adventure |
+| `lzcompile` | LZ | Compile Co. Ltd. command-byte LZ; 256-byte circular history, 4-byte output chunks | Dr. Robotnik's Mean Bean Machine, Mado Monogatari I, MUSHA Aleste, Puyo Puyo, Puyo Puyo 2 |
+| `ITL` | Mixed | I.T.L. (Sega) non-zero-byte copy + XOR block compressor | Arrow Flash, Bonanza Bros., Chase HQ II, Growl, Ultimate Qix |
+| `lzfactor5` | LZ | Factor 5 LZ; v1 = 11-bit window, v2 = 16-bit window (auto-detected from header) | International Superstar Soccer Deluxe, Mega Turrican |
+| `lzbeam` | LZ | Beam Software LZ; Elias-coded counts, absolute back-references, command bits in appended bitstream | Blades of Vengeance, George Foreman's KO Boxing, NBA All-Star Challenge, Radical Rex, Super High Impact, Tom and Jerry - Frantic Antics, True Lies |
+| `lztreasure` | LZ | Treasure Co. Ltd. multi-mode LZ; 2-byte size header, back-references + RLE single/pairs/alternating + literal runs | Alien Soldier, Dynamite Headdy, Gunstar Heroes, Light Crusader, McDonald's Treasure Land Adventure, Yu Yu Hakusho: Makyo Toitsuken |
 
 **Labels & symbols:**
 - Reads `symbols.txt` in multiple formats (name=addr, addr:name, space-separated)
