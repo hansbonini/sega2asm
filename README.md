@@ -2,10 +2,10 @@
 
 **Sega Mega Drive / Genesis ROM disassembler & splitter**
 
-Inspired by [ethteck/splat](https://github.com/ethteck/splat) and [nathancassano/snes2asm](https://github.com/nathancassano/snes2asm).
-68000 disassembler based on [Clownacy/clown68000](https://github.com/Clownacy/clown68000).
-Z80 disassembler based on [Clownacy/clownz80](https://github.com/Clownacy/clownz80).
-Assembly output compatible with [Clownacy/clownassembler](https://github.com/Clownacy/clownassembler) (asm68k clone).
+- Inspired by: [ethteck/splat](https://github.com/ethteck/splat) and [nathancassano/snes2asm](https://github.com/nathancassano/snes2asm).
+- 68000 disassembler based on [Clownacy/clown68000](https://github.com/Clownacy/clown68000).
+- Z80 disassembler based on [Clownacy/clownz80](https://github.com/Clownacy/clownz80).
+- Assembly output compatible with [Clownacy/clownassembler](https://github.com/Clownacy/clownassembler) (asm68k clone).
 
 ---
 
