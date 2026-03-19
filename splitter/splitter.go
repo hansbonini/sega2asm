@@ -166,9 +166,6 @@ func (s *Splitter) Run() error {
 		case "pcm":
 			outPath, err = s.writePCM(r, seg, assetDir)
 			isBin = true
-		case "psg":
-			outPath, err = s.writePSG(r, seg, assetDir)
-			isBin = true
 		case "text":
 			outPath, err = s.writeText(r, seg, assetDir, cmap)
 		case "bin":
@@ -549,43 +546,6 @@ func (s *Splitter) writePCM(r *rom.ROM, seg config.Segment, dir string) (string,
 		s.warn("  PCM → WAV failed: %v", err)
 	} else {
 		s.logv("  PCM → WAV: %s (%d samples @ %d Hz)", wavPath, len(data), rate)
-	}
-	return binPath, nil
-}
-
-func (s *Splitter) writePSG(r *rom.ROM, seg config.Segment, dir string) (string, error) {
-	binPath := s.segPath(seg, dir, ".bin")
-	midPath := s.segPath(seg, dir, ".midi")
-	if s.opts.DryRun {
-		return binPath, nil
-	}
-	if err := os.MkdirAll(filepath.Dir(binPath), 0755); err != nil {
-		return "", err
-	}
-
-	data := r.Slice(uint32(seg.Start), uint32(seg.End))
-
-	// Save original raw bytes for incbin.
-	if err := os.WriteFile(binPath, data, 0644); err != nil {
-		return "", err
-	}
-
-	// Convert to MIDI for preview only.
-	events, err := audio.ParseVGMPSGEvents(data)
-	if err != nil || len(events) == 0 {
-		events = nil
-		for i := 0; i+1 < len(data); i += 2 {
-			events = append(events, audio.PSGEvent{
-				Tick:     uint32(i / 2),
-				Register: data[i]>>5&0x3*2 + data[i]>>4&1,
-				Value:    uint16(data[i+1]),
-			})
-		}
-	}
-	if err := audio.PSGToMIDI(events, midPath, 480); err != nil {
-		s.warn("  PSG → MIDI failed: %v", err)
-	} else {
-		s.logv("  PSG → MIDI: %s (%d events)", midPath, len(events))
 	}
 	return binPath, nil
 }
