@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"sega2asm/helpers"
 	"gopkg.in/yaml.v3"
 )
 
@@ -70,20 +71,12 @@ type HexInt uint32
 func (h *HexInt) UnmarshalYAML(value *yaml.Node) error {
 	var s string
 	if err := value.Decode(&s); err == nil {
-		// It's a string like "0x1A2B" or "$1A2B"
-		var v uint64
-		if len(s) > 0 && s[0] == '$' {
-			s = "0x" + s[1:]
+		v, err := helpers.ParseHex(s)
+		if err != nil {
+			return fmt.Errorf("invalid hex/int value: %q", s)
 		}
-		if _, err := fmt.Sscanf(s, "0x%X", &v); err == nil {
-			*h = HexInt(v)
-			return nil
-		}
-		if _, err := fmt.Sscanf(s, "%d", &v); err == nil {
-			*h = HexInt(v)
-			return nil
-		}
-		return fmt.Errorf("invalid hex/int value: %q", s)
+		*h = HexInt(v)
+		return nil
 	}
 	// Try as integer directly
 	var n int

@@ -11,6 +11,9 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
+	"sega2asm/helpers"
+	"sega2asm/types"
 )
 
 type Table struct {
@@ -75,7 +78,7 @@ func parseLine(line string) (Symbol, error) {
 	if strings.Contains(line, "=") {
 		parts := strings.SplitN(line, "=", 2)
 		name := strings.TrimSpace(parts[0])
-		addr, err := parseHex(strings.TrimSpace(parts[1]))
+		addr, err := helpers.ParseHex(strings.TrimSpace(parts[1]))
 		if err != nil {
 			return Symbol{}, err
 		}
@@ -85,7 +88,7 @@ func parseLine(line string) (Symbol, error) {
 	// Format: ADDR:name
 	if strings.Contains(line, ":") {
 		parts := strings.SplitN(line, ":", 2)
-		addr, err := parseHex(strings.TrimSpace(parts[0]))
+		addr, err := helpers.ParseHex(strings.TrimSpace(parts[0]))
 		if err != nil {
 			return Symbol{}, err
 		}
@@ -96,40 +99,19 @@ func parseLine(line string) (Symbol, error) {
 	fields := strings.Fields(line)
 	if len(fields) == 2 {
 		// Try addr first, then name-first
-		if addr, err := parseHex(fields[0]); err == nil {
+		if addr, err := helpers.ParseHex(fields[0]); err == nil {
 			return Symbol{Addr: addr, Name: fields[1]}, nil
 		}
-		if addr, err := parseHex(fields[1]); err == nil {
+		if addr, err := helpers.ParseHex(fields[1]); err == nil {
 			return Symbol{Addr: addr, Name: fields[0]}, nil
 		}
 	}
 	return Symbol{}, fmt.Errorf("unrecognised line: %q", line)
 }
 
-func parseHex(s string) (uint32, error) {
-	s = strings.TrimSpace(s)
-	if strings.HasPrefix(s, "$") {
-		s = "0x" + s[1:]
-	}
-	var v uint32
-	if _, err := fmt.Sscanf(s, "0x%X", &v); err == nil {
-		return v, nil
-	}
-	if _, err := fmt.Sscanf(s, "0X%X", &v); err == nil {
-		return v, nil
-	}
-	if _, err := fmt.Sscanf(s, "%d", &v); err == nil {
-		return v, nil
-	}
-	return 0, fmt.Errorf("not a number: %q", s)
-}
-
 // Label returns the symbol name for addr, or a generated "loc_XXXXXX" fallback.
 func (t *Table) Label(addr uint32) string {
-	if name, ok := t.ByAddr[addr]; ok {
-		return name
-	}
-	return fmt.Sprintf("loc_%06X", addr)
+	return types.LookupOrHex(t.ByAddr, addr)
 }
 
 // Has returns true if addr has an explicit symbol.

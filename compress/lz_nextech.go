@@ -2,6 +2,7 @@ package compress
 
 import (
 	"encoding/binary"
+	"sega2asm/helpers"
 	"fmt"
 )
 
@@ -19,7 +20,7 @@ func decompressNextech(src []byte) ([]byte, error) {
 	}
 	uncompSize := int(binary.LittleEndian.Uint32(src[4:8]))
 	pos := 8
-	win := newWin(0x1000, 0xFEE, 0)
+	win := helpers.NewWin(0x1000, 0xFEE, 0)
 	initWindowNextech(win)
 	var out []byte
 	decoded := 0
@@ -36,14 +37,14 @@ func decompressNextech(src []byte) ([]byte, error) {
 		for bit := 0; bit < 8 && decoded < uncompSize; bit++ {
 			if (ctrl>>uint(bit))&1 == 1 {
 				b := read()
-				win.emit(b, &out)
+				win.Emit(b, &out)
 				decoded++
 			} else {
 				hi := int(read())
 				lo := int(read())
 				length := (lo & 0xF) + 3
 				offset := ((lo & 0xF0) << 4) | hi
-				win.copyFrom(offset, length, &out)
+				win.CopyFrom(offset, length, &out)
 				decoded += length
 			}
 		}
@@ -54,23 +55,23 @@ func decompressNextech(src []byte) ([]byte, error) {
 	return out, nil
 }
 
-func initWindowNextech(w *winBuf) {
+func initWindowNextech(w *helpers.WinBuf) {
 	for i := 0; i < 0x100; i++ {
-		for j := 0; j < 0x0D && i*0x0D+j < w.size; j++ {
-			w.data[i*0x0D+j] = byte(i)
+		for j := 0; j < 0x0D && i*0x0D+j < w.Size; j++ {
+			w.Data[i*0x0D+j] = byte(i)
 		}
-		if 0xD00+i < w.size {
-			w.data[0xD00+i] = byte(i)
+		if 0xD00+i < w.Size {
+			w.Data[0xD00+i] = byte(i)
 		}
-		if 0xE00+i < w.size {
-			w.data[0xE00+i] = byte(0xFF - i)
+		if 0xE00+i < w.Size {
+			w.Data[0xE00+i] = byte(0xFF - i)
 		}
-		if i < 0x80 && 0xF00+i < w.size {
-			w.data[0xF00+i] = 0x00
+		if i < 0x80 && 0xF00+i < w.Size {
+			w.Data[0xF00+i] = 0x00
 		}
 		if i < 0x6E {
-			w.data[i] = 0x20
+			w.Data[i] = 0x20
 		}
 	}
-	w.cursor = 0xFEE
+	w.Cursor = 0xFEE
 }

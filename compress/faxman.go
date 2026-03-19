@@ -2,6 +2,7 @@ package compress
 
 import (
 	"encoding/binary"
+	"sega2asm/helpers"
 	"fmt"
 )
 
@@ -44,7 +45,7 @@ func DecompressFaxman(src []byte) ([]byte, error) {
 				out = append(out, 0)
 			}
 		} else {
-			copyDist(&out, distance, count)
+			helpers.CopyDist(&out, distance, count)
 		}
 	}
 	for remaining > 0 {

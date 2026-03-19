@@ -2,6 +2,7 @@ package compress
 
 import (
 	"encoding/binary"
+	"sega2asm/helpers"
 	"fmt"
 )
 
@@ -16,7 +17,7 @@ func DecompressLZTose(src []byte) ([]byte, error) {
 	hdr := binary.LittleEndian.Uint16(src[0:2])
 	uncompSize := int(hdr&0x7FFF) + 1
 	pos := 2
-	win := newWin(0x2000, 0, 0)
+	win := helpers.NewWin(0x2000, 0, 0)
 	var out []byte
 	decoded := 0
 	read := func() byte {
@@ -32,15 +33,15 @@ func DecompressLZTose(src []byte) ([]byte, error) {
 		for bit := 0; bit < 8 && decoded < uncompSize; bit++ {
 			if (ctrl>>uint(bit))&1 == 1 {
 				b := read()
-				win.emit(b, &out)
+				win.Emit(b, &out)
 				decoded++
 			} else {
 				lo := int(read())
 				hi := int(read())
 				length := (lo & 0xF) + 3
 				offset := ((hi << 8) | lo) >> 4
-				base := (win.cursor - offset + win.size) & win.mask
-				win.copyFrom(base, length, &out)
+				base := (win.Cursor - offset + win.Size) & win.Mask
+				win.CopyFrom(base, length, &out)
 				decoded += length
 			}
 		}

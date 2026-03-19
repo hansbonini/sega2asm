@@ -2,6 +2,7 @@ package compress
 
 import (
 	"encoding/binary"
+	"sega2asm/helpers"
 	"fmt"
 )
 
@@ -80,7 +81,7 @@ func DecompressChameleon(src []byte) ([]byte, error) {
 				}
 			}
 			if dist > 0 {
-				copyDist(&out, dist, count)
+				helpers.CopyDist(&out, dist, count)
 			}
 		}
 	}

@@ -3,7 +3,11 @@
 // Output is compatible with standard Z80 assembler syntax.
 package z80
 
-import "fmt"
+import (
+	"fmt"
+
+	"sega2asm/types"
+)
 
 // Result holds one disassembled Z80 instruction.
 type Result struct {
@@ -17,14 +21,14 @@ type Result struct {
 type Disassembler struct {
 	data   []byte
 	base   uint32
-	labels map[uint32]string
+	labels types.LabelMap
 	pos    int
 }
 
 // New creates a Z80 Disassembler.
-func New(data []byte, baseAddr uint32, labels map[uint32]string) *Disassembler {
+func New(data []byte, baseAddr uint32, labels types.LabelMap) *Disassembler {
 	if labels == nil {
-		labels = make(map[uint32]string)
+		labels = make(types.LabelMap)
 	}
 	return &Disassembler{data: data, base: baseAddr, labels: labels}
 }
@@ -356,7 +360,7 @@ func aluOp(kind byte, reg string) (string, bool) {
 }
 
 // DisassembleBlock disassembles Z80 code in data[start:end].
-func DisassembleBlock(data []byte, baseAddr, start, end uint32, labels map[uint32]string) []Result {
+func DisassembleBlock(data []byte, baseAddr, start, end uint32, labels types.LabelMap) []Result {
 	seg := data[start:end]
 	d := New(seg, baseAddr+start, labels)
 	var results []Result

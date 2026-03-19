@@ -2,6 +2,7 @@ package compress
 
 import (
 	"encoding/binary"
+	"sega2asm/helpers"
 	"fmt"
 )
 
@@ -54,14 +55,14 @@ func DecompressRage(src []byte) ([]byte, error) {
 		case 3:
 			count := first & 0x1F
 			if lastDist > 0 {
-				copyDist(&out, lastDist, count)
+				helpers.CopyDist(&out, lastDist, count)
 			}
 		default:
 			second := int(read())
 			count := ((first >> 5) & 3) + 4
 			lastDist = ((first << 8) & 0x1F00) | second
 			if lastDist > 0 {
-				copyDist(&out, lastDist, count)
+				helpers.CopyDist(&out, lastDist, count)
 			}
 		}
 	}

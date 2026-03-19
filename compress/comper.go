@@ -1,5 +1,7 @@
 package compress
 
+import "sega2asm/helpers"
+
 // ── Comper (clownlzss) ────────────────────────────────────────────────────────
 // Word-oriented: raw=2 bytes; match=(raw_dist,raw_count); raw_count==0 → end.
 // distance=(0x100-raw_dist)*2; count=(raw_count+1)*2.
@@ -38,7 +40,7 @@ func DecompressComper(src []byte) ([]byte, error) {
 			if rawCount == 0 {
 				break
 			}
-			copyDist(&out, (0x100-rawDist)*2, (rawCount+1)*2)
+			helpers.CopyDist(&out, (0x100-rawDist)*2, (rawCount+1)*2)
 		}
 	}
 	return out, nil

@@ -2,6 +2,7 @@ package compress
 
 import (
 	"encoding/binary"
+	"sega2asm/helpers"
 	"fmt"
 )
 
@@ -48,7 +49,7 @@ func DecompressRocket(src []byte) ([]byte, error) {
 			dictIdx := (word + 0x40) & 0x3FF
 			count := (word >> 10) + 1
 			dist := ((0x400 + len(out) - dictIdx - 1) & 0x3FF) + 1
-			copyDist(&out, dist, count)
+			helpers.CopyDist(&out, dist, count)
 		}
 	}
 	if len(out) > uncompSize {

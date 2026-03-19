@@ -2,6 +2,7 @@ package compress
 
 import (
 	"encoding/binary"
+	"sega2asm/helpers"
 	"fmt"
 	"sort"
 )
@@ -141,7 +142,7 @@ func DecompressRNC1(src []byte) ([]byte, error) {
 			if cmd < numCmds {
 				dist := decodeRNC(br, posTable) + 1
 				copyLen := decodeRNC(br, lenTable) + 2
-				copyDist(&out, dist, copyLen)
+				helpers.CopyDist(&out, dist, copyLen)
 			}
 		}
 	}
@@ -180,7 +181,7 @@ func DecompressRNC2(src []byte) ([]byte, error) {
 			break
 		}
 		count := br.pop(4) + 2
-		copyDist(&out, d, count)
+		helpers.CopyDist(&out, d, count)
 		switch br.pop(2) {
 		case 1:
 			readRaw(1)

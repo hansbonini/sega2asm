@@ -2,6 +2,7 @@ package compress
 
 import (
 	"encoding/binary"
+	"sega2asm/helpers"
 	"fmt"
 )
 
@@ -14,7 +15,7 @@ func DecompressLZSTI(src []byte) ([]byte, error) {
 		return nil, fmt.Errorf("lzsti: too short")
 	}
 	uncompSize := int(binary.BigEndian.Uint16(src[0:2]))
-	win := newWin(0x400, 0, 0)
+	win := helpers.NewWin(0x400, 0, 0)
 	var out []byte
 	data := src[2:]
 	bytePos, bitBuf, bitsAvail := 0, 0, 0
@@ -41,12 +42,12 @@ func DecompressLZSTI(src []byte) ([]byte, error) {
 	for decoded < uncompSize {
 		if readBit() == 1 {
 			b := byte(readBits(8))
-			win.emit(b, &out)
+			win.Emit(b, &out)
 			decoded++
 		} else {
 			offset := readBits(10)
 			length := readBits(4) + 2
-			win.copyFrom(offset, length, &out)
+			win.CopyFrom(offset, length, &out)
 			decoded += length
 		}
 	}

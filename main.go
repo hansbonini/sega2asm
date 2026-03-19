@@ -1,11 +1,10 @@
 package main
 
 import (
-	"flag"
 	"fmt"
-	"log"
 	"os"
 
+	"github.com/spf13/cobra"
 	"sega2asm/config"
 	"sega2asm/splitter"
 )
@@ -22,67 +21,72 @@ const banner = `
   Sega Mega Drive / Genesis ROM disassembler & splitter  v` + version + `
 `
 
-func main() {
+func newRootCmd() *cobra.Command {
 	var configFile string
 	var symbolsFile string
 	var charmapFile string
 	var verbose bool
-	var showVersion bool
 	var dryRun bool
 
-	flag.StringVar(&configFile, "c", "", "Configuration YAML file")
-	flag.StringVar(&symbolsFile, "s", "", "Symbols file (overrides config)")
-	flag.StringVar(&charmapFile, "t", "", "Charmap TBL file (overrides config)")
-	flag.BoolVar(&verbose, "v", false, "Verbose output")
-	flag.BoolVar(&showVersion, "version", false, "Show version and exit")
-	flag.BoolVar(&dryRun, "dry-run", false, "Parse config and symbols without writing files")
-	flag.Parse()
+	cmd := &cobra.Command{
+		Use:     "sega2asm [config.yaml]",
+		Short:   "Sega Mega Drive / Genesis ROM disassembler & splitter",
+		Version: version,
+		Args:    cobra.MaximumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			fmt.Print(banner)
 
-	fmt.Print(banner)
+			if configFile == "" {
+				if len(args) > 0 {
+					configFile = args[0]
+				} else {
+					return cmd.Usage()
+				}
+			}
 
-	if showVersion {
-		fmt.Printf("sega2asm v%s\n", version)
-		os.Exit(0)
+			// Silence usage for runtime errors (past argument validation)
+			cmd.SilenceUsage = true
+
+			cfg, err := config.Load(configFile)
+			if err != nil {
+				return fmt.Errorf("loading config: %w", err)
+			}
+
+			if symbolsFile != "" {
+				cfg.Options.SymbolsPath = symbolsFile
+			}
+			if charmapFile != "" {
+				cfg.Options.CharmapPath = charmapFile
+			}
+
+			sp := splitter.New(cfg, splitter.Options{
+				Verbose: verbose,
+				DryRun:  dryRun,
+			})
+
+			if err := sp.Run(); err != nil {
+				return err
+			}
+
+			fmt.Println("\n[OK] sega2asm: Completed successfully!")
+			return nil
+		},
 	}
 
-	// Allow config file as positional argument
-	if configFile == "" {
-		if flag.NArg() > 0 {
-			configFile = flag.Arg(0)
-		} else {
-			fmt.Println("Usage: sega2asm [options] <config.yaml>")
-			fmt.Println("       sega2asm -c config.yaml [-s symbols.txt] [-t charmap.tbl] [-v]")
-			fmt.Println()
-			fmt.Println("Options:")
-			flag.PrintDefaults()
-			fmt.Println()
-			fmt.Println("Segment types: m68k, z80, gfx, gfxcomp, pcm, psg, header, bin, text")
-			fmt.Println("Compression:   nemesis, kosinski, enigma, none")
-			os.Exit(1)
-		}
-	}
+	cmd.Flags().StringVarP(&configFile, "config", "c", "", "Configuration YAML file")
+	cmd.Flags().StringVarP(&symbolsFile, "symbols", "s", "", "Symbols file (overrides config)")
+	cmd.Flags().StringVarP(&charmapFile, "charmap", "t", "", "Charmap TBL file (overrides config)")
+	cmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "Verbose output")
+	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Parse config and symbols without writing files")
 
-	cfg, err := config.Load(configFile)
-	if err != nil {
-		log.Fatalf("[ERROR] Loading config: %v", err)
-	}
+	cmd.SetVersionTemplate("sega2asm v{{.Version}}\n")
 
-	// Command-line flags override config file paths
-	if symbolsFile != "" {
-		cfg.Options.SymbolsPath = symbolsFile
-	}
-	if charmapFile != "" {
-		cfg.Options.CharmapPath = charmapFile
-	}
+	return cmd
+}
 
-	sp := splitter.New(cfg, splitter.Options{
-		Verbose: verbose,
-		DryRun:  dryRun,
-	})
-
-	if err := sp.Run(); err != nil {
-		log.Fatalf("[ERROR] %v", err)
+func main() {
+	if err := newRootCmd().Execute(); err != nil {
+		fmt.Fprintf(os.Stderr, "[ERROR] %v\n", err)
+		os.Exit(1)
 	}
-
-	fmt.Println("\n[OK] sega2asm: Completed successfully!")
 }

@@ -2,6 +2,7 @@ package compress
 
 import (
 	"encoding/binary"
+	"sega2asm/helpers"
 	"fmt"
 )
 
@@ -16,7 +17,7 @@ func DecompressLZKonami1(src []byte) ([]byte, error) {
 	}
 	uncompSize := int(binary.BigEndian.Uint16(src[0:2]))
 	pos := 2
-	win := newWin(0x400, 0x3C0, 0x20)
+	win := helpers.NewWin(0x400, 0x3C0, 0x20)
 	var out []byte
 	decoded := 0
 	read := func() byte {
@@ -39,18 +40,18 @@ outer1:
 				if r > 0x80 {
 					length := int(r&0x1F) + 3
 					low := int(read())
-					offset := ((int(r)<<3)&0xFF00 | low) & win.mask
-					win.copyFrom(offset, length, &out)
+					offset := ((int(r)<<3)&0xFF00 | low) & win.Mask
+					win.CopyFrom(offset, length, &out)
 					decoded += length
 				} else if r == 0x80 {
 					length := int(r>>4) - 6
-					offset := (win.cursor - int(r&0xF) + win.size) & win.mask
-					win.copyFrom(offset, length, &out)
+					offset := (win.Cursor - int(r&0xF) + win.Size) & win.Mask
+					win.CopyFrom(offset, length, &out)
 					decoded += length
 				}
 				// r < 0x80 (not 0x1F): undefined per reference, ignore
 			} else {
-				win.emit(r, &out)
+				win.Emit(r, &out)
 				decoded++
 			}
 		}
@@ -72,7 +73,7 @@ func DecompressLZKonami2(src []byte) ([]byte, error) {
 	if end > len(src) {
 		end = len(src)
 	}
-	win := newWin(0x400, 0x3C0, 0x20)
+	win := helpers.NewWin(0x400, 0x3C0, 0x20)
 	var out []byte
 	read := func() byte {
 		if pos >= end {
@@ -87,14 +88,14 @@ func DecompressLZKonami2(src []byte) ([]byte, error) {
 		for bit := 0; bit < 8 && pos <= end; bit++ {
 			if (ctrl>>uint(bit))&1 == 1 {
 				b := read()
-				win.emit(b, &out)
+				win.Emit(b, &out)
 			} else {
 				hi := int(read())
 				lo := int(read())
 				word := (hi << 8) | lo
 				length := ((word & 0xFC00) >> 10) + 1
 				offset := word & 0x3FF
-				win.copyFrom(offset, length, &out)
+				win.CopyFrom(offset, length, &out)
 			}
 		}
 	}
@@ -112,7 +113,7 @@ func DecompressLZKonami3(src []byte) ([]byte, error) {
 	}
 	uncompSize := int(binary.BigEndian.Uint16(src[0:2]))
 	pos := 2
-	win := newWin(0x400, 0x3DF, 0)
+	win := helpers.NewWin(0x400, 0x3DF, 0)
 	var out []byte
 	decoded := 0
 	read := func() byte {
@@ -135,24 +136,24 @@ outer3:
 				if r < 0x80 {
 					length := int(r&0x1F) + 3
 					low := int(read())
-					offset := (((int(r) & 0x60) << 3) | low) & win.mask
-					win.copyFrom(offset, length, &out)
+					offset := (((int(r) & 0x60) << 3) | low) & win.Mask
+					win.CopyFrom(offset, length, &out)
 					decoded += length
 				} else if r <= 0xBF {
 					length := ((int(r) >> 4) & 0x3) + 2
-					offset := (win.cursor - int(r&0xF) + win.size) & win.mask
-					win.copyFrom(offset, length, &out)
+					offset := (win.Cursor - int(r&0xF) + win.Size) & win.Mask
+					win.CopyFrom(offset, length, &out)
 					decoded += length
 				} else {
 					length := int(r&0x3F) + 8
 					for i := 0; i < length && decoded < uncompSize; i++ {
 						b := read()
-						win.emit(b, &out)
+						win.Emit(b, &out)
 						decoded++
 					}
 				}
 			} else {
-				win.emit(r, &out)
+				win.Emit(r, &out)
 				decoded++
 			}
 		}

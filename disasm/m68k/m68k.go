@@ -6,6 +6,9 @@ package m68k
 import (
 	"fmt"
 	"strings"
+
+	"sega2asm/helpers"
+	"sega2asm/types"
 )
 
 // ---------------------------------------------------------------------------
@@ -37,8 +40,8 @@ type Result struct {
 // Disassembler holds state needed for a disassembly pass.
 type Disassembler struct {
 	data       []byte
-	base       uint32            // ROM base address (usually 0)
-	labels     map[uint32]string // address → label name
+	base       uint32         // ROM base address (usually 0)
+	labels     types.LabelMap // address → label name
 	pos        int
 	lastFlow   FlowKind
 	lastTarget uint32
@@ -47,8 +50,8 @@ type Disassembler struct {
 // New creates a Disassembler over data starting at baseAddr.
 // Genesis hardware register addresses are pre-loaded as symbolic names;
 // any entry in labels overrides the built-in defaults.
-func New(data []byte, baseAddr uint32, labels map[uint32]string) *Disassembler {
-	merged := make(map[uint32]string, len(genesisHWPorts)+len(labels))
+func New(data []byte, baseAddr uint32, labels types.LabelMap) *Disassembler {
+	merged := make(types.LabelMap, len(genesisHWPorts)+len(labels))
 	for k, v := range genesisHWPorts {
 		merged[k] = v
 	}
@@ -82,7 +85,7 @@ func (d *Disassembler) Next() Result {
 		// Emit as DC.W
 		d.pos = startPos + 2
 		end = d.pos
-		word := readU16(d.data, startPos)
+		word := helpers.ReadBEU16(d.data, startPos)
 		text = fmt.Sprintf("\tdc.w\t$%04X", word)
 	}
 
@@ -101,7 +104,7 @@ func (d *Disassembler) Next() Result {
 // ---------------------------------------------------------------------------
 
 func (d *Disassembler) decode() (string, bool) {
-	op := readU16(d.data, d.pos)
+	op := helpers.ReadBEU16(d.data, d.pos)
 	d.pos += 2
 
 	switch op >> 12 {
@@ -726,7 +729,7 @@ func (d *Disassembler) readImmU16() uint16 {
 	if d.pos+2 > len(d.data) {
 		return 0
 	}
-	v := readU16(d.data, d.pos)
+	v := helpers.ReadBEU16(d.data, d.pos)
 	d.pos += 2
 	return v
 }
@@ -735,7 +738,7 @@ func (d *Disassembler) readImmU32() uint32 {
 	if d.pos+4 > len(d.data) {
 		return 0
 	}
-	v := readU32(d.data, d.pos)
+	v := helpers.ReadBEU32(d.data, d.pos)
 	d.pos += 4
 	return v
 }
@@ -746,21 +749,21 @@ func (d *Disassembler) readImm(n int) uint32 {
 		if d.pos+2 > len(d.data) {
 			return 0
 		}
-		v := readU16(d.data, d.pos)
+		v := helpers.ReadBEU16(d.data, d.pos)
 		d.pos += 2
 		return uint32(v & 0xFF)
 	case 2:
 		if d.pos+2 > len(d.data) {
 			return 0
 		}
-		v := readU16(d.data, d.pos)
+		v := helpers.ReadBEU16(d.data, d.pos)
 		d.pos += 2
 		return uint32(v)
 	case 4:
 		if d.pos+4 > len(d.data) {
 			return 0
 		}
-		v := readU32(d.data, d.pos)
+		v := helpers.ReadBEU32(d.data, d.pos)
 		d.pos += 4
 		return v
 	}
@@ -780,10 +783,7 @@ func (d *Disassembler) fmtImm(sz string) string {
 }
 
 func (d *Disassembler) labelOrHex(addr uint32) string {
-	if name, ok := d.labels[addr]; ok {
-		return name
-	}
-	return fmt.Sprintf("loc_%06X", addr)
+	return types.LookupOrHex(d.labels, addr)
 }
 
 func (d *Disassembler) labelOrHex16(addr uint32) string {
@@ -811,34 +811,20 @@ func eaAbsTarget(ea uint16, data []byte, posAfterOpword int, base uint32) uint32
 	switch ea & 7 {
 	case 0: // absolute short (.w)
 		if posAfterOpword+2 <= len(data) {
-			return uint32(readU16(data, posAfterOpword))
+			return uint32(helpers.ReadBEU16(data, posAfterOpword))
 		}
 	case 1: // absolute long (.l)
 		if posAfterOpword+4 <= len(data) {
-			return readU32(data, posAfterOpword)
+			return helpers.ReadBEU32(data, posAfterOpword)
 		}
 	case 2: // PC-relative (d16,PC) — PC points past the displacement word
 		if posAfterOpword+2 <= len(data) {
-			disp := int16(readU16(data, posAfterOpword))
+			disp := int16(helpers.ReadBEU16(data, posAfterOpword))
 			pc := base + uint32(posAfterOpword+2)
 			return uint32(int32(pc) + int32(disp))
 		}
 	}
 	return 0
-}
-
-func readU16(data []byte, pos int) uint16 {
-	if pos+2 > len(data) {
-		return 0
-	}
-	return uint16(data[pos])<<8 | uint16(data[pos+1])
-}
-
-func readU32(data []byte, pos int) uint32 {
-	if pos+4 > len(data) {
-		return 0
-	}
-	return uint32(data[pos])<<24 | uint32(data[pos+1])<<16 | uint32(data[pos+2])<<8 | uint32(data[pos+3])
 }
 
 func sizeName(sz uint16) string {
@@ -896,7 +882,7 @@ func regListStr(mask uint16, predecrement bool) string {
 // DisassembleBlock disassembles data[start:end] treating it as M68K code.
 // Returns all Result entries with labels resolved, including automatic
 // jump-table detection (dc.l entries replacing garbled post-terminator bytes).
-func DisassembleBlock(data []byte, baseAddr, start, end uint32, labels map[uint32]string) []Result {
+func DisassembleBlock(data []byte, baseAddr, start, end uint32, labels types.LabelMap) []Result {
 	segData := data[start:end]
 	segBase := baseAddr + start
 	d := New(segData, segBase, labels)

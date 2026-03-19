@@ -1,5 +1,7 @@
 package compress
 
+import "sega2asm/helpers"
+
 // ── KosinskiPlus (clownlzss) ──────────────────────────────────────────────────
 
 func DecompressKosinskiPlus(src []byte) ([]byte, error) {
@@ -41,7 +43,7 @@ func DecompressKosinskiPlus(src []byte) ([]byte, error) {
 			} else {
 				count = 10 - count
 			}
-			copyDist(&out, offset, count)
+			helpers.CopyDist(&out, offset, count)
 		} else {
 			offset := 0x100 - int(read())
 			count := 2
@@ -51,7 +53,7 @@ func DecompressKosinskiPlus(src []byte) ([]byte, error) {
 			if popBit() == 1 {
 				count++
 			}
-			copyDist(&out, offset, count)
+			helpers.CopyDist(&out, offset, count)
 		}
 	}
 	return out, nil

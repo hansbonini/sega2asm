@@ -2,6 +2,7 @@ package compress
 
 import (
 	"encoding/binary"
+	"sega2asm/helpers"
 	"fmt"
 )
 
@@ -20,7 +21,7 @@ func decompressNamco(src []byte, winSize, winCursor int) ([]byte, error) {
 	}
 	uncompSize := int(binary.BigEndian.Uint16(src[0:2]))
 	pos := 2
-	win := newWin(winSize, winCursor, 0)
+	win := helpers.NewWin(winSize, winCursor, 0)
 	var out []byte
 	decoded := 0
 	read := func() byte {
@@ -36,14 +37,14 @@ func decompressNamco(src []byte, winSize, winCursor int) ([]byte, error) {
 		for bit := 0; bit < 8 && decoded < uncompSize; bit++ {
 			if (ctrl>>uint(bit))&1 == 1 {
 				b := read()
-				win.emit(b, &out)
+				win.Emit(b, &out)
 				decoded++
 			} else {
 				hi := int(read())
 				lo := int(read())
 				length := (lo & 0xF) + 3
 				offset := ((lo & 0xF0) << 4) | hi
-				win.copyFrom(offset, length, &out)
+				win.CopyFrom(offset, length, &out)
 				decoded += length
 			}
 		}
