@@ -58,6 +58,7 @@
 | `lzfactor5` | LZ | Factor 5 LZ; v1 = 11-bit window, v2 = 16-bit window (auto-detected from header) | International Superstar Soccer Deluxe, Mega Turrican |
 | `lzbeam` | LZ | Beam Software LZ; Elias-coded counts, absolute back-references, command bits in appended bitstream | Blades of Vengeance, George Foreman's KO Boxing, NBA All-Star Challenge, Radical Rex, Super High Impact, Tom and Jerry - Frantic Antics, True Lies |
 | `lztreasure` | LZ + RLE | Treasure Co. Ltd. multi-mode LZ; 2-byte size header, back-references + RLE single/pairs/alternating + literal runs | Alien Soldier, Dynamite Headdy, Gunstar Heroes, Light Crusader, McDonald's Treasure Land Adventure, Yu Yu Hakusho: Makyo Toitsuken |
+| `lzblizzard` | LZSS | Okumura 1989 LZSS; 4096-byte ring buffer (zero-filled), 8-bit control flags LSB-first, 12-bit absolute offset + 4-bit length | Rock N Roll Racing, The Death and Return of Superman |
 
 **Labels & symbols:**
 - Reads `symbols.txt` in multiple formats (name=addr, addr:name, space-separated)
