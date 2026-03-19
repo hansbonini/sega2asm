@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"sega2asm/compress"
 	"sega2asm/config"
 	"sega2asm/splitter"
 )
@@ -81,7 +82,32 @@ func newRootCmd() *cobra.Command {
 
 	cmd.SetVersionTemplate("sega2asm v{{.Version}}\n")
 
+	cmd.AddCommand(newDetectCmd())
+
 	return cmd
+}
+
+func newDetectCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "detect <rom>",
+		Short: "Scan a ROM for known compression routine signatures",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			data, err := os.ReadFile(args[0])
+			if err != nil {
+				return err
+			}
+			matches := compress.Detect(data)
+			if len(matches) == 0 {
+				fmt.Println("No known compression signatures found.")
+				return nil
+			}
+			for _, m := range matches {
+				fmt.Printf("$%06X  %s\n", m.Offset, m.Name)
+			}
+			return nil
+		},
+	}
 }
 
 func main() {
