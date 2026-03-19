@@ -185,7 +185,7 @@ func (s *Splitter) Run() error {
 			if isBin {
 				addr = uint32(seg.Start)
 			}
-			includes = append(includes, incEntry{path: outPath, addr: addr})
+			includes = append(includes, incEntry{path: outPath, addr: addr, name: seg.Name})
 		}
 	}
 
@@ -667,10 +667,11 @@ RAM_END			equ	$00FFFFFF	; Work RAM end
 
 // incEntry pairs an output file with the ROM start address it covers.
 // For .asm files addr is 0 (the file already contains its own org directive).
-// For .bin files addr is the segment start, emitted as "org $ADDR + incbin".
+// For .bin files addr is the segment start, emitted as "org $ADDR\nname:\n\tincbin".
 type incEntry struct {
 	path string
 	addr uint32
+	name string // segment name, used as label for bin entries
 }
 
 func (s *Splitter) writeMainASM(path string, includes []incEntry) error {
@@ -682,6 +683,9 @@ func (s *Splitter) writeMainASM(path string, includes []incEntry) error {
 			sb.WriteString(fmt.Sprintf("\tinclude\t'%s'\n", inc.path))
 		} else if strings.HasSuffix(inc.path, ".bin") {
 			sb.WriteString(fmt.Sprintf("\n\torg\t$%06X\n", inc.addr))
+			if inc.name != "" {
+				sb.WriteString(inc.name + ":\n")
+			}
 			sb.WriteString(fmt.Sprintf("\tincbin\t'%s'\n", inc.path))
 		}
 	}
