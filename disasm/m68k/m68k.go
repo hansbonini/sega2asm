@@ -68,6 +68,7 @@ func (d *Disassembler) Next() Result {
 	d.lastTarget = 0
 
 	text, ok := d.decode()
+	text = applyImmStrLiterals(text)
 
 	end := d.Pos
 	if !ok {
@@ -783,6 +784,13 @@ func (d *Disassembler) fmtImm(sz string) string {
 		return fmt.Sprintf("#$%08X", d.readImm(4))
 	}
 	return "#?"
+}
+
+// applyImmStrLiterals rewrites known immediate values to string literal form
+// for specific destination registers where the value is a 4-byte ASCII tag.
+func applyImmStrLiterals(text string) string {
+	// TMSS unlock: move.l #'SEGA',TMSS_REG
+	return strings.ReplaceAll(text, "#$53454741,TMSS_REG", "#'SEGA',TMSS_REG")
 }
 
 func (d *Disassembler) labelOrHex(addr uint32) string {
