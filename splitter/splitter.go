@@ -514,11 +514,11 @@ func (s *Splitter) writeGFX(r *rom.ROM, seg config.Segment, dir string, compress
 			}
 		}
 	}
-	opts := gfx.Options{TilesPerRow: 16, Scale: 2}
+	opts := gfx.Options{TilesPerRow: 16, Scale: 2, BPP: seg.BPP}
 	if err := gfx.DumpTiles(gfxData, pngPath, opts); err != nil {
 		s.warn("  PNG render failed: %v", err)
 	} else {
-		s.logv("  tiles: %d  saved: %s", gfx.TileCount(gfxData), pngPath)
+		s.logv("  tiles: %d  saved: %s", gfx.TileCount(gfxData, opts.BPP), pngPath)
 	}
 	return binPath, nil
 }
