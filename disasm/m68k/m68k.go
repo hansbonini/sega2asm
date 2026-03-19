@@ -902,6 +902,7 @@ func DisassembleBlock(data []byte, baseAddr, start, end uint32, labels types.Lab
 		results = append(results, d.Next())
 	}
 	results = detectJumpTables(results, segData, segBase, d.Labels)
+	results = convertDeadDataToDCW(results, segData, segBase)
 	return results
 }
 
@@ -1008,6 +1009,86 @@ func detectJumpTables(results []Result, data []byte, segBase uint32, labels type
 		out = append(out, res)
 		if extra, ok := insertAfter[i]; ok {
 			out = append(out, extra...)
+		}
+	}
+	return out
+}
+
+// convertDeadDataToDCW converts unreachable instruction sequences whose opcode
+// word is in the $0000–$000F range (ori.b/ori.w to any Dn) into dc.w entries.
+// These opcodes virtually never appear in real M68K code and are almost always
+// embedded data that follows a flow terminator.
+//
+// Dead mode starts after FlowReturn/FlowJump/FlowHalt and ends when either:
+//   - A known intra-segment branch target is reached, or
+//   - An opcode outside $0000–$000F is encountered (new function entry).
+//
+// Already-formatted dc.* entries from detectJumpTables are kept as-is.
+func convertDeadDataToDCW(results []Result, data []byte, segBase uint32) []Result {
+	if len(results) == 0 {
+		return results
+	}
+
+	// Collect all intra-segment branch/call targets.
+	branchTargets := make(map[uint32]bool)
+	branchTargets[results[0].Addr] = true
+	for _, res := range results {
+		if res.Target != 0 {
+			branchTargets[res.Target] = true
+		}
+	}
+
+	out := make([]Result, 0, len(results))
+	inDead := false
+
+	for _, res := range results {
+		addr := res.Addr
+
+		// Known branch target always resumes code mode.
+		if branchTargets[addr] {
+			inDead = false
+		}
+
+		if inDead {
+			// Keep entries already formatted by detectJumpTables.
+			if strings.HasPrefix(res.Text, "\tdc.") {
+				out = append(out, res)
+				continue
+			}
+
+			rawOff := int(addr - segBase)
+			if rawOff+2 > len(data) {
+				out = append(out, res)
+				continue
+			}
+			opcode := uint16(data[rawOff])<<8 | uint16(data[rawOff+1])
+			if opcode <= 0x000F {
+				// Convert each word of this instruction to dc.w.
+				for j := 0; j+1 < len(res.Bytes); j += 2 {
+					off := rawOff + j
+					if off+2 > len(data) {
+						break
+					}
+					w := uint16(data[off])<<8 | uint16(data[off+1])
+					out = append(out, Result{
+						BaseResult: disasm.BaseResult{
+							Addr:    addr + uint32(j),
+							Bytes:   data[off : off+2],
+							Text:    fmt.Sprintf("\tdc.w\t$%04X", w),
+							IsValid: true,
+						},
+					})
+				}
+				continue
+			}
+			// Non-trivial opcode: exit dead mode and emit as code.
+			inDead = false
+		}
+
+		out = append(out, res)
+
+		if res.Flow == FlowReturn || res.Flow == FlowJump || res.Flow == FlowHalt {
+			inDead = true
 		}
 	}
 	return out
