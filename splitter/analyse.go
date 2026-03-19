@@ -17,11 +17,17 @@ type splitSuggestion struct {
 }
 
 // suggestM68KSplits analyses disassembly results and returns YAML-ready split
-// suggestion lines. A boundary is suggested when an address is:
+// suggestion lines and boundary-health warnings. A split boundary is suggested
+// when an address is:
 //
 //   - a JSR/BSR target that immediately follows a flow terminator (strong), or
 //   - a JSR/BSR target called more than once (medium).
-func (s *Splitter) suggestM68KSplits(results []m68k.Result, seg config.Segment, syms *symbols.Table) []string {
+//
+// Boundary warnings are emitted when:
+//
+//   - the segment ends without a flow terminator (cut mid-function), or
+//   - an unconditional branch/jump escapes the segment into ROM (wrong boundary).
+func (s *Splitter) suggestM68KSplits(results []m68k.Result, seg config.Segment, syms *symbols.Table, rom []byte) []string {
 	segStart := uint32(seg.Start)
 	segEnd := uint32(seg.End)
 
@@ -29,6 +35,9 @@ func (s *Splitter) suggestM68KSplits(results []m68k.Result, seg config.Segment, 
 	callCount := map[uint32]int{}
 	// afterTerminator[addr] = true if addr immediately follows rts/rte/jmp/bra/illegal.
 	afterTerminator := map[uint32]bool{}
+
+	// Boundary health diagnostics.
+	var boundaryWarnings []string
 
 	prevTerminator := false
 	for i, res := range results {
@@ -50,6 +59,45 @@ func (s *Splitter) suggestM68KSplits(results []m68k.Result, seg config.Segment, 
 			prevTerminator = true
 		}
 		_ = i
+	}
+
+	// ── Check: segment ends mid-function ─────────────────────────────────
+	// Walk backward through results to find the last actual code instruction
+	// (skip dc.w/dc.l/dc.b data entries emitted by convertDeadDataToDCW).
+	lastCodeFlow := m68k.FlowNone
+	lastCodeAddr := uint32(0)
+	for i := len(results) - 1; i >= 0; i-- {
+		res := results[i]
+		if strings.HasPrefix(res.Text, "\tdc.") {
+			continue
+		}
+		lastCodeFlow = res.Flow
+		lastCodeAddr = res.Addr
+		break
+	}
+	isTerminated := lastCodeFlow == m68k.FlowReturn ||
+		lastCodeFlow == m68k.FlowJump ||
+		lastCodeFlow == m68k.FlowHalt
+	if lastCodeAddr != 0 && !isTerminated {
+		boundaryWarnings = append(boundaryWarnings,
+			fmt.Sprintf("  [WARN] segment %q ends mid-function at $%06X (last insn has no flow terminator) — end boundary may be too early",
+				seg.Name, lastCodeAddr))
+
+		// Scan ROM forward from seg.End for the next word-aligned rts ($4E75).
+		newEnd := "0x??????"
+		segEndOff := int(seg.End)
+		for off := segEndOff; off+1 < len(rom); off += 2 {
+			if rom[off] == 0x4E && (rom[off+1] == 0x75 || rom[off+1] == 0x73) {
+				newEnd = fmt.Sprintf("0x%06X", off+2) // end is exclusive (past the rts/rte)
+				break
+			}
+		}
+
+		boundaryWarnings = append(boundaryWarnings, "  Suggested fix (extend end to include the missing rts):")
+		boundaryWarnings = append(boundaryWarnings, fmt.Sprintf("    - name: %s", seg.Name))
+		boundaryWarnings = append(boundaryWarnings, fmt.Sprintf("      type: %s", seg.Type))
+		boundaryWarnings = append(boundaryWarnings, fmt.Sprintf("      start: 0x%06X", uint32(seg.Start)))
+		boundaryWarnings = append(boundaryWarnings, fmt.Sprintf("      end:   %s", newEnd))
 	}
 
 	// Build suggestion map.
@@ -92,7 +140,7 @@ func (s *Splitter) suggestM68KSplits(results []m68k.Result, seg config.Segment, 
 		}
 	}
 
-	if len(suggestions) == 0 {
+	if len(suggestions) == 0 && len(boundaryWarnings) == 0 {
 		return nil
 	}
 
@@ -101,6 +149,14 @@ func (s *Splitter) suggestM68KSplits(results []m68k.Result, seg config.Segment, 
 	})
 
 	var lines []string
+
+	// Boundary health warnings come first.
+	lines = append(lines, boundaryWarnings...)
+
+	if len(suggestions) == 0 {
+		return lines
+	}
+
 	lines = append(lines, fmt.Sprintf("[HINT] Split suggestions for %q ($%06X–$%06X) — %d boundaries:",
 		seg.Name, segStart, segEnd, len(suggestions)))
 

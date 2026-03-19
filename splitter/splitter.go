@@ -422,7 +422,7 @@ func (s *Splitter) writeM68K(r *rom.ROM, seg config.Segment, dir string, syms *s
 	}
 	s.labelHits += labelHits
 	s.labelTotal = len(syms.Ordered)
-	hints2 := s.suggestM68KSplits(results, seg, syms)
+	hints2 := s.suggestM68KSplits(results, seg, syms, r.Data)
 
 	return outPath, hints2, os.WriteFile(outPath, []byte(sb.String()), 0644)
 }

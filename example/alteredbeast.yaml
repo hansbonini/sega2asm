@@ -30,7 +30,12 @@ segments:
   - name: loc_000200
     type: m68k
     start: 0x000200
-    end:   0x000236
+    end:   0x00020C
+
+  - name: loc_00020C
+    type: m68k
+    start: 0x00020C
+    end:   0x000280
     hints:
       - offset: 0x000010
         type: text
@@ -56,20 +61,10 @@ segments:
         type: text
         length: 4
         label: string_00022E
-      
-  - name: loc_000236
-    type: m68k
-    start: 0x000236
-    end:   0x000240
 
-  - name: loc_000240
+  - name: loc_000280
     type: m68k
-    start: 0x000240
-    end:   0x000266
-
-  - name: loc_000266
-    type: m68k
-    start: 0x000266
+    start: 0x000280
     end:   0x000354
 
   - name: loc_000354
