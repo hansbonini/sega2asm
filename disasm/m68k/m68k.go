@@ -682,8 +682,8 @@ func (d *Disassembler) decodeEAReg(mode, reg uint16, bytes int) string {
 	case 7:
 		switch reg {
 		case 0:
-			// Absolute short: sign-extend 16→32, mask to 24-bit Genesis address space.
-			addr := uint32(int32(int16(d.readImmU16()))) & 0x00FFFFFF
+			// Absolute short: sign-extend 16→32.
+			addr := uint32(int32(int16(d.readImmU16())))
 			return d.labelOrHex16(addr)
 		case 1:
 			addr := d.readImmU32()
@@ -691,7 +691,7 @@ func (d *Disassembler) decodeEAReg(mode, reg uint16, bytes int) string {
 		case 2:
 			disp := int16(d.readImmU16())
 			target := d.PC() + uint32(disp) - 2
-			return fmt.Sprintf("(%s,pc)", d.labelOrHex(target))
+			return fmt.Sprintf("%s(pc)", d.labelOrHex(target))
 		case 3:
 			ext := d.readImmU16()
 			disp := int8(ext & 0xFF)
