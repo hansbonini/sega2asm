@@ -1963,7 +1963,7 @@ func DecompressLZFactor5(src []byte) ([]byte, error) {
 	return out, nil
 }
 
-// DecompressITL decompresses data using the LZ I.T.L (Sega) format:
+// DecompressITL decompresses data using the I.T.L (Sega) format:
 // non-zero-byte literal selection + running XOR chain, operating on 32-byte blocks.
 // Reference: https://github.com/lab313ru/itl_comp/blob/master/main.c
 func DecompressITL(src []byte) ([]byte, error) {
