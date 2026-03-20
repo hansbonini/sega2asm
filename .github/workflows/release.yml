@@ -1,0 +1,85 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Fetch all history for changelog generation
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.22'
+
+    - name: Get version from tag
+      id: get_version
+      run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+    - name: Build binaries
+      run: |
+        mkdir -p dist/
+        
+        # Build for multiple platforms
+        platforms=("windows/amd64" "linux/amd64" "linux/arm64" "darwin/amd64" "darwin/arm64")
+        
+        for platform in "${platforms[@]}"; do
+          platform_split=(${platform//\// })
+          GOOS=${platform_split[0]}
+          GOARCH=${platform_split[1]}
+          
+          output_name="sega2asm_${GOOS}_${GOARCH}"
+          if [ $GOOS = "windows" ]; then
+            output_name+='.exe'
+          fi
+          
+          echo "Building for $GOOS/$GOARCH..."
+          
+          env GOOS=$GOOS GOARCH=$GOARCH go build \
+            -ldflags="-s -w -X main.Version=${{ steps.get_version.outputs.VERSION }} -X main.BuildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ) -X main.GitCommit=${{ github.sha }}" \
+            -o "dist/${output_name}" .
+        done
+        
+        ls -la dist/
+
+    - name: Create archives
+      run: |
+        cd dist/
+        
+        # Create zip for Windows
+        zip sega2asm_windows_amd64.zip sega2asm_windows_amd64.exe
+        
+        # Create tar.gz for Unix systems
+        tar -czf sega2asm_linux_amd64.tar.gz sega2asm_linux_amd64
+        tar -czf sega2asm_linux_arm64.tar.gz sega2asm_linux_arm64
+        tar -czf sega2asm_darwin_amd64.tar.gz sega2asm_darwin_amd64
+        tar -czf sega2asm_darwin_arm64.tar.gz sega2asm_darwin_arm64
+        
+        # Remove original binaries, keep only archives
+        rm sega2asm_windows_amd64.exe
+        rm sega2asm_linux_amd64
+        rm sega2asm_linux_arm64
+        rm sega2asm_darwin_amd64
+        rm sega2asm_darwin_arm64
+
+    - name: Create Release
+      uses: ncipollo/release-action@v1
+      with:
+        tag: ${{ steps.get_version.outputs.VERSION }}
+        name: sega2asm ${{ steps.get_version.outputs.VERSION }}
+        body: ${{ steps.changelog.outputs.CHANGELOG }}
+        artifacts: "dist/*"
+        draft: false
+        prerelease: ${{ contains(steps.get_version.outputs.VERSION, '-') }}
+        token: ${{ secrets.GITHUB_TOKEN }}
