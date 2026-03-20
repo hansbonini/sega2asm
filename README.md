@@ -2,10 +2,7 @@
 
 **Sega Mega Drive / Genesis ROM disassembler & splitter**
 
-- Inspired by: [ethteck/splat](https://github.com/ethteck/splat) and [nathancassano/snes2asm](https://github.com/nathancassano/snes2asm).
-- 68000 disassembler based on [Clownacy/clown68000](https://github.com/Clownacy/clown68000).
-- Z80 disassembler based on [Clownacy/clownz80](https://github.com/Clownacy/clownz80).
-- Assembly output compatible with [Clownacy/clownassembler](https://github.com/Clownacy/clownassembler) (asm68k clone).
+Inspired by [ethteck/splat](https://github.com/ethteck/splat) and [nathancassano/snes2asm](https://github.com/nathancassano/snes2asm), I decided to construct a splitter by segment type for Sega Genesis, for code segments the 68000 disassembler was based on [Clownacy/clown68000](https://github.com/Clownacy/clown68000) and the Z80 disassembler was based on [Clownacy/clownz80](https://github.com/Clownacy/clownz80). The assembly output of code segment is compatible with [Clownacy/clownassembler](https://github.com/Clownacy/clownassembler) which is a improved versions of asm68k assembler. For graphics segments a lot of compressions are available covering most of Sega Genesis games. For audio segments only PCM support are available yet.
 
 ---
 
@@ -28,7 +25,7 @@
 | Code | Type | Description | Compatible Games |
 |---|---|---|---|
 | `none` | — | No compression; data copied verbatim | — |
-| `nemesis` | Huffman | Nemesis tile compression; Huffman-coded nybble runs per tile | Alien Storm, ATP Tour Championship Tennis, Ayrton Senna's Super Monaco GP II, Castle of Illusion, Chou Yakyuu Miracle Nine, Classic Collection, Columns, Disney Collection - Castle of Illusion & Quack Shot, Dr. Robotinik's Mean Bean Machine, ESWAT Cyber Police - City Under Siege, Fatal Labyrinth, Flicky, Forgotten Worlds, Genesis 6-Pak, Ghostbusters, Ghouls n Ghosts, Golden Axe, Golden Axe 2, Golden Axe 3, Jewel Master, Magical Taruruto-Kun, Mega Games 10 , Mega Games 2, Mega Games 3, Mega Games 6, Mega Games 6, Mega Games 6, Mega Games I, Mercs, Metal Fangs, Mighty Morphin Power Rangers - The Movie, MLBPA Sports Talk Baseball, Moonwalker, Musha, Phantasy Star 2, Phantasy Star 2 Text Adventures, Phantasy Star 3, Phantasy Star 4, Psy-O-Blade, Pulseman, Quackshot starring Donald Duck, Rent A Hero, Revenge of Shinobi, Ristar, Sega Mega Anser, Sega Sports 1, Sega Top 5, Shadow Dancer - The Secret of Shinobi, Sonic and Knuckles, Sonic Classics, Sonic Compilation, Sonic Crackers, Sonic Eraser, Sonic The Hedgehog, Sonic the Hedgehog 2, Sonic the Hedgehog 3, Streets of Rage, Streets of Rage 2, Streets of Rage 3, Strider, Super Hang-On, Super Monaco GP, Tecmo Super Bowl II SE, Tecmo Super Bowl III Final Edition, Twin Cobra, Virtua Racing, Wimbledon Championship Tennis, World Cup Italia '90, World of Illusion, Wrestle War |
+| `nemesis` | Huffman | Nemesis tile compression; Huffman-coded nybble runs per tile | Alien Storm, ATP Tour Championship Tennis, Altered Beast, Ayrton Senna's Super Monaco GP II, Castle of Illusion, Chou Yakyuu Miracle Nine, Classic Collection, Columns, Disney Collection - Castle of Illusion & Quack Shot, Dr. Robotinik's Mean Bean Machine, ESWAT Cyber Police - City Under Siege, Fatal Labyrinth, Flicky, Forgotten Worlds, Genesis 6-Pak, Ghostbusters, Ghouls n Ghosts, Golden Axe, Golden Axe 2, Golden Axe 3, Jewel Master, Magical Taruruto-Kun, Mega Games 10 , Mega Games 2, Mega Games 3, Mega Games 6, Mega Games 6, Mega Games 6, Mega Games I, Mercs, Metal Fangs, Mighty Morphin Power Rangers - The Movie, MLBPA Sports Talk Baseball, Moonwalker, Musha, Phantasy Star 2, Phantasy Star 2 Text Adventures, Phantasy Star 3, Phantasy Star 4, Psy-O-Blade, Pulseman, Quackshot starring Donald Duck, Rent A Hero, Revenge of Shinobi, Ristar, Sega Mega Anser, Sega Sports 1, Sega Top 5, Shadow Dancer - The Secret of Shinobi, Sonic and Knuckles, Sonic Classics, Sonic Compilation, Sonic Crackers, Sonic Eraser, Sonic The Hedgehog, Sonic the Hedgehog 2, Sonic the Hedgehog 3, Streets of Rage, Streets of Rage 2, Streets of Rage 3, Strider, Super Hang-On, Super Monaco GP, Tecmo Super Bowl II SE, Tecmo Super Bowl III Final Edition, Twin Cobra, Virtua Racing, Wimbledon Championship Tennis, World Cup Italia '90, World of Illusion, Wrestle War |
 | `kosinski` | LZ | Kosinski LZ-style scheme with sliding-window back-references | 16 Ton (SegaNet), Aworg (SegaNet) , Ayrton Senna's Super Monaco GP II, Battletoads, Bishoujo Senshi Sailor Moon, Disney Collection - Castle of Illusion & Quack Shot, Doki Doki Penguin Land MD (SegaNet), Flux for Mega-CD, Genesis 6-Pak, J. League Pro Striker - Perfect Edition, J. League Pro Striker 2, J. League Pro Striker Final Stage, Mega Games 10, Mega Games 2, Mega Games 3, Mega Games 6 (Vol 1) , Mega Games 6 (Vol 3) , Phantasy Star 4, Phantom 2040, Quackshot starring Donald Duck, Shinobi III - Return of the Ninja Master, Sonic and Knuckles, Sonic Classics , Sonic Crackers, Sonic The Hedgehog, Sonic The Hedgehog 2, Sonic The Hedgehog 3, Streets of Rage, Streets of Rage 3, Teddy Boy Blues (SegaNet), Virtua Racing, World of Illusion |
 | `kosinskiplus` | LZ | Extended Kosinski with larger offset/count fields | Sonic 3 & Knuckles |
 | `enigma` | Mixed | Bit-packed compression for mappings/tilemaps | Sonic 2, Sonic 3 & Knuckles |
@@ -57,7 +54,7 @@
 | `lzfactor5` | LZ | Factor 5 LZ; v1 = 11-bit window, v2 = 16-bit window (auto-detected from header) | International Superstar Soccer Deluxe, Mega Turrican |
 | `lzbeam` | LZ | Beam Software LZ; Elias-coded counts, absolute back-references, command bits in appended bitstream | Blades of Vengeance, George Foreman's KO Boxing, NBA All-Star Challenge, Radical Rex, Super High Impact, Tom and Jerry - Frantic Antics, True Lies |
 | `lztreasure` | LZ + RLE | Treasure Co. Ltd. multi-mode LZ; 2-byte size header, back-references + RLE single/pairs/alternating + literal runs | Alien Soldier, Dynamite Headdy, Gunstar Heroes, Light Crusader, McDonald's Treasure Land Adventure, Yu Yu Hakusho: Makyo Toitsuken |
-| `lzblizzard` | LZSS | Okumura 1989 LZSS; 4096-byte ring buffer (zero-filled), 8-bit control flags LSB-first, 12-bit absolute offset + 4-bit length | Rock N Roll Racing, The Death and Return of Superman |
+| `lzblizzard` | LZSS | Okumura 1989 LZSS; 4096-byte ring buffer (zero-filled), 8-bit control flags LSB-first, 12-bit absolute offset + 4-bit length | Rock N Roll Racing, The Death and Return of Superman, The Lost Vikings |
 | `lzhlucasarts` | LZH | Adaptive Huffman + LZ sliding window (LZHUF variant); N=4096, F=60, ring buffer pre-filled 0x20; BE16 output size header; position via d_code/d_len tables | Zombies Ate My Neighbors |
 | `lzclimax` | LZ77 | Climax LZ77; control byte MSB-first (1=literal, 0=back-ref), 12-bit offset + 4-bit length (3..18), offset=0 ends stream | Landstalker, Shining in the Darkness, Shining Force, Shining Force II |
 | `lzwestone` | LZH | Westone Huffman+LZ tile decompressor (type 0x02); adaptive Huffman tree built from bitstream, symbols 0x000–0x0FF=literal, 0x100–0x11F=back-reference; always outputs 1024 bytes | Mega Bomberman, Monster World IV, Wonder Boy in Monster World |
@@ -249,9 +246,11 @@ out/
 ## References
 
 - [ethteck/splat](https://github.com/ethteck/splat)
+- [nathancassano/snes2asm](https://github.com/nathancassano/snes2asm)
 - [Clownacy/clownassembler](https://github.com/Clownacy/clownassembler)
 - [Clownacy/clown68000](https://github.com/Clownacy/clown68000)
 - [Clownacy/clownz80](https://github.com/Clownacy/clownz80)
 - [Clownacy/clownnemesis](https://github.com/Clownacy/clownnemesis)
 - [Clownacy/clownlzss](https://github.com/Clownacy/clownlzss)
 - [hansbonini/smd_alteredbeast](https://github.com/hansbonini/smd_alteredbeast)
+- [hansbonini/swissknife](https://github.com/hansbonini/swissknife)
