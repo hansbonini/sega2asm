@@ -35,7 +35,7 @@ Inspired by [ethteck/splat](https://github.com/ethteck/splat) and [nathancassano
 | `comper` | LZ | Community format optimised for 68000 decompression speed at the cost of ratio | Community / Sonic hacks |
 | `rocket` | LZ | Konami Rocket Knight compression | Rocket Knight Adventures |
 | `faxman` | LZSS | Modified Saxman tuned to compress SMPS music data | Sonic hacks / SMPS tools |
-| `rage` | LZ | Bit-stream LZ compressor | Streets of Rage series |
+| `rage` | LZ | Bit-stream LZ compressor | Streets of Rage 2 |
 | `chameleon` | LZ | Kid Chameleon compressor | Kid Chameleon |
 | `lznamco` | LZ | Namco LZ; 0x400-byte sliding window | Ball Jacks, Buning Force, Chibi Maruko-Chan: Waku Waku Shopping, Fushigi Umi No Nadia, Klax, Kyuukai Douchuuki, Marvel Land , Megapanel, Pac-Attack, PacMan2: The New Adventures, Phelios, Powerball, Rolling Thunder 2 |
 | `lzstrike` | LZ | Same as `lznamco` but with 0x800-byte window | Desert Strike, Jungle Strike, Urban Strike |
@@ -59,7 +59,7 @@ Inspired by [ethteck/splat](https://github.com/ethteck/splat) and [nathancassano
 | `lzclimax` | LZ77 | Climax LZ77; control byte MSB-first (1=literal, 0=back-ref), 12-bit offset + 4-bit length (3..18), offset=0 ends stream | Landstalker, Shining in the Darkness, Shining Force, Shining Force II |
 | `lzwestone` | LZH | Westone Huffman+LZ tile decompressor (type 0x02); adaptive Huffman tree built from bitstream, symbols 0x000–0x0FF=literal, 0x100–0x11F=back-reference; always outputs 1024 bytes | Mega Bomberman, Monster World IV, Wonder Boy in Monster World |
 | `lzwestone_block` | Mixed | Westone block-based tile decompressor (type 0x00); 32 blocks × 32 bytes; mode 0=literal, mode 1=sparse color-group bitmap, mode 2=XOR+planar bit-spread; always outputs 1024 bytes | Mega Bomberman, Monster World IV, Wonder Boy in Monster World |
-| `lzkoei` | LZSS | KOEI LZSS variant; interleaved flag/literal bytes with 16-bit pairs words; Elias-gamma length coding; variable-width offset via p_len bias table; end marker length=255 | Various KOEI games |
+| `lzkoei` | LZSS | KOEI LZSS variant; interleaved flag/literal bytes with 16-bit pairs words; Elias-gamma length coding; variable-width offset via p_len bias table; end marker length=255 | Aerobiz, Aerobiz Supersonic , Gemfire, Genghis Khan II, Liberty or Death, Nobunaga's Ambition, Operation Europe, P.T.O.: Pacific Theater of Operations, Romance of the Three Kingdoms II (also on Amiga), Romance of the Three Kingdoms III, Uncharted Waters, Uncharted Waters: New Horizons |
 | `rlegamearts` | RLE | Game Arts 4-plane RLE; 16-byte header with 8-byte lookup table + plane offsets; 7 opcode types; bit-interleaved output (plane order 3,2,0,1) | Alisia Dragoon |
 
 **Labels & symbols:**
