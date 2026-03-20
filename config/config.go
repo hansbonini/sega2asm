@@ -34,8 +34,9 @@ type Options struct {
 	CharmapPath  string `yaml:"charmap_path"`  // charmap.tbl
 	Region       string `yaml:"region"`        // ntsc, pal
 	Endian       string `yaml:"endian"`        // big (default for Genesis)
-	HeaderOutput bool   `yaml:"header_output"` // emit include directives
-	IncBin       bool   `yaml:"incbin"`        // use incbin for binary segments
+	HeaderOutput    bool `yaml:"header_output"`    // emit include directives
+	IncBin          bool `yaml:"incbin"`           // use incbin for binary segments
+	NoSuggestions   bool `yaml:"no_suggestions"`   // suppress split-hint output
 }
 
 // Segment defines a single data segment in the ROM.
