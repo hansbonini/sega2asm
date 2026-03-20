@@ -1,4 +1,5 @@
 # sega2asm
+![GitHub License](https://img.shields.io/github/license/hansbonini/go-sega2asm) ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/hansbonini/sega2asm)
 
 **Sega Mega Drive / Genesis ROM disassembler & splitter**
 
