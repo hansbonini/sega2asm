@@ -326,6 +326,7 @@ func (s *Splitter) writeM68K(r *rom.ROM, seg config.Segment, dir string, syms *s
 	if s.opts.DryRun {
 		return outPath, nil, nil
 	}
+	asmDir := filepath.Dir(outPath)
 	if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil {
 		return "", nil, err
 	}
@@ -394,7 +395,7 @@ func (s *Splitter) writeM68K(r *rom.ROM, seg config.Segment, dir string, syms *s
 			sb.WriteString(syms.Label(hintAddr) + ":")
 			sb.WriteString(fmt.Sprintf("\t\t\t\t; $%06X\n", hintAddr))
 		}
-		s.emitHint(&sb, hints[off], data, off, cmap, syms)
+		s.emitHint(&sb, hints[off], data, off, cmap, syms, asmDir)
 		lastHintEnd = off + uint32(hints[off].Length)
 	}
 
@@ -442,7 +443,7 @@ func (s *Splitter) writeM68K(r *rom.ROM, seg config.Segment, dir string, syms *s
 			for hintPtr < len(sortedHintOffs) && sortedHintOffs[hintPtr] <= curOff {
 				hintPtr++
 			}
-			s.emitHint(&sb, hint, data, curOff, cmap, syms)
+			s.emitHint(&sb, hint, data, curOff, cmap, syms, asmDir)
 			lastHintEnd = curOff + uint32(hint.Length)
 			continue
 		}
@@ -820,7 +821,8 @@ func buildHintsMap(hints []config.Hint) map[uint32]config.Hint {
 }
 
 // emitHint writes data directive bytes based on a hint.
-func (s *Splitter) emitHint(sb *strings.Builder, hint config.Hint, data []byte, offset uint32, cmap *charmap.Map, syms *symbols.Table) {
+// asmDir is the directory of the output ASM file, used for bin hints.
+func (s *Splitter) emitHint(sb *strings.Builder, hint config.Hint, data []byte, offset uint32, cmap *charmap.Map, syms *symbols.Table, asmDir string) {
 	if hint.Label != "" {
 		sb.WriteString(hint.Label + ":\n")
 	}
@@ -857,6 +859,44 @@ func (s *Splitter) emitHint(sb *strings.Builder, hint config.Hint, data []byte, 
 			}
 			sb.WriteString(fmt.Sprintf("\tdc.l\t%s\n", label))
 		}
+	case "ptr_table_rel":
+		// Each entry is a signed 16-bit offset relative to hint.Base.
+		// Emits: dc.w <target_label> - <base_label>
+		baseAddr := uint32(hint.Base)
+		baseLabel := syms.Label(baseAddr)
+		if baseLabel == "" {
+			if hint.Label != "" {
+				baseLabel = hint.Label
+			} else {
+				baseLabel = fmt.Sprintf("$%06X", baseAddr)
+			}
+		}
+		for i := int(offset); i < end-1; i += 2 {
+			delta := int16(uint16(data[i])<<8 | uint16(data[i+1]))
+			target := uint32(int32(baseAddr) + int32(delta))
+			targetLabel := syms.Label(target)
+			if targetLabel == "" {
+				targetLabel = fmt.Sprintf("loc_%06X", target)
+			}
+			sb.WriteString(fmt.Sprintf("\tdc.w\t%s-%s\n", targetLabel, baseLabel))
+		}
+	case "bin":
+		// Extract bytes to a binary file and emit an incbin directive.
+		fileName := hint.File
+		if fileName == "" {
+			if hint.Label != "" {
+				fileName = hint.Label + ".bin"
+			} else {
+				fileName = fmt.Sprintf("blob_%06X.bin", offset)
+			}
+		}
+		if asmDir != "" {
+			binPath := filepath.Join(asmDir, fileName)
+			if err := os.MkdirAll(filepath.Dir(binPath), 0755); err == nil {
+				_ = os.WriteFile(binPath, data[offset:end], 0644)
+			}
+		}
+		sb.WriteString(fmt.Sprintf("\tincbin\t\"%s\"\n", fileName))
 	case "text":
 		if !cmap.Empty() {
 			decoded := cmap.DecodeString(data[offset:end], 0x00)

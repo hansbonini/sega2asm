@@ -62,9 +62,11 @@ type Segment struct {
 // Hint provides inline disassembly information for a segment.
 type Hint struct {
 	Offset uint32 `yaml:"offset"` // ROM offset
-	Type   string `yaml:"type"`   // data_byte, data_word, data_long, ptr_table, code, text, skip
+	Type   string `yaml:"type"`   // data_byte, data_word, data_long, ptr_table, ptr_table_rel, code, text, skip, bin
 	Length int    `yaml:"length"` // number of bytes to treat this way
 	Label  string `yaml:"label"`  // optional label name
+	Base   HexInt `yaml:"base"`   // base address for ptr_table_rel (absolute ROM addr); 0 = use hint's own address
+	File   string `yaml:"file"`   // output filename for bin hints (default: <label>.bin)
 }
 
 // HexInt is a uint32 that can be unmarshalled from either decimal or "0x..." hex strings.

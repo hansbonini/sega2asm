@@ -125,6 +125,7 @@ options:
   symbols_path: ./symbols.txt
   charmap_path: ./charmap.tbl
   header_output: true           # Write main .asm include file
+  no_suggestions: false         # Set true to suppress split-hint output
 
 segments:
   - name: header
@@ -140,10 +141,44 @@ segments:
       - offset: 0x0000          # relative to segment start
         type: code
         label: EntryPoint
-      - offset: 0x0E00
-        type: data_long
+
+      - offset: 0x0E00          # absolute pointer table (longwords)
+        type: ptr_table
         length: 32
         label: LevelPtrs
+
+      - offset: 0x0F00          # relative pointer table (signed words)
+        type: ptr_table_rel
+        length: 16
+        label: JumpTable
+        base: 0x000F00          # base ROM address subtracted from each entry
+
+      - offset: 0x1000          # inline binary blob → extracted file + incbin
+        type: bin
+        length: 256
+        label: SpriteData
+        file: sprite_data.bin   # written to same dir as the .asm file
+
+      - offset: 0x1100          # text string decoded with charmap
+        type: text
+        length: 7
+        label: GameTitle
+
+      - offset: 0x1200          # raw byte values
+        type: data_byte
+        length: 4
+
+      - offset: 0x1204          # raw word values
+        type: data_word
+        length: 4
+
+      - offset: 0x1208          # raw longword values
+        type: data_long
+        length: 8
+
+      - offset: 0x1210          # alignment padding
+        type: skip
+        length: 2
 
   - name: sound_driver
     type: z80
@@ -210,14 +245,34 @@ Multi-byte keys are supported:
 
 ## Hint types (inline disassembly control)
 
-| Type | Directive emitted |
-|---|---|
-| `code` | Normal disassembly |
-| `data_byte` | `dc.b $XX` per byte |
-| `data_word` | `dc.w $XXXX` per word |
-| `data_long` | `dc.l $XXXXXXXX` per longword |
-| `text` | `dc.b 'string',0` (charmap decoded) |
-| `skip` | `even` (alignment padding) |
+Hints override the disassembler output for a byte range within an `m68k` segment.
+They are applied even when the disassembler would have decoded those bytes as
+a different instruction or skipped them inside a multi-byte opcode.
+
+**Common fields**
+
+| Field | Required | Description |
+|---|---|---|
+| `offset` | yes | Byte offset relative to the segment `start` |
+| `type` | yes | One of the types below |
+| `length` | yes | Number of bytes covered |
+| `label` | no | Label emitted before the directive |
+| `base` | `ptr_table_rel` only | Absolute ROM address used as the subtraction base |
+| `file` | `bin` only | Output filename (default: `<label>.bin`) |
+
+**Hint types**
+
+| Type | Directive emitted | Notes |
+|---|---|---|
+| `code` | Normal M68K disassembly | Explicitly marks a range as code (useful after data blocks) |
+| `data_byte` | `dc.b $XX` per byte | |
+| `data_word` | `dc.w $XXXX` per 2 bytes | |
+| `data_long` | `dc.l $XXXXXXXX` per 4 bytes | |
+| `ptr_table` | `dc.l <label>` per 4 bytes | Absolute 32-bit pointer; resolves to symbol name if known |
+| `ptr_table_rel` | `dc.w <target>-<base>` per 2 bytes | Signed 16-bit offset relative to `base`; target resolved to symbol name |
+| `text` | `dc.b 'string',0` | ASCII or charmap-decoded string; null terminator appended |
+| `bin` | `incbin "file.bin"` | Extracts bytes to `file` (beside the `.asm`) and emits an `incbin` directive |
+| `skip` | `even` | Alignment padding; length bytes are suppressed |
 
 ---
 
