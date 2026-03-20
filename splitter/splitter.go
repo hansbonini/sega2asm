@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"sega2asm/audio"
@@ -224,7 +225,7 @@ func (s *Splitter) Run() error {
 	s.log("[SYM] Labels matched: %d / %d", s.labelHits, s.labelTotal)
 
 	// ── Print all split suggestions grouped at the end ────────────────────
-	if len(splitHints) > 0 {
+	if !s.cfg.Options.NoSuggestions && len(splitHints) > 0 {
 		s.log("")
 		s.log("[HINT] Split suggestions:")
 		for _, line := range splitHints {
@@ -369,10 +370,44 @@ func (s *Splitter) writeM68K(r *rom.ROM, seg config.Segment, dir string, syms *s
 	sb.WriteString(fmt.Sprintf("; Segment: %s  $%06X–$%06X\n\n", seg.Name, start, end))
 	sb.WriteString(fmt.Sprintf("\torg\t$%06X\n\n", start))
 
+	// Sort hint offsets so we can detect gaps during the linear pass.
+	sortedHintOffs := make([]uint32, 0, len(hints))
+	for off := range hints {
+		sortedHintOffs = append(sortedHintOffs, off)
+	}
+	sort.Slice(sortedHintOffs, func(i, j int) bool { return sortedHintOffs[i] < sortedHintOffs[j] })
+	hintPtr := 0
+
 	labelHits := 0
 	lastHintEnd := uint32(0)
+
+	// flushHint emits a hint (with optional symbol label) at a given segment offset.
+	// Used both for normal hits and for gaps the disassembler jumped over.
+	flushHint := func(off uint32) {
+		if off < lastHintEnd {
+			return
+		}
+		hintAddr := start + off
+		if syms.Has(hintAddr) {
+			labelHits++
+			sb.WriteByte('\n')
+			sb.WriteString(syms.Label(hintAddr) + ":")
+			sb.WriteString(fmt.Sprintf("\t\t\t\t; $%06X\n", hintAddr))
+		}
+		s.emitHint(&sb, hints[off], data, off, cmap, syms)
+		lastHintEnd = off + uint32(hints[off].Length)
+	}
+
 	for _, res := range results {
 		addr := res.Addr
+		curOff := addr - start
+
+		// Emit any hints whose start address was skipped because the disassembler
+		// decoded a multi-byte instruction that landed past them.
+		for hintPtr < len(sortedHintOffs) && sortedHintOffs[hintPtr] < curOff {
+			flushHint(sortedHintOffs[hintPtr])
+			hintPtr++
+		}
 
 		// Emit the appropriate label for this address (at most one per address).
 		// Priority: user symbol > EntryPoint > segment name > branch target.
@@ -402,14 +437,18 @@ func (s *Splitter) writeM68K(r *rom.ROM, seg config.Segment, dir string, syms *s
 		}
 
 		// Check hints: override with explicit data directives.
-		if hint, ok := hints[addr-start]; ok {
-			s.emitHint(&sb, hint, data, addr-start, cmap, syms)
-			lastHintEnd = addr - start + uint32(hint.Length)
+		if hint, ok := hints[curOff]; ok {
+			// Advance pointer past this offset (handled here, not in the gap loop).
+			for hintPtr < len(sortedHintOffs) && sortedHintOffs[hintPtr] <= curOff {
+				hintPtr++
+			}
+			s.emitHint(&sb, hint, data, curOff, cmap, syms)
+			lastHintEnd = curOff + uint32(hint.Length)
 			continue
 		}
 
-		// Don't emit disassembly for instructions that overlap with a hint's data
-		if addr-start < lastHintEnd {
+		// Don't emit disassembly for instructions that overlap with a hint's data.
+		if curOff < lastHintEnd {
 			continue
 		}
 
@@ -420,6 +459,13 @@ func (s *Splitter) writeM68K(r *rom.ROM, seg config.Segment, dir string, syms *s
 		sb.WriteString(vdp.annotate(res.Text))
 		sb.WriteByte('\n')
 	}
+
+	// Flush any hints that fall after the last disassembled result.
+	for hintPtr < len(sortedHintOffs) {
+		flushHint(sortedHintOffs[hintPtr])
+		hintPtr++
+	}
+
 	s.labelHits += labelHits
 	s.labelTotal = len(syms.Ordered)
 	hints2 := s.suggestM68KSplits(results, seg, syms, r.Data)
