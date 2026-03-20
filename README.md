@@ -16,7 +16,7 @@ Inspired by [ethteck/splat](https://github.com/ethteck/splat) and [nathancassano
 | `z80`      | `.asm` | Zilog Z80 disassembly (sound CPU) |
 | `gfx`      | `.png` + `.bin` | Raw 4bpp tile graphics → PNG sheet |
 | `gfxcomp`  | `.png` + `.bin` | Compressed graphics (auto-decompress) |
-| `pcm`      | `.wav` | Raw PCM samples → WAV (7040 Hz default) |
+| `pcm`      | `.wav` + `.bin` | Raw PCM samples → WAV (7040 Hz default) |
 | `text`     | `.txt` | Text with optional charmap decode |
 | `bin`      | `.bin` | Raw binary blob |
 
