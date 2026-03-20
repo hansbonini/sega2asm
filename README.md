@@ -48,7 +48,7 @@ Inspired by [ethteck/splat](https://github.com/ethteck/splat) and [nathancassano
 | `lznextech` / `lzwolfteam` | LZ | Nextech / WolfTeam shared LZ compression | Crusader of Centy, El Viento, Granada, Earnest Evans, Final Zone, Ranger-X, Zan Yasha Enbuden |
 | `lzsti` | LZ | STI LZ compression | Comix Zone |
 | `rlesc` | RLE | Software Creations RLE compression | Cutthroat Island, Spiderman & Venom: Maximum Carnage, Spiderman & Venom: Separation Anxiety, The Tick  |
-| `rnc` / `rnc1` / `rnc2` | LZH | Rob Northen Compression methods 1 & 2 | Various multiplatform ports and publisher tools |
+| `rnc` / `rnc1` / `rnc2` | LZH | Rob Northen Compression methods 1 & 2 | 3 Ninjas Kick Back, Addams Family, Addams Family Values, The Adventures of Mighty Max, Astérix and the Great Rescue, Astérix and the Power of the Gods, The Humans, The Incredible Hulk, The Itchy & Scratchy Game (unreleased), Marsupilami, Mortal Kombat, Mortal Kombat 2, Mortal Kombat 3, Mr. Nutz, Outlander, The Pagemaster, RoboCop 3, Spirou, Spot Goes to Hollywood, Stargate, Street Racer, Tinhead, Tintin in Tibet, World Championship Soccer II, The Chaos Engine |
 | `lzcompile` | LZ | Compile Co. Ltd. command-byte LZ; 256-byte circular history, 4-byte output chunks | Dr. Robotnik's Mean Bean Machine, Mado Monogatari I, MUSHA Aleste, Puyo Puyo, Puyo Puyo 2 |
 | `itl` | Mixed | I.T.L. (Sega) non-zero-byte copy + XOR block compression | Arrow Flash, Bonanza Bros., Chase HQ II, Growl, Ultimate Qix |
 | `lzfactor5` | LZ | Factor 5 LZ; v1 = 11-bit window, v2 = 16-bit window (auto-detected from header) | International Superstar Soccer Deluxe, Mega Turrican |
