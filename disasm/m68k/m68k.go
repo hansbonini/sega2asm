@@ -799,14 +799,14 @@ func (d *Disassembler) labelOrHex(addr uint32) string {
 
 func (d *Disassembler) labelOrHex16(addr uint32) string {
 	if name, ok := d.Labels[addr]; ok {
-		return name
+		return fmt.Sprintf("(%s).w", name)
 	}
 	return fmt.Sprintf("($%06X).w", addr)
 }
 
 func (d *Disassembler) labelOrHex32(addr uint32) string {
 	if name, ok := d.Labels[addr]; ok {
-		return name
+		return fmt.Sprintf("(%s).l", name)
 	}
 	return fmt.Sprintf("($%06X).l", addr)
 }

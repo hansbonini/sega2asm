@@ -119,3 +119,17 @@ func (t *Table) Has(addr uint32) bool {
 	_, ok := t.ByAddr[addr]
 	return ok
 }
+
+// Add inserts a symbol only if neither the address nor the name is already
+// present, so explicit symbols-file entries always take priority.
+func (t *Table) Add(addr uint32, name string) {
+	if _, exists := t.ByAddr[addr]; exists {
+		return
+	}
+	if _, exists := t.ByName[name]; exists {
+		return
+	}
+	t.ByAddr[addr] = name
+	t.ByName[name] = addr
+	t.Ordered = append(t.Ordered, Symbol{Addr: addr, Name: name})
+}

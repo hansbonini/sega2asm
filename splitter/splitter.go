@@ -72,6 +72,13 @@ func (s *Splitter) Run() error {
 	}
 	s.log("[SYM] Loaded %d symbols from %s", len(syms.Ordered), cfg.Options.SymbolsPath)
 
+	// ── Inject segment names as symbols (lower priority than symbols file) ─
+	for _, seg := range cfg.Segments {
+		if seg.Name != "" {
+			syms.Add(uint32(seg.Start), seg.Name)
+		}
+	}
+
 	// ── Load charmap ─────────────────────────────────────────────────────
 	cmap, err := charmap.Load(cfg.Options.CharmapPath)
 	if err != nil {
