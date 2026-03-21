@@ -118,23 +118,33 @@ func vdpMemType(cd uint8) string {
 
 func vdpRegDesc(reg int, val uint8) string {
 	switch reg {
-	case 0:
+	case 0: // Mode Register 1
+		// Bit 4: display disable  Bit 3: H/V counter latch
+		// Bit 1: H interrupt enable  Bit 0: left column blank
 		parts := []string{}
-		if val&0x04 != 0 {
-			parts = append(parts, "HV_stop")
+		if val&0x10 != 0 {
+			parts = append(parts, "DispOff")
+		}
+		if val&0x08 != 0 {
+			parts = append(parts, "HVLatch")
 		}
 		if val&0x02 != 0 {
 			parts = append(parts, "HInt")
 		}
 		if val&0x01 != 0 {
-			parts = append(parts, "ExtInt")
+			parts = append(parts, "LCB") // left column blank
 		}
 		if len(parts) == 0 {
 			return "Mode1: off"
 		}
 		return "Mode1: " + strings.Join(parts, "|")
-	case 1:
+	case 1: // Mode Register 2
+		// Bit 7: VRAM 128K  Bit 6: display on  Bit 5: V interrupt
+		// Bit 4: DMA enable  Bit 3: V30 (240-line)  Bit 2: Mode 5
 		parts := []string{}
+		if val&0x80 != 0 {
+			parts = append(parts, "VRAM128K")
+		}
 		if val&0x40 != 0 {
 			parts = append(parts, "DisplayOn")
 		} else {
@@ -160,20 +170,34 @@ func vdpRegDesc(reg int, val uint8) string {
 		return fmt.Sprintf("PlaneB=$%04X", uint32(val&0x07)<<13)
 	case 5:
 		return fmt.Sprintf("Sprites=$%04X", uint32(val&0x7F)<<9)
+	case 6:
+		// Bit 5: sprite table address MSB (128 KB VRAM mode)
+		return fmt.Sprintf("Sprites_hi=%d", (val>>5)&1)
 	case 7:
 		pal := (val >> 4) & 0x3
 		col := val & 0xF
 		return fmt.Sprintf("BgColor=PAL%d[%d]", pal, col)
+	case 8:
+		return fmt.Sprintf("SMSHScroll=$%02X", val) // SMS compatibility; unused on MD
+	case 9:
+		return fmt.Sprintf("SMSVScroll=$%02X", val) // SMS compatibility; unused on MD
 	case 10:
 		return fmt.Sprintf("HInt every %d lines", int(val)+1)
-	case 11:
+	case 11: // Mode Register 3
+		// Bit 3: ext V scroll (2-cell column)  Bit 2: IE2 (external interrupt)
+		// Bits 1-0: H scroll mode
 		hscrollModes := [4]string{"FullScreen", "Invalid", "Cell", "Line"}
-		ext := ""
-		if val&0x04 != 0 {
-			ext = "+ExtVScroll"
+		parts := []string{}
+		if val&0x08 != 0 {
+			parts = append(parts, "ExtVScroll")
 		}
-		return fmt.Sprintf("Mode3: HScroll=%s%s", hscrollModes[val&0x03], ext)
-	case 12:
+		if val&0x04 != 0 {
+			parts = append(parts, "IE2")
+		}
+		parts = append(parts, "HScroll="+hscrollModes[val&0x03])
+		return "Mode3: " + strings.Join(parts, "|")
+	case 12: // Mode Register 4
+		// Bit 7+0: H40 (RS0/RS1)  Bits 2-1: interlace  Bit 3: shadow/highlight
 		h40 := (val&0x01 != 0) || (val&0x80 != 0)
 		interlace := [4]string{"", " Int2xRes", " Int2x", " IntDouble"}[(val>>1)&0x3]
 		shadow := ""
@@ -187,6 +211,9 @@ func vdpRegDesc(reg int, val uint8) string {
 		return fmt.Sprintf("Mode4: %s%s%s", res, interlace, shadow)
 	case 13:
 		return fmt.Sprintf("HScroll=$%04X", uint32(val&0x3F)<<10)
+	case 14:
+		// Bits for 128 KB VRAM: bit 1 = PlaneA MSB, bit 0 = PlaneB MSB
+		return fmt.Sprintf("NTBase_hi: PlaneA_b=%d PlaneB_b=%d", (val>>1)&1, val&1)
 	case 15:
 		return fmt.Sprintf("AutoInc=%d", val)
 	case 16:
@@ -205,9 +232,9 @@ func vdpRegDesc(reg int, val uint8) string {
 		}
 		return fmt.Sprintf("WindowV=%s cell=%d", side, val&0x1F)
 	case 19:
-		return fmt.Sprintf("DMALen_lo=%d", val)
+		return fmt.Sprintf("DMALen_lo=$%02X", val)
 	case 20:
-		return fmt.Sprintf("DMALen_hi=%d (words=%d)", val, int(val)<<8)
+		return fmt.Sprintf("DMALen_hi=$%02X (words=%d)", val, int(val)<<8)
 	case 21:
 		return fmt.Sprintf("DMASrc_lo=$%02X", val)
 	case 22:
@@ -217,10 +244,10 @@ func vdpRegDesc(reg int, val uint8) string {
 		case 0, 1:
 			return fmt.Sprintf("DMASrc_hi=$%02X (ROM/RAM→VRAM)", val&0x7F)
 		case 2:
-			return fmt.Sprintf("DMASrc_hi=$%02X (68k→VDP fill)", val&0x3F)
+			return fmt.Sprintf("DMASrc_hi=$%02X (fill)", val&0x3F)
 		case 3:
 			return "DMA VRAM copy"
 		}
 	}
-	return fmt.Sprintf("reg%d", reg)
+	return fmt.Sprintf("reg%d=$%02X", reg, val)
 }

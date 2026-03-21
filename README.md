@@ -271,8 +271,89 @@ a different instruction or skipped them inside a multi-byte opcode.
 | `ptr_table` | `dc.l <label>` per 4 bytes | Absolute 32-bit pointer; resolves to symbol name if known |
 | `ptr_table_rel` | `dc.w <target>-<base>` per 2 bytes | Signed 16-bit offset relative to `base`; target resolved to symbol name |
 | `text` | `dc.b 'string',0` | ASCII or charmap-decoded string; null terminator appended |
+| `vdp_regs` | `dc.w $XXXX ; VDP reg #N = $YY (...)` | Each 16-bit word decoded as a VDP register write; annotated with register name and field values |
+| `vdp_cmds` | `dc.l $XXXXXXXX ; VDP <type> addr=$XXXX` | Each 32-bit longword decoded as a VDP control port command (address set, DMA setup, or register pair) |
 | `bin` | `incbin "file.bin"` | Extracts bytes to `file` (beside the `.asm`) and emits an `incbin` directive |
 | `skip` | `even` | Alignment padding; length bytes are suppressed |
+
+**VDP hint example**
+
+```yaml
+- offset: 0x0040
+  type: vdp_regs        # table of dc.w VDP register writes
+  length: 48            # 24 words = 24 register writes
+  label: vdp_init_table
+
+- offset: 0x0070
+  type: vdp_cmds        # table of dc.l VDP control commands (address set / DMA)
+  length: 16
+  label: vdp_dma_setup
+```
+
+Generated output:
+```asm
+vdp_init_table:
+    dc.w  $8004  ; VDP reg #0 = $04 (Mode1: off)
+    dc.w  $8174  ; VDP reg #1 = $74 (Mode2: DisplayOn|VInt|DMAEn|V28)
+    dc.w  $8230  ; VDP reg #2 = $30 (PlaneA=$C000)
+    dc.w  $8328  ; VDP reg #3 = $28 (Window=$A000)
+    dc.w  $8407  ; VDP reg #4 = $07 (PlaneB=$E000)
+    dc.w  $857C  ; VDP reg #5 = $7C (Sprites=$F800)
+    dc.w  $8700  ; VDP reg #7 = $00 (BgColor=PAL0[0])
+    ...
+vdp_dma_setup:
+    dc.l  $40000080  ; VDP VRAM write addr=$0000
+    dc.l  $94009300  ; VDP reg #19 = $00 | VDP reg #20 = $93 (DMALen_hi=$93 words=37632)
+```
+
+---
+
+## VDP register reference
+
+A VDP register write is a 16-bit word of the form `$8NVV` where `N` = register number (0–23) and `VV` = value. Two consecutive writes can be packed into a 32-bit longword.
+
+| Reg | Name | Decoded fields |
+|---|---|---|
+| 0 | Mode Register 1 | Bit 4: `DispOff` · Bit 3: `HVLatch` (freeze H/V counter) · Bit 1: `HInt` (H-blank interrupt enable) · Bit 0: `LCB` (left column blank) |
+| 1 | Mode Register 2 | Bit 7: `VRAM128K` · Bit 6: `DisplayOn/Off` · Bit 5: `VInt` (V-blank interrupt enable) · Bit 4: `DMAEn` · Bit 3: `V30`/`V28` (240/224 lines) |
+| 2 | Plane A Name Table | `PlaneA=$XXXX` — VRAM address (bits 5-3 × 0x400) |
+| 3 | Window Name Table | `Window=$XXXX` — VRAM address (bits 5-1 × 0x400) |
+| 4 | Plane B Name Table | `PlaneB=$XXXX` — VRAM address (bits 2-0 × 0x2000) |
+| 5 | Sprite Table | `Sprites=$XXXX` — VRAM address (bits 6-0 × 0x200) |
+| 6 | Sprite Table (hi) | `Sprites_hi=N` — MSB for 128 KB VRAM mode |
+| 7 | Background Color | `BgColor=PALN[N]` — palette line (bits 5-4) and color index (bits 3-0) |
+| 8 | SMS H Scroll | `SMSHScroll=$XX` — SMS compatibility; unused in Mode 5 |
+| 9 | SMS V Scroll | `SMSVScroll=$XX` — SMS compatibility; unused in Mode 5 |
+| 10 | H Interrupt Counter | `HInt every N lines` — H-blank fires every N+1 scanlines |
+| 11 | Mode Register 3 | Bit 3: `ExtVScroll` (2-cell column scroll) · Bit 2: `IE2` (external interrupt enable) · Bits 1-0: `HScroll=FullScreen/Invalid/Cell/Line` |
+| 12 | Mode Register 4 | Bits 7+0: `H40`/`H32` · Bits 2-1: interlace mode · Bit 3: `+Shadow` (shadow/highlight enable) |
+| 13 | H Scroll Data | `HScroll=$XXXX` — VRAM address (bits 5-0 × 0x400) |
+| 14 | Name Table (hi) | `NTBase_hi` — Plane A/B address MSBs for 128 KB VRAM mode |
+| 15 | Auto-Increment | `AutoInc=N` — bytes added to VDP address after each data port access |
+| 16 | Scroll Size | `ScrollSize=WxH cells` — plane dimensions: 32/64/128 cells wide/tall |
+| 17 | Window H Position | `WindowH=Left/Right cell=N` — window plane horizontal split |
+| 18 | Window V Position | `WindowV=Up/Down cell=N` — window plane vertical split |
+| 19 | DMA Length Low | `DMALen_lo=$XX` |
+| 20 | DMA Length High | `DMALen_hi=$XX (words=N)` |
+| 21 | DMA Source Low | `DMASrc_lo=$XX` |
+| 22 | DMA Source Mid | `DMASrc_mid=$XX` |
+| 23 | DMA Source High | `DMASrc_hi=$XX (ROM/RAM→VRAM)` / `(fill)` / `DMA VRAM copy` — bits 7-6 select DMA type |
+
+**VDP control commands** (32-bit longwords to `$C00004`) decode the CD bits to determine the operation:
+
+| CD bits | Operation |
+|---|---|
+| `0x00` | VRAM read |
+| `0x01` | VRAM write |
+| `0x03` | CRAM write |
+| `0x04` | VSRAM read |
+| `0x05` | VSRAM write |
+| `0x08` | CRAM read |
+| `0x20` | DMA fill |
+| `0x21` | VRAM DMA write |
+| `0x23` | CRAM DMA write |
+| `0x25` | VSRAM DMA write |
+| `0x30` | VRAM DMA copy |
 
 ---
 

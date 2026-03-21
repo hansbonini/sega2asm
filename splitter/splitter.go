@@ -859,6 +859,30 @@ func (s *Splitter) emitHint(sb *strings.Builder, hint config.Hint, data []byte, 
 			}
 			sb.WriteString(fmt.Sprintf("\tdc.l\t%s\n", label))
 		}
+	case "vdp_regs":
+		// Each 16-bit word is a VDP register write or control command.
+		// Emits dc.w $XXXX with a decoded comment.
+		for i := int(offset); i < end-1; i += 2 {
+			w := uint16(data[i])<<8 | uint16(data[i+1])
+			comment := vdpWordComment(w)
+			if comment == "" {
+				sb.WriteString(fmt.Sprintf("\tdc.w\t$%04X\n", w))
+			} else {
+				sb.WriteString(fmt.Sprintf("\tdc.w\t$%04X\t; %s\n", w, comment))
+			}
+		}
+	case "vdp_cmds":
+		// Each 32-bit longword is a VDP control port command (address set / DMA / reg pair).
+		// Emits dc.l $XXXXXXXX with a decoded comment.
+		for i := int(offset); i < end-3; i += 4 {
+			l := uint32(data[i])<<24 | uint32(data[i+1])<<16 | uint32(data[i+2])<<8 | uint32(data[i+3])
+			comment := vdpLongComment(l)
+			if comment == "" {
+				sb.WriteString(fmt.Sprintf("\tdc.l\t$%08X\n", l))
+			} else {
+				sb.WriteString(fmt.Sprintf("\tdc.l\t$%08X\t; %s\n", l, comment))
+			}
+		}
 	case "ptr_table_rel":
 		// Each entry is a signed 16-bit offset relative to hint.Base.
 		// Emits: dc.w <target_label> - <base_label>
