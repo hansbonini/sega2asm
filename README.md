@@ -105,6 +105,9 @@ Options:
 sega2asm -c example/sonic1.yaml -s example/symbols.txt -t example/charmap.tbl -v
 ```
 
+### LUA Scripts
+There is LUA script `gensr57shell.lua` to automate and help users collecting segments during GensR57Shell execution.
+
 ---
 
 ## Configuration YAML
