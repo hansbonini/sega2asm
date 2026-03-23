@@ -105,8 +105,13 @@ Options:
 sega2asm -c example/sonic1.yaml -s example/symbols.txt -t example/charmap.tbl -v
 ```
 
-### LUA Scripts
-There is LUA script `gensr57shell.lua` to automate and help users collecting segments during GensR57Shell execution.
+### Optional LUA Scripts
+
+On folder `optional` there are some LUA scripts that could be run on Emulator to help user and automate collect segments task, here is the list:
+
+| Emulator                         | Script File          |
+| -------------------------------- | -------------------- |
+| Gens R57Shell Mod                | `gensr57shell.lua`   |
 
 ---
 
