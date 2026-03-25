@@ -1522,6 +1522,10 @@ segments:
         type: text
         length: 10
         label: string_00BF74
+      - offset: 0x000036
+        type: data_byte
+        length: 1
+        label: byte_00BF7E
 
   - name: loc_00BF80
     type: m68k

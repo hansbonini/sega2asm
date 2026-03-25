@@ -14,7 +14,7 @@ import "fmt"
 //   RNC:          rnc  rnc1  rnc2
 //   Blizzard:     lzblizzard
 //   LucasArts:    lzhlucasarts
-//   Climax:       lzclimax
+//   Climax:       lzclimax  lzclimax2
 //   Westone:      lzwestone  lzwestone_block
 //   KOEI:         lzkoei
 //   Game Arts:    rlegamearts
@@ -91,6 +91,8 @@ func Decompress(compression string, src []byte) ([]byte, error) {
 		return DecompressLZHLucasArts(src)
 	case "lzclimax":
 		return DecompressLZClimax(src)
+	case "lzclimax2":
+		return DecompressLZClimax2(src)
 	case "lzwestone":
 		return DecompressLZWestone(src)
 	case "lzwestone_block":

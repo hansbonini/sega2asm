@@ -90,8 +90,7 @@ var signatures = []struct {
 		},
 	},
 	{
-		// Silicon Synapse LZSS (Boogerman, Rock n Roll Racing, The Lost Vikings)
-		"lzsiliconsynapse",
+		"lzblizzard",
 		[]byte{0x12, 0x18, 0x14, 0xC1, 0xE1, 0x46, 0x1C, 0x01, 0xE3},
 	},
 	{
@@ -130,6 +129,12 @@ var signatures = []struct {
 		// RNC — 3-byte file magic "RNC"
 		"rnc",
 		[]byte{0x52, 0x4E, 0x43},
+	},
+	{
+		// LZ Climax 2 — Shining Force 1 tile graphics decompressor
+		// moveq #-128,d6; moveq #$F,d7; clr.w d3; moveq #-1,d4; moveq #2,d5
+		"lzclimax2",
+		[]byte{0x7C, 0x80, 0x7E, 0x0F, 0x42, 0x43, 0x78, 0xFF, 0x7A, 0x02},
 	},
 }
 
