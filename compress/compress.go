@@ -18,6 +18,7 @@ import "fmt"
 //   Westone:      lzwestone  lzwestone_block
 //   KOEI:         lzkoei
 //   Game Arts:    rlegamearts
+//   PowerPacker:  powerpack20
 //   Pass-through: none  (empty)
 func Decompress(compression string, src []byte) ([]byte, error) {
 	switch compression {
@@ -103,6 +104,8 @@ func Decompress(compression string, src []byte) ([]byte, error) {
 		return DecompressLZKoei(src)
 	case "rlegamearts":
 		return DecompressRLEGameArts(src)
+	case "powerpack20":
+		return DecompressPowerPack20(src)
 	case "none", "":
 		dst := make([]byte, len(src))
 		copy(dst, src)

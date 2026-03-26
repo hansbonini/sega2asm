@@ -59,10 +59,12 @@ Inspired by [ethteck/splat](https://github.com/ethteck/splat) and [nathancassano
 | `lzhlucasarts` | LZH | Adaptive Huffman + LZ sliding window (LZHUF variant); N=4096, F=60, ring buffer pre-filled 0x20; BE16 output size header; position via d_code/d_len tables | Zombies Ate My Neighbors |
 | `lzclimax` | LZ77 | Climax LZ77; control byte MSB-first (1=literal, 0=back-ref), 12-bit offset + 4-bit length (3..18), offset=0 ends stream | Landstalker |
 | `lzclimax2` | LZ + Exp-Golomb + Spatial | Climax/Camelot 4bpp tile graphics; exp-Golomb position coding + 2-D spatial nibble navigation + nibble-pair packing + 4×4 tile reorder; dimensions header (must be multiples of 4 tiles) | Shining Force |
+| `lzclimax3` | LZ + RLE | Camelot/Climax bitstream LZ (LoadBasicCompressedData); addx word-chaining control bits, inline literal copies (longword/word), back-references with rotated 12-bit offset + inverse 5-bit length jump table, word-repeat RLE; self-terminating (no header) | Shining Force 2 |
 | `lzwestone` | LZH | Westone Huffman+LZ tile decompressor (type 0x02); adaptive Huffman tree built from bitstream, symbols 0x000–0x0FF=literal, 0x100–0x11F=back-reference; always outputs 1024 bytes | Monster World IV, Wonder Boy in Monster World |
 | `lzwestone_block` | Mixed | Westone block-based tile decompressor (type 0x00); 32 blocks × 32 bytes; mode 0=literal, mode 1=sparse color-group bitmap, mode 2=XOR+planar bit-spread; always outputs 1024 bytes | Monster World IV, Wonder Boy in Monster World |
 | `lzkoei` | LZSS | KOEI LZSS variant; interleaved flag/literal bytes with 16-bit pairs words; Elias-gamma length coding; variable-width offset via p_len bias table; end marker length=255 | Aerobiz, Aerobiz Supersonic , Gemfire, Genghis Khan II, Liberty or Death, Nobunaga's Ambition, Operation Europe, P.T.O.: Pacific Theater of Operations, Romance of the Three Kingdoms II (also on Amiga), Romance of the Three Kingdoms III, Uncharted Waters, Uncharted Waters: New Horizons |
 | `rlegamearts` | RLE | Game Arts 4-plane RLE; 16-byte header with 8-byte lookup table + plane offsets; 7 opcode types; bit-interleaved output (plane order 3,2,0,1) | Alisia Dragoon |
+| `powerpack20` | LZ77 | PowerPacker 2.0 (no magic variant); backwards LZ77 with sentinel-based bitstream, 4-byte efficiency table, extended literal/match length coding; self-sizing header (u32be total size + trailer with decompressed size) | James Pond 3 |
 
 **Labels & symbols:**
 - Reads `symbols.txt` in multiple formats (name=addr, addr:name, space-separated)
