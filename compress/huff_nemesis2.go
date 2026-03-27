@@ -5,8 +5,8 @@ import (
 	"fmt"
 )
 
-// DecompressHuffSamsung decompresses 4bpp tile data using the Samsung Mega Drive
-// Huffman-nibble scheme (sub_1F32, used in Jang Pung series and other
+// DecompressHuffNemesis2 decompresses 4bpp tile data using the Samsung Mega Drive
+// Huffman-nibble scheme (sub_1F32, used in Uzu Keobukseon and other
 // Samsung-developed titles).
 //
 // Format:
@@ -22,9 +22,9 @@ import (
 //
 // Each decoded value byte encodes: high nibble = repeat count - 1,
 // low nibble = pixel value. Nibbles are packed 8 per longword (32 bits).
-func DecompressHuffSamsung(src []byte) ([]byte, error) {
+func DecompressHuffNemesis2(src []byte) ([]byte, error) {
 	if len(src) < 4 {
-		return nil, fmt.Errorf("huffsamsung: input too short")
+		return nil, fmt.Errorf("huffnemesis2: input too short")
 	}
 
 	pos := 0
@@ -57,7 +57,7 @@ func DecompressHuffSamsung(src []byte) ([]byte, error) {
 	}
 	outSize := longwords * 4
 	if outSize > 0x200000 {
-		return nil, fmt.Errorf("huffsamsung: output size %d too large", outSize)
+		return nil, fmt.Errorf("huffnemesis2: output size %d too large", outSize)
 	}
 
 	// --- Build Huffman lookup table (sub_1FF0) ---

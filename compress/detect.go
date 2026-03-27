@@ -198,12 +198,12 @@ var signatures = []signature{
 		},
 	},
 	{
-		// Huffman Samsung — Samsung Huffman-nibble tile decompressor (sub_1F32)
+		// Nemesis — Samsung variant (Uzu Keobukseon)
+		// Canonical Huffman table (sub_1FF0) instead of inline codebook.
+		// Uses cmpi.w #$FC,d1 (word compare) vs nemesis cmpi.b (byte compare).
 		// move.w (a0)+,d2; lsl.w #1,d2; bcc.s +4; adda.w #$A,a3
 		// lsl.w #2,d2; movea.w d2,a5; moveq #8,d3; moveq #0,d2; moveq #0,d4
-		// Key difference from nemesis early: Samsung uses lsl.w #1,d2 (E3 4A)
-		// whereas nemesis uses add.w d2,d2 (D4 42).
-		name:        "huffsamsung",
+		name:        "huffnemesis",
 		wordAligned: true,
 		sig: []byte{
 			0x34, 0x18, 0xE3, 0x4A, 0x64, 0x04, 0xD6, 0xFC, 0x00, 0x0A,
