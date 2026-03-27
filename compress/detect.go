@@ -198,7 +198,7 @@ var signatures = []signature{
 		},
 	},
 	{
-		// Nemesis — Samsung variant (Uzu Keobukseon)
+		// Nemesis — variant
 		// Canonical Huffman table (sub_1FF0) instead of inline codebook.
 		// Uses cmpi.w #$FC,d1 (word compare) vs nemesis cmpi.b (byte compare).
 		// move.w (a0)+,d2; lsl.w #1,d2; bcc.s +4; adda.w #$A,a3
@@ -208,6 +208,17 @@ var signatures = []signature{
 		sig: []byte{
 			0x34, 0x18, 0xE3, 0x4A, 0x64, 0x04, 0xD6, 0xFC, 0x00, 0x0A,
 			0xE5, 0x4A, 0x3A, 0x42, 0x76, 0x08, 0x74, 0x00, 0x78, 0x00,
+		},
+		// Uses cmpi.w #$FC,d1 (0C 41 00 FC) at offset+40,
+		// while standard nemesis uses cmpi.b #$FC,d1 (0C 01 00 FC).
+		validator: func(rom []byte, offset int) bool {
+			if offset+44 > len(rom) {
+				return false
+			}
+			return rom[offset+40] == 0x0C &&
+				rom[offset+41] == 0x41 &&
+				rom[offset+42] == 0x00 &&
+				rom[offset+43] == 0xFC
 		},
 	},
 }

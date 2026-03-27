@@ -5,9 +5,9 @@ import (
 	"fmt"
 )
 
-// DecompressHuffNemesis2 decompresses 4bpp tile data using the Samsung Mega Drive
+// DecompressHuffNemesis2 decompresses 4bpp tile data using the Mega Drive
 // Huffman-nibble scheme (sub_1F32, used in Uzu Keobukseon and other
-// Samsung-developed titles).
+// titles).
 //
 // Format:
 //
@@ -132,7 +132,7 @@ func DecompressHuffNemesis2(src []byte) ([]byte, error) {
 	out := make([]byte, outSize)
 	wp := 0
 	var xorAccum uint32
-	nibbleCount := 8   // nibbles per longword
+	nibbleCount := 8    // nibbles per longword
 	var accum uint32    // nibble accumulator
 	lwLeft := longwords // longwords remaining
 

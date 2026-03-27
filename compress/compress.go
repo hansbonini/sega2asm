@@ -6,22 +6,21 @@ import "fmt"
 //
 // Compression name strings accepted by the YAML `compression:` field:
 //
-//   Original:     huffnemesis  lzkosinski  lzkosinskiplus  mixedenigma  rlesegard
-//   clownlzss:    lzsssaxman  lzsssaxman_noheader  lzcomper  lzrocket  lzssfaxman  lzrage  lzchameleon
-//   py-port:      lznamco  lzstrike  lztechnosoft
-//                 lzkonami1  lzkonami2  lzkonami3
-//                 lzancient  lzbandai  lznextech  lzwolfteam  lzsti  rlesc
-//   RNC:          lzhrnc  lzhrnc1  lzhrnc2
-//   Blizzard:     lzssblizzard
-//   LucasArts:    lzhlucasarts
-//   Climax:       lz77climax  expgolombclimax  lzclimax
-//   Westone:      lzhwestone  mixedwestone
-//   KOEI:         lzsskoei
-//   Game Arts:    rlegamearts
-//   PowerPacker:  lzpowerpack20
-//   Bahamut:      rlebahamut
-//   Samsung:      huffnemesis2
-//   Pass-through: none  (empty)
+//	Original:     huffnemesis huffnemesis2 lzkosinski  lzkosinskiplus  mixedenigma  rlesegard
+//	clownlzss:    lzsssaxman  lzsssaxman_noheader  lzcomper  lzrocket  lzssfaxman  lzrage  lzchameleon
+//	py-port:      lznamco  lzstrike  lztechnosoft
+//	              lzkonami1  lzkonami2  lzkonami3
+//	              lzancient  lzbandai  lznextech  lzwolfteam  lzsti  rlesc
+//	RNC:          lzhrnc  lzhrnc1  lzhrnc2
+//	Blizzard:     lzssblizzard
+//	LucasArts:    lzhlucasarts
+//	Climax:       lz77climax  expgolombclimax  lzclimax
+//	Westone:      lzhwestone  mixedwestone
+//	KOEI:         lzsskoei
+//	Game Arts:    rlegamearts
+//	PowerPacker:  lzpowerpack20
+//	Bahamut:      rlebahamut
+//	Pass-through: none  (empty)
 func Decompress(compression string, src []byte) ([]byte, error) {
 	switch compression {
 	case "huffnemesis":
