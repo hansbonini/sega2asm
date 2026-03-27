@@ -65,8 +65,9 @@ Inspired by [ethteck/splat](https://github.com/ethteck/splat) and [nathancassano
 | `lzclimax3` | LZ + RLE | Camelot/Climax bitstream LZ (LoadBasicCompressedData); addx word-chaining control bits, inline literal copies (longword/word), back-references with rotated 12-bit offset + inverse 5-bit length jump table, word-repeat RLE; self-terminating (no header) | Shining Force 2 |
 | `rlegamearts` | RLE | Game Arts 4-plane RLE; 16-byte header with 8-byte lookup table + plane offsets; 7 opcode types; bit-interleaved output (plane order 3,2,0,1) | Alisia Dragoon |
 | `powerpack20` | LZ77 | PowerPacker 2.0 (no magic variant); backwards LZ77 with sentinel-based bitstream, 4-byte efficiency table, extended literal/match length coding; self-sizing header (u32be total size + trailer with decompressed size) | James Pond 3 |
+| `lzbahamut` | RLE + Mixed | Bahamut Senki byteplane-interleaved command-nibble scheme; even/odd byte planes at stride 2; 7 commands (terminate, RLE fill, literal copy, incrementing fill, repeated sub-run, repeated incremental run, uncompressed passthrough); length in low nibble with 8-bit extended length | Bahamut Senki |
 
-> **Total: 209 unique games covered across 35 compression formats**
+> **Total: 210 unique games covered across 36 compression formats**
 
 **Labels & symbols:**
 - Reads `symbols.txt` in multiple formats (name=addr, addr:name, space-separated)
