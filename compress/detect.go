@@ -203,7 +203,7 @@ var signatures = []signature{
 		// Uses cmpi.w #$FC,d1 (word compare) vs nemesis cmpi.b (byte compare).
 		// move.w (a0)+,d2; lsl.w #1,d2; bcc.s +4; adda.w #$A,a3
 		// lsl.w #2,d2; movea.w d2,a5; moveq #8,d3; moveq #0,d2; moveq #0,d4
-		name:        "huffnemesis",
+		name:        "huffnemesis2",
 		wordAligned: true,
 		sig: []byte{
 			0x34, 0x18, 0xE3, 0x4A, 0x64, 0x04, 0xD6, 0xFC, 0x00, 0x0A,
