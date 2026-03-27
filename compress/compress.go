@@ -20,6 +20,7 @@ import "fmt"
 //	Game Arts:    rlegamearts
 //	PowerPacker:  lzpowerpack20
 //	Bahamut:      rlebahamut
+//	Gaibrain:     lzgaibrain
 //	Pass-through: none  (empty)
 func Decompress(compression string, src []byte) ([]byte, error) {
 	switch compression {
@@ -111,6 +112,8 @@ func Decompress(compression string, src []byte) ([]byte, error) {
 		return DecompressRLEBahamut(src)
 	case "huffnemesis2":
 		return DecompressHuffNemesis2(src)
+	case "lzgaibrain":
+		return DecompressLZGaibrain(src)
 	case "none", "":
 		dst := make([]byte, len(src))
 		copy(dst, src)

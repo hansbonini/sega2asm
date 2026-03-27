@@ -198,6 +198,19 @@ var signatures = []signature{
 		},
 	},
 	{
+		// Gaibrain LZ — Fatal Fury / Garou Densetsu and other Gaibrain titles.
+		// move.w (a0)+,d7; move.w d7,d2; andi.w #$3FFF,d7; eor.w d7,d2;
+		// rol.w #2,d2; moveq #4,d1; sub.w d2,d1; moveq #1,d2;
+		// lsl.w d1,d2; subq.w #1,d2
+		name:        "lzgaibrain",
+		wordAligned: true,
+		sig: []byte{
+			0x3E, 0x18, 0x34, 0x07, 0x02, 0x47, 0x3F, 0xFF, 0xBF, 0x42,
+			0xE5, 0x5A, 0x72, 0x04, 0x92, 0x42, 0x74, 0x01, 0xE3, 0x6A,
+			0x53, 0x42,
+		},
+	},
+	{
 		// Nemesis — variant
 		// Canonical Huffman table (sub_1FF0) instead of inline codebook.
 		// Uses cmpi.w #$FC,d1 (word compare) vs nemesis cmpi.b (byte compare).
