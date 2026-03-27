@@ -66,7 +66,7 @@ Inspired by [ethteck/splat](https://github.com/ethteck/splat) and [nathancassano
 | `rlegamearts` | RLE | Game Arts 4-plane RLE; 16-byte header with 8-byte lookup table + plane offsets; 7 opcode types; bit-interleaved output (plane order 3,2,0,1) | Alisia Dragoon |
 | `lzpowerpack20` | LZ77 | PowerPacker 2.0 (no magic variant); backwards LZ77 with sentinel-based bitstream, 4-byte efficiency table, extended literal/match length coding; self-sizing header (u32be total size + trailer with decompressed size) | James Pond 3 |
 | `rlebahamut` | RLE + Mixed | Bahamut Senki byteplane-interleaved command-nibble scheme; even/odd byte planes at stride 2; 7 commands (terminate, RLE fill, literal copy, incrementing fill, repeated sub-run, repeated incremental run, uncompressed passthrough); length in low nibble with 8-bit extended length | Bahamut Senki |
-| `huffsamsung` | Huffman + Nibble | Samsung Huffman-nibble tile compressor; canonical Huffman table (8 code lengths), 8-bit lookup with 2+7 bit escape codes, value byte = repeat count (high nibble) + pixel (low nibble), 8 nibbles packed per longword, optional XOR delta mode; header encodes tile count + XOR flag | Jang Pung 3 |
+| `huffsamsung` | Huffman + Nibble | Samsung Huffman-nibble tile compressor; canonical Huffman table (8 code lengths), 8-bit lookup with 2+7 bit escape codes, value byte = repeat count (high nibble) + pixel (low nibble), 8 nibbles packed per longword, optional XOR delta mode; header encodes tile count + XOR flag | Uzu Keobukseon |
 
 > **Total: 211 unique games covered across 37 compression formats**
 
