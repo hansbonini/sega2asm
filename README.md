@@ -63,6 +63,7 @@ Inspired by [ethteck/splat](https://github.com/ethteck/splat) and [nathancassano
 | `lz77climax` | LZ77 | Climax LZ77; control byte MSB-first (1=literal, 0=back-ref), 12-bit offset + 4-bit length (3..18), offset=0 ends stream | Landstalker |
 | `expgolombclimax` | Exp-Golomb + Spatial | Climax/Camelot 4bpp tile graphics; exp-Golomb position coding + 2-D spatial nibble navigation + nibble-pair packing + 4×4 tile reorder; dimensions header (must be multiples of 4 tiles) | Shining Force |
 | `lzclimax` | LZ + RLE | Camelot/Climax bitstream LZ; addx word-chaining control bits, inline literal copies (longword/word), back-references with rotated 12-bit offset + inverse 5-bit length jump table, word-repeat RLE; self-terminating (no header) | Shining Force 2 |
+| `lzelmerswd` | LZ | Elmer's SWD bitstream LZ; word-aligned big-endian bitstream with rotating 32-bit register; variable-length coding for match length (2..275) and offset (1..1696) with 2-bit selector for four offset ranges; end marker is 8-bit zero length | Batman Returns, BattleTech - A Game of Armored Combat, Cliffhanger, Evander Holyfield's Real Deal' Boxing, Ex-Mutants, Gargoyles, Greatest Heavyweights, NBA Action '94, NBA Action, Tecmo Super Hocker, Thomas the Tank Engine & Friends |
 | `mixedmicroprose` | Mixed | MicroProse delta-coded scanline scheme; u32be size header, nibble-aligned commands (12 types: RLE, raw, mirror-back, shift, mask fill, border build, pair set); each command produces a 4-byte scanline relative to the previous one | Star Trek: The Next Generation - Echoes from the Past |
 | `rlegamearts` | RLE | Game Arts 4-plane RLE; 16-byte header with 8-byte lookup table + plane offsets; 7 opcode types; bit-interleaved output (plane order 3,2,0,1) | Alisia Dragoon |
 | `lzpowerpack20` | LZ77 | PowerPacker 2.0 (no magic variant); backwards LZ77 with sentinel-based bitstream, 4-byte efficiency table, extended literal/match length coding; self-sizing header (u32be total size + trailer with decompressed size) | James Pond 3 |
@@ -71,7 +72,7 @@ Inspired by [ethteck/splat](https://github.com/ethteck/splat) and [nathancassano
 | `lzssfaxman` | LZSS | Modified Saxman tuned to compress SMPS music data | Sonic hacks / SMPS tools |
 | `none` | — | No compression; data copied verbatim | — |
 
-> **Total: 275 unique games covered across 44 compression formats**
+> **Total: 276 unique games covered across 45 compression formats**
 
 **Labels & symbols:**
 - Reads `symbols.txt` in multiple formats (name=addr, addr:name, space-separated)

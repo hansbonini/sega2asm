@@ -269,6 +269,22 @@ var signatures = []signature{
 		},
 	},
 	{
+		// Elmer SWD — bitstream LZ used in Ex-Mutants (Sega Genesis) and other
+		// Malibu Interactives titles.
+		// Distinctive reload+command sequence:
+		//   move.w  (a0)+,d1        ; 32 18
+		//   swap    d1              ; 48 41
+		//   moveq   #$0F,d7         ; 7E 0F
+		//   clr.w   d1              ; 42 41
+		//   rol.l   #1,d1           ; E3 99
+		//   tst.w   d1              ; 4A 41
+		name:        "lzelmerswd",
+		wordAligned: true,
+		sig: []byte{
+			0x32, 0x18, 0x48, 0x41, 0x7E, 0x0F, 0x42, 0x41, 0xE3, 0x99, 0x4A, 0x41,
+		},
+	},
+	{
 		// LZ Treasure
 		name:        "lztreasure",
 		wordAligned: true,
