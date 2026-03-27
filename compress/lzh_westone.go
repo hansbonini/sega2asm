@@ -135,7 +135,7 @@ func decodeWestoneSym(br *westoneBR, nodes []westoneNode) int {
 	}
 }
 
-// DecompressLZWestone decompresses Monster World IV graphics data
+// DecompressLZHWestone decompresses Monster World IV graphics data
 // using the Huffman + LZ scheme (loc_18E7A, type 0x02).
 //
 // Symbols:
@@ -145,9 +145,9 @@ func decodeWestoneSym(br *westoneBR, nodes []westoneNode) int {
 //	               next symbol = back-offset (1..288 bytes back)
 //
 // Output is always 1024 bytes (32 Genesis tiles × 32 bytes).
-func DecompressLZWestone(src []byte) ([]byte, error) {
+func DecompressLZHWestone(src []byte) ([]byte, error) {
 	if len(src) < 1 {
-		return nil, fmt.Errorf("lzwestone: empty input")
+		return nil, fmt.Errorf("lzhwestone: empty input")
 	}
 	br := newWestoneBR(src)
 	nodes := buildWestoneTree(br)
@@ -166,7 +166,7 @@ func DecompressLZWestone(src []byte) ([]byte, error) {
 			off := decodeWestoneSym(br, nodes) // 0..0x11F
 			srcOff := len(out) - off - 1
 			if srcOff < 0 {
-				return nil, fmt.Errorf("lzwestone: back-reference out of bounds (off=%d, len=%d)", off, len(out))
+				return nil, fmt.Errorf("lzhwestone: back-reference out of bounds (off=%d, len=%d)", off, len(out))
 			}
 			for i := 0; i < length; i++ {
 				out = append(out, out[srcOff+i])
@@ -179,7 +179,7 @@ func DecompressLZWestone(src []byte) ([]byte, error) {
 	return out, nil
 }
 
-// DecompressLZWestoneBlock decompresses Monster World IV graphics data
+// DecompressMixedWestone decompresses Monster World IV graphics data
 // using the block-based scheme (loc_18CD2, type 0x00).
 //
 // Outer loop: 32 blocks × 32 bytes = 1024 bytes.
@@ -188,7 +188,7 @@ func DecompressLZWestone(src []byte) ([]byte, error) {
 //	ctrl == 0x00        → mode 0: 32 literal bytes
 //	ctrl  < 0x80        → mode 1: sparse bitmap (ctrl = number of color groups)
 //	ctrl >= 0x80        → mode 2: tile-row encoding with XOR + planar bit-spread
-func DecompressLZWestoneBlock(src []byte) ([]byte, error) {
+func DecompressMixedWestone(src []byte) ([]byte, error) {
 	pos := 0
 	out := make([]byte, 0, 0x400)
 

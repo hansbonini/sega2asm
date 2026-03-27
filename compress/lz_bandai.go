@@ -6,7 +6,7 @@ import (
 	"fmt"
 )
 
-// DecompressLZTose decompresses data using the LZTose format
+// DecompressLZBandai decompresses data using the LZBandai format
 // (Dragon Ball Z: Buyuu Retsuden).
 //
 // Window: 0x2000 bytes, cursor at 0x00, fill 0x00.
@@ -21,9 +21,9 @@ import (
 //	bit=0 → back-reference: 2 bytes little-endian (word)
 //	          length = (lo & 0x0F) + 3
 //	          offset = word >> 4
-func DecompressLZTose(src []byte) ([]byte, error) {
+func DecompressLZBandai(src []byte) ([]byte, error) {
 	if len(src) < 2 {
-		return nil, fmt.Errorf("lztose: too short")
+		return nil, fmt.Errorf("lzbandai: too short")
 	}
 	hdr := binary.LittleEndian.Uint16(src[0:2])
 	uncompSize := int(hdr&0x7FFF) + 1

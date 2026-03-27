@@ -2,7 +2,7 @@ package compress
 
 import "fmt"
 
-// DecompressEnigma decompresses data using the Enigma (clownlzss) format,
+// DecompressMixedEnigma decompresses data using the Enigma (clownlzss) format,
 // designed for encoding Mega Drive VDP block map data as incrementing or literal words.
 //
 // Header:
@@ -20,9 +20,9 @@ import "fmt"
 //	          01 = emit incr_word
 //	          10 = read 2 bytes → new lit_word, emit it
 //	          11 = read 2 bytes → new incr_word
-func DecompressEnigma(src []byte) ([]byte, error) {
+func DecompressMixedEnigma(src []byte) ([]byte, error) {
 	if len(src) < 6 {
-		return nil, fmt.Errorf("enigma: too short")
+		return nil, fmt.Errorf("mixedenigma: too short")
 	}
 	pos := 0
 	readByte := func() (byte, bool) {

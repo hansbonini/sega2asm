@@ -1,9 +1,9 @@
 package compress
 
-// DecompressITL decompresses data using the I.T.L (Sega) format:
+// DecompressMixedITL decompresses data using the I.T.L (Sega) format:
 // non-zero-byte literal selection + running XOR chain, operating on 32-byte blocks.
 // Reference: https://github.com/lab313ru/itl_comp/blob/master/main.c
-func DecompressITL(src []byte) ([]byte, error) {
+func DecompressMixedITL(src []byte) ([]byte, error) {
 	rpos := 0
 	var out []byte
 

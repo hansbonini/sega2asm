@@ -1,6 +1,6 @@
 package compress
 
-// DecompressLZBlizzard decompresses data using the Blizzard LZSS format
+// DecompressLZSSBlizzard decompresses data using the Blizzard LZSS format
 // (Rock N Roll Racing). Based on Haruhiko Okumura's LZSS (1989).
 //
 // Parameters:
@@ -15,7 +15,7 @@ package compress
 //	bit=0 → back-reference: 2 bytes
 //	          offset = byte0 | ((byte1 & 0x0F) << 8)  — absolute ring-buffer index
 //	          length = ((byte1 & 0xF0) >> 4) + THRESHOLD  — copies length+1 bytes
-func DecompressLZBlizzard(src []byte) ([]byte, error) {
+func DecompressLZSSBlizzard(src []byte) ([]byte, error) {
 	const (
 		n         = 4096
 		threshold = 2

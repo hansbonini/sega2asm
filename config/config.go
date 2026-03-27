@@ -45,7 +45,7 @@ type Segment struct {
 	Type        string `yaml:"type"`        // m68k, z80, gfx, gfxcomp, pcm, psg, header, bin, text
 	Start       HexInt `yaml:"start"`
 	End         HexInt `yaml:"end"`
-	Compression string `yaml:"compression"` // none, nemesis, kosinski, enigma
+	Compression string `yaml:"compression"` // none, huffnemesis, lzkosinski, mixedenigma
 	BPP         int    `yaml:"bpp"`         // for gfx segments: 1, 2, 4 (default), 8
 	SampleRate  int    `yaml:"sample_rate"` // for PCM segments (default 7040 for Mega Drive)
 	OutputPath  string `yaml:"output"`      // custom output path override

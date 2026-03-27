@@ -15,7 +15,7 @@ var lzKoeiPLen = [64]byte{
 	0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08,
 }
 
-// DecompressLZKoei decompresses data using the KOEI LZSS variant.
+// DecompressLZSSKoei decompresses data using the KOEI LZSS variant.
 // Direct port of TLZ.Decompress from LZSS.pas.
 //
 // The compressed stream interleaves flag/literal bytes with 16-bit "pairs"
@@ -26,11 +26,11 @@ var lzKoeiPLen = [64]byte{
 //	              match length: Elias-gamma encoded
 //	              match offset: variable-width with p_len bias table
 //	End marker: back-reference whose decoded length + 1 equals 255
-func DecompressLZKoei(src []byte) ([]byte, error) {
+func DecompressLZSSKoei(src []byte) ([]byte, error) {
 	pos := 0
 	readByte := func() (byte, error) {
 		if pos >= len(src) {
-			return 0, fmt.Errorf("lzkoei: unexpected end of input at offset %d", pos)
+			return 0, fmt.Errorf("lzsskoei: unexpected end of input at offset %d", pos)
 		}
 		b := src[pos]
 		pos++
@@ -152,40 +152,40 @@ func DecompressLZKoei(src []byte) ([]byte, error) {
 
 	// Initialise: load the first pairs word into bsLo (DeleteBits(16)).
 	if err := deleteBits(16); err != nil {
-		return nil, fmt.Errorf("lzkoei: %w", err)
+		return nil, fmt.Errorf("lzsskoei: %w", err)
 	}
 
 	var out []byte
 	for {
 		flag, err := readBits(8)
 		if err != nil {
-			return nil, fmt.Errorf("lzkoei: %w", err)
+			return nil, fmt.Errorf("lzsskoei: %w", err)
 		}
 		for mask := uint32(0x80); mask != 0; mask >>= 1 {
 			if flag&mask != 0 {
 				// Literal byte
 				b, err := readBits(8)
 				if err != nil {
-					return nil, fmt.Errorf("lzkoei: %w", err)
+					return nil, fmt.Errorf("lzsskoei: %w", err)
 				}
 				out = append(out, byte(b))
 			} else {
 				// Back-reference: decode length then offset
 				length := uint(elliasGammaDecode(bsLo)) + 1
 				if err := deleteBits(bitsLen); err != nil {
-					return nil, fmt.Errorf("lzkoei: %w", err)
+					return nil, fmt.Errorf("lzsskoei: %w", err)
 				}
 				if length == 255 {
 					return out, nil
 				}
 				offset := uint(decodePosition(bsLo))
 				if err := deleteBits(bitsLen); err != nil {
-					return nil, fmt.Errorf("lzkoei: %w", err)
+					return nil, fmt.Errorf("lzsskoei: %w", err)
 				}
 				for i := uint(0); i < length; i++ {
 					srcIdx := len(out) - int(offset) - 1
 					if srcIdx < 0 {
-						return nil, fmt.Errorf("lzkoei: back-ref out of bounds (offset=%d, outPos=%d)", offset, len(out))
+						return nil, fmt.Errorf("lzsskoei: back-ref out of bounds (offset=%d, outPos=%d)", offset, len(out))
 					}
 					out = append(out, out[srcIdx])
 				}

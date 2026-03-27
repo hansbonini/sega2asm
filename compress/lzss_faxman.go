@@ -6,7 +6,7 @@ import (
 	"fmt"
 )
 
-// DecompressFaxman decompresses data using the Faxman (clownlzss) format.
+// DecompressLZSSFaxman decompresses data using the Faxman (clownlzss) format.
 //
 // Header:
 //
@@ -21,7 +21,7 @@ import (
 //	          length     = (b1 & 0x0F) + 3
 //
 // Out-of-bounds back-references emit zero bytes.
-func DecompressFaxman(src []byte) ([]byte, error) {
+func DecompressLZSSFaxman(src []byte) ([]byte, error) {
 	if len(src) < 2 {
 		return nil, fmt.Errorf("faxman: too short")
 	}

@@ -104,7 +104,7 @@ func decodeRNC(br *rncBR, table []rncHuff) int {
 	return 0
 }
 
-// DecompressRNC1 decompresses data using Rob Northen Compression Method 1
+// DecompressLZHRNC1 decompresses data using Rob Northen Compression Method 1
 // (Huffman + LZ back-references).
 //
 // Header layout (18 bytes):
@@ -121,12 +121,12 @@ func decodeRNC(br *rncBR, table []rncHuff) int {
 // Each chunk rebuilds three Huffman tables (raw lengths, distances, copy counts)
 // then emits raw bytes and back-references until the chunk is exhausted.
 // Reference: https://segaretro.org/Rob_Northen_compression
-func DecompressRNC1(src []byte) ([]byte, error) {
+func DecompressLZHRNC1(src []byte) ([]byte, error) {
 	if len(src) < 18 {
-		return nil, fmt.Errorf("rnc1: header too short")
+		return nil, fmt.Errorf("lzhrnc1: header too short")
 	}
 	if src[0] != 'R' || src[1] != 'N' || src[2] != 'C' || src[3] != 0x01 {
-		return nil, fmt.Errorf("rnc1: bad magic/method")
+		return nil, fmt.Errorf("lzhrnc1: bad magic/method")
 	}
 	unpackedSize := int(binary.BigEndian.Uint32(src[4:8]))
 	chunks := int(src[17])
@@ -156,19 +156,19 @@ func DecompressRNC1(src []byte) ([]byte, error) {
 	return out, nil
 }
 
-// DecompressRNC2 decompresses data using Rob Northen Compression Method 2
+// DecompressLZHRNC2 decompresses data using Rob Northen Compression Method 2
 // (variable-length LZ, no Huffman tables).
 //
 // Uses the same 18-byte header as Method 1 (see DecompressRNC1), with method byte 0x02.
 //
 // Stream after header: 2-bit initial raw count, then repeating blocks of:
 // back-reference distance bits, back-reference, raw count bits, raw bytes.
-func DecompressRNC2(src []byte) ([]byte, error) {
+func DecompressLZHRNC2(src []byte) ([]byte, error) {
 	if len(src) < 18 {
-		return nil, fmt.Errorf("rnc2: header too short")
+		return nil, fmt.Errorf("lzhrnc2: header too short")
 	}
 	if src[0] != 'R' || src[1] != 'N' || src[2] != 'C' || src[3] != 0x02 {
-		return nil, fmt.Errorf("rnc2: bad magic/method")
+		return nil, fmt.Errorf("lzhrnc2: bad magic/method")
 	}
 	unpackedSize := int(binary.BigEndian.Uint32(src[4:8]))
 	br := &rncBR{src: src, pos: 18}
@@ -206,20 +206,20 @@ func DecompressRNC2(src []byte) ([]byte, error) {
 	return out, nil
 }
 
-// DecompressRNC auto-detects Method 1 or 2 from the header.
-func DecompressRNC(src []byte) ([]byte, error) {
+// DecompressLZHRNC auto-detects Method 1 or 2 from the header.
+func DecompressLZHRNC(src []byte) ([]byte, error) {
 	if len(src) < 4 {
-		return nil, fmt.Errorf("rnc: too short")
+		return nil, fmt.Errorf("lzhrnc: too short")
 	}
 	if src[0] != 'R' || src[1] != 'N' || src[2] != 'C' {
-		return nil, fmt.Errorf("rnc: bad magic")
+		return nil, fmt.Errorf("lzhrnc: bad magic")
 	}
 	switch src[3] {
 	case 0x01:
-		return DecompressRNC1(src)
+		return DecompressLZHRNC1(src)
 	case 0x02:
-		return DecompressRNC2(src)
+		return DecompressLZHRNC2(src)
 	default:
-		return nil, fmt.Errorf("rnc: unknown method 0x%02X", src[3])
+		return nil, fmt.Errorf("lzhrnc: unknown method 0x%02X", src[3])
 	}
 }

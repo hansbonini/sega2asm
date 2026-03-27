@@ -5,10 +5,10 @@ import (
 	"fmt"
 )
 
-// DecompressLZClimax2 decompresses tile graphics using the Climax/Camelot
+// DecompressExpGolombClimax decompresses tile graphics using the Climax/Camelot
 // format found in Shining Force 1 and related titles.
 //
-// Unlike lzclimax (Landstalker LZSS), this is a specialised 4bpp tile
+// Unlike lz77climax (Landstalker LZSS), this is a specialised 4bpp tile
 // graphics compressor that encodes nibble values with 2-D spatial
 // navigation and produces tile-ordered VDP output.
 //
@@ -22,9 +22,9 @@ import (
 //  1. Decode the bitstream into a nibble buffer (one nibble per byte, flagged 0x80).
 //  2. Pack adjacent nibble pairs into bytes (two pixels per byte, high|low nibble).
 //  3. Rearrange the packed bitmap into VDP tile order (4×4 tile groups).
-func DecompressLZClimax2(src []byte) ([]byte, error) {
+func DecompressExpGolombClimax(src []byte) ([]byte, error) {
 	if len(src) < 4 {
-		return nil, fmt.Errorf("lzclimax2: input too short")
+		return nil, fmt.Errorf("expgolombclimax: input too short")
 	}
 
 	widthTiles := int(src[0])
@@ -33,10 +33,10 @@ func DecompressLZClimax2(src []byte) ([]byte, error) {
 	bufSize := stride * heightTiles * 8
 
 	if bufSize == 0 {
-		return nil, fmt.Errorf("lzclimax2: zero dimensions")
+		return nil, fmt.Errorf("expgolombclimax: zero dimensions")
 	}
 	if widthTiles%4 != 0 || heightTiles%4 != 0 {
-		return nil, fmt.Errorf("lzclimax2: dimensions %dx%d must be multiples of 4",
+		return nil, fmt.Errorf("expgolombclimax: dimensions %dx%d must be multiples of 4",
 			widthTiles, heightTiles)
 	}
 
@@ -78,7 +78,7 @@ mainLoop:
 		for readBit() == 0 {
 			unary++
 			if unary > 24 {
-				return nil, fmt.Errorf("lzclimax2: corrupt bitstream (unary overflow)")
+				return nil, fmt.Errorf("expgolombclimax: corrupt bitstream (unary overflow)")
 			}
 		}
 		cursor += (2 << uint(unary)) - 2

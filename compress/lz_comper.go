@@ -2,7 +2,7 @@ package compress
 
 import "sega2asm/helpers"
 
-// DecompressComper decompresses data using the Comper (clownlzss) format.
+// DecompressLZComper decompresses data using the Comper (clownlzss) format.
 //
 // Word-oriented: all operations work on 16-bit units.
 // No size header; stream terminates when a back-reference with raw_count == 0 is encountered.
@@ -13,7 +13,7 @@ import "sega2asm/helpers"
 //	bit=0 → back-reference word pair (raw_dist, raw_count):
 //	          distance = (0x100 - raw_dist) × 2 bytes
 //	          length   = (raw_count + 1) × 2 bytes; raw_count == 0 → end of stream
-func DecompressComper(src []byte) ([]byte, error) {
+func DecompressLZComper(src []byte) ([]byte, error) {
 	pos := 0
 	var out []byte
 	var descWord uint16

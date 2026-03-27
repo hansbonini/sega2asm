@@ -6,7 +6,7 @@ import (
 	"fmt"
 )
 
-// DecompressRocket decompresses data using the Rocket (clownlzss) format.
+// DecompressLZRocket decompresses data using the Rocket (clownlzss) format.
 //
 // Header:
 //
@@ -19,7 +19,7 @@ import (
 //	bit=0 → back-reference: big-endian word
 //	          ring index = (word + 0x40) & 0x3FF   (10-bit absolute ring buffer index)
 //	          length     = (word >> 10) + 1
-func DecompressRocket(src []byte) ([]byte, error) {
+func DecompressLZRocket(src []byte) ([]byte, error) {
 	if len(src) < 4 {
 		return nil, fmt.Errorf("rocket: too short")
 	}

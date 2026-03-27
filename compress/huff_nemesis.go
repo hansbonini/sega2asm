@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-// DecompressNemesis decompresses data using the Nemesis tile compression format.
+// DecompressHuffNemesis decompresses data using the Nemesis tile compression format.
 //
 // Header:
 //
@@ -20,9 +20,9 @@ import (
 //
 // In XOR mode each output nibble is XOR'd with the preceding nibble.
 // Reference: https://segaretro.org/Nemesis_compression
-func DecompressNemesis(src []byte) ([]byte, error) {
+func DecompressHuffNemesis(src []byte) ([]byte, error) {
 	if len(src) < 2 {
-		return nil, fmt.Errorf("nemesis: data too short")
+		return nil, fmt.Errorf("huffnemesis: data too short")
 	}
 	header := binary.BigEndian.Uint16(src[0:2])
 	xorMode := (header & 0x8000) != 0
@@ -49,11 +49,11 @@ func DecompressNemesis(src []byte) ([]byte, error) {
 		code := src[pos]
 		pos++
 		if codeBits == 0 || codeBits > 8 {
-			return nil, fmt.Errorf("nemesis: invalid code_bits=%d", codeBits)
+			return nil, fmt.Errorf("huffnemesis: invalid code_bits=%d", codeBits)
 		}
 		idx := int(code) << (8 - int(codeBits))
 		if idx >= 256 {
-			return nil, fmt.Errorf("nemesis: code table index OOB")
+			return nil, fmt.Errorf("huffnemesis: code table index OOB")
 		}
 		runs[idx] = nybbleRun{codeBits: codeBits, value: curValue, length: runLen}
 	}
@@ -147,7 +147,7 @@ func DecompressNemesis(src []byte) ([]byte, error) {
 			}
 		}
 		if run == nil {
-			return out, fmt.Errorf("nemesis: no code match")
+			return out, fmt.Errorf("huffnemesis: no code match")
 		}
 		for i := 0; i < int(run.length) && nybsRemaining > 0; i++ {
 			outputNybble(run.value)

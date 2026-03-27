@@ -6,7 +6,7 @@ import (
 	"fmt"
 )
 
-// DecompressRage decompresses data using the Rage (clownlzss) format
+// DecompressLZRage decompresses data using the Rage (clownlzss) format
 // (Streets of Rage series).
 //
 // Header:
@@ -21,7 +21,7 @@ import (
 //	                             count = (cmd & 0x10) ? (cmd & 0xF) << 8 | next : cmd & 0xF
 //	0b011 → repeat last dist:  copy (cmd & 0x1F) bytes using the previous back-reference distance
 //	0b1xx → back-reference:    length = ((cmd >> 5) & 3) + 4; distance = (cmd & 0x1F) << 8 | next
-func DecompressRage(src []byte) ([]byte, error) {
+func DecompressLZRage(src []byte) ([]byte, error) {
 	if len(src) < 2 {
 		return nil, fmt.Errorf("rage: too short")
 	}

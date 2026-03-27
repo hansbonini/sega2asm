@@ -2,7 +2,7 @@ package compress
 
 import "fmt"
 
-// DecompressSegaRD decompresses data using the Sega RD (Resource Data) format.
+// DecompressRLESegard decompresses data using the Sega RD (Resource Data) format.
 //
 // Stream structure: sequence of blocks terminated by a count byte of 0xFF.
 // Each block:
@@ -12,7 +12,7 @@ import "fmt"
 //	remaining literal bytes           — fill any bit positions not covered by the combined mask
 //
 // Output is always a multiple of 32 bytes; each block emits one 32-byte tile row.
-func DecompressSegaRD(src []byte) ([]byte, error) {
+func DecompressRLESegard(src []byte) ([]byte, error) {
 	var out []byte
 	pos := 0
 	read1 := func() (byte, bool) {

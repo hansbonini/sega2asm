@@ -6,7 +6,7 @@ import (
 	"fmt"
 )
 
-// DecompressChameleon decompresses data using the Chameleon (clownlzss) format.
+// DecompressLZChameleon decompresses data using the Chameleon (clownlzss) format.
 //
 // Header:
 //
@@ -20,7 +20,7 @@ import (
 //	bit=0 → back-reference: read 2 bytes from the descriptor sub-stream
 //	          ring index = b0 | ((b1 & 0xF0) << 4)   (12-bit absolute ring buffer index)
 //	          length     = (b1 & 0x0F) + 3; ring index == 0 && length == 3 → end of stream
-func DecompressChameleon(src []byte) ([]byte, error) {
+func DecompressLZChameleon(src []byte) ([]byte, error) {
 	if len(src) < 2 {
 		return nil, fmt.Errorf("chameleon: too short")
 	}

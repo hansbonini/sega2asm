@@ -6,47 +6,48 @@ import "fmt"
 //
 // Compression name strings accepted by the YAML `compression:` field:
 //
-//   Original:     nemesis  kosinski  kosinskiplus  enigma  segard
-//   clownlzss:    saxman  saxman_noheader  comper  rocket  faxman  rage  chameleon
+//   Original:     huffnemesis  lzkosinski  lzkosinskiplus  mixedenigma  rlesegard
+//   clownlzss:    lzsssaxman  lzsssaxman_noheader  lzcomper  lzrocket  lzssfaxman  lzrage  lzchameleon
 //   py-port:      lznamco  lzstrike  lztechnosoft
 //                 lzkonami1  lzkonami2  lzkonami3
-//                 lzancient  lztose  lznextech  lzwolfteam  lzsti  rlesc
-//   RNC:          rnc  rnc1  rnc2
-//   Blizzard:     lzblizzard
+//                 lzancient  lzbandai  lznextech  lzwolfteam  lzsti  rlesc
+//   RNC:          lzhrnc  lzhrnc1  lzhrnc2
+//   Blizzard:     lzssblizzard
 //   LucasArts:    lzhlucasarts
-//   Climax:       lzclimax  lzclimax2  lzclimax3
-//   Westone:      lzwestone  lzwestone_block
-//   KOEI:         lzkoei
+//   Climax:       lz77climax  expgolombclimax  lzclimax
+//   Westone:      lzhwestone  mixedwestone
+//   KOEI:         lzsskoei
 //   Game Arts:    rlegamearts
-//   PowerPacker:  powerpack20
-//   Bahamut:      lzbahamut
+//   PowerPacker:  lzpowerpack20
+//   Bahamut:      rlebahamut
+//   Samsung:      huffsamsung
 //   Pass-through: none  (empty)
 func Decompress(compression string, src []byte) ([]byte, error) {
 	switch compression {
-	case "nemesis":
-		return DecompressNemesis(src)
-	case "kosinski":
-		return DecompressKosinski(src)
-	case "kosinskiplus":
-		return DecompressKosinskiPlus(src)
-	case "enigma":
-		return DecompressEnigma(src)
-	case "segard":
-		return DecompressSegaRD(src)
-	case "saxman":
-		return DecompressSaxman(src)
-	case "saxman_noheader":
-		return DecompressSaxmanNoHeader(src)
-	case "comper":
-		return DecompressComper(src)
-	case "rocket":
-		return DecompressRocket(src)
-	case "faxman":
-		return DecompressFaxman(src)
-	case "rage":
-		return DecompressRage(src)
-	case "chameleon":
-		return DecompressChameleon(src)
+	case "huffnemesis":
+		return DecompressHuffNemesis(src)
+	case "lzkosinski":
+		return DecompressLZKosinski(src)
+	case "lzkosinskiplus":
+		return DecompressLZKosinskiPlus(src)
+	case "mixedenigma":
+		return DecompressMixedEnigma(src)
+	case "rlesegard":
+		return DecompressRLESegard(src)
+	case "lzsssaxman":
+		return DecompressLZSSSaxman(src)
+	case "lzsssaxman_noheader":
+		return DecompressLZSSSaxmanNoHeader(src)
+	case "lzcomper":
+		return DecompressLZComper(src)
+	case "lzrocket":
+		return DecompressLZRocket(src)
+	case "lzssfaxman":
+		return DecompressLZSSFaxman(src)
+	case "lzrage":
+		return DecompressLZRage(src)
+	case "lzchameleon":
+		return DecompressLZChameleon(src)
 	case "lznamco":
 		return DecompressLZNamco(src)
 	case "lzstrike":
@@ -61,8 +62,8 @@ func Decompress(compression string, src []byte) ([]byte, error) {
 		return DecompressLZKonami3(src)
 	case "lzancient":
 		return DecompressLZAncient(src)
-	case "lztose":
-		return DecompressLZTose(src)
+	case "lzbandai":
+		return DecompressLZBandai(src)
 	case "lznextech":
 		return DecompressLZNextech(src)
 	case "lzwolfteam":
@@ -70,45 +71,47 @@ func Decompress(compression string, src []byte) ([]byte, error) {
 	case "lzsti":
 		return DecompressLZSTI(src)
 	case "rlesc":
-		return DecompressRLESoftwareCreations(src)
-	case "rnc":
-		return DecompressRNC(src)
-	case "rnc1":
-		return DecompressRNC1(src)
-	case "rnc2":
-		return DecompressRNC2(src)
+		return DecompressRLESC(src)
+	case "lzhrnc":
+		return DecompressLZHRNC(src)
+	case "lzhrnc1":
+		return DecompressLZHRNC1(src)
+	case "lzhrnc2":
+		return DecompressLZHRNC2(src)
 	case "lzcompile":
 		return DecompressLZCompile(src)
-	case "itl":
-		return DecompressITL(src)
+	case "mixeditl":
+		return DecompressMixedITL(src)
 	case "lzfactor5":
 		return DecompressLZFactor5(src)
 	case "lzbeam":
 		return DecompressLZBeam(src)
 	case "lztreasure":
 		return DecompressLZTreasure(src)
-	case "lzblizzard":
-		return DecompressLZBlizzard(src)
+	case "lzssblizzard":
+		return DecompressLZSSBlizzard(src)
 	case "lzhlucasarts":
 		return DecompressLZHLucasArts(src)
+	case "lz77climax":
+		return DecompressLZ77Climax(src)
+	case "expgolombclimax":
+		return DecompressExpGolombClimax(src)
 	case "lzclimax":
 		return DecompressLZClimax(src)
-	case "lzclimax2":
-		return DecompressLZClimax2(src)
-	case "lzclimax3":
-		return DecompressLZClimax3(src)
-	case "lzwestone":
-		return DecompressLZWestone(src)
-	case "lzwestone_block":
-		return DecompressLZWestoneBlock(src)
-	case "lzkoei":
-		return DecompressLZKoei(src)
+	case "lzhwestone":
+		return DecompressLZHWestone(src)
+	case "mixedwestone":
+		return DecompressMixedWestone(src)
+	case "lzsskoei":
+		return DecompressLZSSKoei(src)
 	case "rlegamearts":
 		return DecompressRLEGameArts(src)
-	case "powerpack20":
-		return DecompressPowerPack20(src)
-	case "lzbahamut":
-		return DecompressLZBahamut(src)
+	case "lzpowerpack20":
+		return DecompressLZPowerPack20(src)
+	case "rlebahamut":
+		return DecompressRLEBahamut(src)
+	case "huffsamsung":
+		return DecompressHuffSamsung(src)
 	case "none", "":
 		dst := make([]byte, len(src))
 		copy(dst, src)

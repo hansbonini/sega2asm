@@ -2,7 +2,7 @@ package compress
 
 import "fmt"
 
-// DecompressKosinski decompresses data using the Kosinski compression format.
+// DecompressLZKosinski decompresses data using the Kosinski compression format.
 //
 // No size header; stream is self-terminating via an end-of-stream token.
 //
@@ -15,7 +15,7 @@ import "fmt"
 //	bit=0, next bit=0    → short back-reference: next 2 bits = length-2 (1..3), next byte = distance
 //
 // Reference: https://segaretro.org/Kosinski_compression
-func DecompressKosinski(src []byte) ([]byte, error) {
+func DecompressLZKosinski(src []byte) ([]byte, error) {
 	if len(src) < 2 {
 		return nil, fmt.Errorf("kosinski: too short")
 	}

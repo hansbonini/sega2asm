@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-// DecompressPowerPack20 decompresses data using the PowerPacker 2.0 scheme
+// DecompressLZPowerPack20 decompresses data using the PowerPacker 2.0 scheme
 // as found in James Pond 3 (and other Amiga-ported titles).
 //
 // This variant has no "PP20" magic bytes. Instead the first 4 bytes are a
@@ -18,7 +18,7 @@ import (
 //
 // The algorithm decompresses backwards (from end to start) using LZ77 with a
 // sentinel-based bitstream reader.
-func DecompressPowerPack20(src []byte) ([]byte, error) {
+func DecompressLZPowerPack20(src []byte) ([]byte, error) {
 	if len(src) < 12 {
 		return nil, fmt.Errorf("powerpack20: input too short")
 	}

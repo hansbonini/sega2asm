@@ -2,7 +2,7 @@ package compress
 
 import "fmt"
 
-// DecompressRLESoftwareCreations decompresses data using the Software Creations
+// DecompressRLESC decompresses data using the Software Creations
 // RLE format (Maximum Carnage, Venom, The Tick, Cutthroat Island).
 //
 // Header:
@@ -13,7 +13,7 @@ import "fmt"
 //
 //	escape, value, count → emit count bytes of value
 //	any other byte       → emit verbatim
-func DecompressRLESoftwareCreations(src []byte) ([]byte, error) {
+func DecompressRLESC(src []byte) ([]byte, error) {
 	if len(src) < 1 {
 		return nil, fmt.Errorf("rlesc: too short")
 	}

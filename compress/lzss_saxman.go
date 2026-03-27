@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-// DecompressSaxman decompresses data using the Saxman (clownlzss) format.
+// DecompressLZSSSaxman decompresses data using the Saxman (clownlzss) format.
 //
 // Header:
 //
@@ -18,10 +18,10 @@ import (
 //	bit=0 → back-reference: 2 bytes
 //	          ring index = (b0 | ((b1 & 0xF0) << 4)) + 18   (absolute, mod 0x1000)
 //	          length     = (b1 & 0x0F) + 3
-func DecompressSaxman(src []byte) ([]byte, error) { return decompressSaxman(src, true) }
+func DecompressLZSSSaxman(src []byte) ([]byte, error) { return decompressSaxman(src, true) }
 
-// DecompressSaxmanNoHeader decompresses Saxman-encoded data with no leading size header.
-func DecompressSaxmanNoHeader(src []byte) ([]byte, error) { return decompressSaxman(src, false) }
+// DecompressLZSSSaxmanNoHeader decompresses Saxman-encoded data with no leading size header.
+func DecompressLZSSSaxmanNoHeader(src []byte) ([]byte, error) { return decompressSaxman(src, false) }
 
 func decompressSaxman(src []byte, hasHeader bool) ([]byte, error) {
 	var data []byte

@@ -4,7 +4,7 @@ import (
 	"fmt"
 )
 
-// DecompressLZBahamut decompresses font/tile data using the Bahamut Senki
+// DecompressRLEBahamut decompresses font/tile data using the Bahamut Senki
 // byteplane-interleaved command-nibble scheme.
 //
 // Format:
@@ -29,16 +29,16 @@ import (
 //
 // Output is numEntries × 2 bytes (big-endian 16-bit words) with even and odd
 // byte planes interleaved.
-func DecompressLZBahamut(src []byte) ([]byte, error) {
+func DecompressRLEBahamut(src []byte) ([]byte, error) {
 	if len(src) < 2 {
-		return nil, fmt.Errorf("lzbahamut: input too short")
+		return nil, fmt.Errorf("rlebahamut: input too short")
 	}
 
 	pos := 0
 
 	rd8 := func() (byte, error) {
 		if pos >= len(src) {
-			return 0, fmt.Errorf("lzbahamut: unexpected end of input at offset %d", pos)
+			return 0, fmt.Errorf("rlebahamut: unexpected end of input at offset %d", pos)
 		}
 		b := src[pos]
 		pos++
@@ -184,7 +184,7 @@ func DecompressLZBahamut(src []byte) ([]byte, error) {
 				return nil
 
 			default:
-				return fmt.Errorf("lzbahamut: illegal command %d", cmd)
+				return fmt.Errorf("rlebahamut: illegal command %d", cmd)
 			}
 
 			// read next command byte
