@@ -22,6 +22,7 @@ import "fmt"
 //	Bahamut:      rlebahamut
 //	Gaibrain:     lzgaibrain
 //	MicroProse:   mixedmicroprose
+//	EA Canada:    lzhrefpack
 //	Pass-through: none  (empty)
 func Decompress(compression string, src []byte) ([]byte, error) {
 	switch compression {
@@ -117,6 +118,8 @@ func Decompress(compression string, src []byte) ([]byte, error) {
 		return DecompressLZGaibrain(src)
 	case "mixedmicroprose":
 		return DecompressMixedMicroprose(src)
+	case "lzhrefpack":
+		return DecompressLZHRefpack(src)
 	case "none", "":
 		dst := make([]byte, len(src))
 		copy(dst, src)

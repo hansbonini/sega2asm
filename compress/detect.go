@@ -251,7 +251,31 @@ var signatures = []signature{
 			0x36, 0x13, 0x02, 0x83, 0x00, 0x00, 0x01, 0xFC, 0xE4, 0x83, 0x06, 0x43, 0x00, 0x80, 0x0C, 0x43,
 			0x00, 0xFF,
 		},
-	}
+	},
+	{
+		// RefPack (EA Canada) — decompressor routine signature.
+		// Matches the header parsing sequence that checks the size-present flag (bit 0),
+		// masks the format type (andi.b #$FE), and dispatches format 0x10:
+		//   btst    #0,d3          ; 08 03 00 00
+		//   beq.w   +4             ; 67 00 00 04
+		//   addq.w  #3,a0          ; 56 48
+		//   andi.b  #$FE,d3        ; 02 03 00 FE
+		//   cmpi.b  #$10,d3        ; 0C 03 00 10
+		name:        "lzhrefpack",
+		wordAligned: true,
+		sig: []byte{
+			0x08, 0x03, 0x00, 0x00, 0x67, 0x00, 0x00, 0x04, 0x56, 0x48,
+			0x02, 0x03, 0x00, 0xFE, 0x0C, 0x03, 0x00, 0x10,
+		},
+	},
+	{
+		// LZ Treasure
+		name:        "lztreasure",
+		wordAligned: true,
+		sig: []byte{
+			0x46, 0xFC, 0x27, 0x00, 0x3A, 0xBC, 0x8F, 0x02, 0x24, 0x0B, 0xE5, 0x8A, 0xE4, 0x4A, 0x00, 0x42,
+		},
+	},
 }
 
 // Detect scans rom for known compression routine signatures and returns all

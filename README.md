@@ -32,6 +32,8 @@ Inspired by [ethteck/splat](https://github.com/ethteck/splat) and [nathancassano
 | `huffnemesis2` | Huffman + Nibble | Nemesis variant; canonical Huffman table (8 code lengths), 8-bit lookup with 2+7 bit escape codes, value byte = repeat count (high nibble) + pixel (low nibble), 8 nibbles packed per longword, optional XOR delta mode; header encodes tile count + XOR flag | 6-Pak, Arcade Legends Sega Mega Drive, Arnold Palmer Tournament Golf, Columns, F1 Circus MD, Forgotten Worlds, Golden Axe, Jewel Master, Mega Games 2, Mega Games 6, Mega Games 6 Vol. 2, Michael Jackson's Moonwalker, Mystic Defender, Psy-O-Blade, Super Mario Bros. (Unl), Twin Cobra - Desert Attack Helicopter, Uzu Keobukseon, World Cup Soccer ~ World Championship Soccer |
 | `lznamco` | LZ | Namco LZ; 0x400-byte sliding window | Ball Jacks, Buning Force, Chibi Maruko-Chan: Waku Waku Shopping, Fushigi Umi No Nadia, Klax, Kyuukai Douchuuki, Marvel Land , Megapanel, Pac-Attack, PacMan2: The New Adventures, Phelios, Powerball, Rolling Thunder 2 |
 | `lzsskoei` | LZSS | KOEI LZSS variant; interleaved flag/literal bytes with 16-bit pairs words; Elias-gamma length coding; variable-width offset via p_len bias table; end marker length=255 | Aerobiz, Aerobiz Supersonic , Gemfire, Genghis Khan II, Liberty or Death, Nobunaga's Ambition, Operation Europe, P.T.O.: Pacific Theater of Operations, Romance of the Three Kingdoms II (also on Amiga), Romance of the Three Kingdoms III, Uncharted Waters, Uncharted Waters: New Horizons |
+| `lzhrefpack` | LZH | EA Canada RefPack; auto-detects format from header flags: 0x10 (byte-oriented LZSS with short/medium/large match tokens), 0x30 (canonical Huffman with RLE escape), 0x32 (Huffman + 1st-order byte delta), 0x34 (Huffman + 2nd-order byte delta); 0xFB magic byte, 24-bit BE decompressed size | Coach K College Basketball, FIFA 98 - Road to World Cup, FIFA International Soccer, FIFA Soccer 95, FIFA Soccer 96, FIFA Soccer 97, NBA Live 95, NBA Live 96, NBA Live 97, NBA Live 98, Skitchin' |
+| `none` | — | No compression; data copied verbatim | — |
 | `rlesegard` | RLE | SegaRD block-based RLE graphics compression | 6-Pak, Alex Kidd in the Enchanted Castle, Altered Beast, Arcade Legends Sega Mega Drive, Columns, Golden Axe, Last Battle, Mega Games 2, Mega Games 6, Mega Games 6 Vol. 2, Super Mario Bros. (Unl), World Cup Soccer ~ World Championship Soccer |
 | `lzkonami2` | LZ | Konami second-generation LZ | Animaniacs, Castlevania Bloodlines, Contra: Hard Corps, Rocket Knight Adventures, Sunset Riders, Teenage Mutant Ninja Turtles: The Hyperstone Heist, Tiny Toon Adventures: Acme Allstars, Tiny Toon Adventures: Buster Hidden Treasure |
 | `lzbeam` | LZ | Beam Software LZ; Elias-coded counts, absolute back-references, command bits in appended bitstream | Blades of Vengeance, George Foreman's KO Boxing, NBA All-Star Challenge, Radical Rex, Super High Impact, Tom and Jerry - Frantic Antics, True Lies |
@@ -68,9 +70,8 @@ Inspired by [ethteck/splat](https://github.com/ethteck/splat) and [nathancassano
 | `rlebahamut` | RLE + Mixed | Bahamut Senki byteplane-interleaved command-nibble scheme; even/odd byte planes at stride 2; 7 commands (terminate, RLE fill, literal copy, incrementing fill, repeated sub-run, repeated incremental run, uncompressed passthrough); length in low nibble with 8-bit extended length | Bahamut Senki |
 | `lzcomper` | LZ | Community format optimised for 68000 decompression speed at the cost of ratio | Community / Sonic hacks |
 | `lzssfaxman` | LZSS | Modified Saxman tuned to compress SMPS music data | Sonic hacks / SMPS tools |
-| `none` | — | No compression; data copied verbatim | — |
 
-> **Total: 213 unique games covered across 39 compression formats**
+> **Total: 275 unique games covered across 44 compression formats**
 
 **Labels & symbols:**
 - Reads `symbols.txt` in multiple formats (name=addr, addr:name, space-separated)
