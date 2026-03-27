@@ -72,7 +72,7 @@ Inspired by [ethteck/splat](https://github.com/ethteck/splat) and [nathancassano
 | `lzssfaxman` | LZSS | Modified Saxman tuned to compress SMPS music data | Sonic hacks / SMPS tools |
 | `none` | — | No compression; data copied verbatim | — |
 
-> **Total: 276 unique games covered across 45 compression formats**
+> **Total: 286 unique games covered across 45 compression formats**
 
 **Labels & symbols:**
 - Reads `symbols.txt` in multiple formats (name=addr, addr:name, space-separated)
