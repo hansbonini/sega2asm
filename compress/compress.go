@@ -24,6 +24,7 @@ import "fmt"
 //	MicroProse:   mixedmicroprose
 //	EA Canada:    lzhrefpack
 //	Elmer SWD:    lzelmerswd
+//	Sloane:       huffsloane
 //	Pass-through: none  (empty)
 func Decompress(compression string, src []byte) ([]byte, error) {
 	switch compression {
@@ -123,6 +124,8 @@ func Decompress(compression string, src []byte) ([]byte, error) {
 		return DecompressLZHRefpack(src)
 	case "lzelmerswd":
 		return DecompressLZElmerSWD(src)
+	case "huffsloane":
+		return DecompressHuffSloane(src)
 	case "none", "":
 		dst := make([]byte, len(src))
 		copy(dst, src)
