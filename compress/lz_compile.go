@@ -2,6 +2,10 @@ package compress
 
 import "fmt"
 
+func init() {
+	Register(Algorithm{Name: "lzcompile", Family: FamilyLZ, Description: "Compile Co. 256-byte circular history", Decompress: DecompressLZCompile})
+}
+
 // ── Compile (Puyo Puyo / Aleste / MUSHA etc.) ─────────────────────────────────
 //
 // Algorithm: command-byte stream with two modes.

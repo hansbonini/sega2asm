@@ -3,7 +3,13 @@ package compress
 import (
 	"encoding/binary"
 	"fmt"
+
+	"sega2asm/types"
 )
+
+func init() {
+	Register(Algorithm{Name: "huffsloane", Family: FamilyHuffman, Description: "Burt Sloane nibble-packed Huffman", Decompress: DecompressHuffSloane})
+}
 
 // DecompressHuffSloane decompresses 4bpp tile pixel data using Burt Sloane's
 // Huffman nibble-packing scheme, found in titles by Technopop, HeadGames,
@@ -50,19 +56,14 @@ func DecompressHuffSloane(src []byte) ([]byte, error) {
 	}
 
 	// --- Build Huffman lookup table ---
-	type htEntry struct {
-		codeLen int  // bits consumed (1..8)
-		symbol  byte // decoded symbol
-	}
-	var table [256]htEntry
 	pos := 4
-	writePos := 0
+	var pairs [][2]byte
 
 	for {
 		if pos >= len(src) {
 			return nil, fmt.Errorf("huffsloane: unexpected end of input in table")
 		}
-		codeLen := int(src[pos])
+		codeLen := src[pos]
 		pos++
 		if codeLen == 0xFF {
 			break
@@ -75,16 +76,10 @@ func DecompressHuffSloane(src []byte) ([]byte, error) {
 		}
 		symbol := src[pos]
 		pos++
-
-		slotCount := 1 << uint(8-codeLen)
-		if writePos+slotCount > 256 {
-			return nil, fmt.Errorf("huffsloane: table overflow at offset 0x%X", pos-2)
-		}
-		for i := 0; i < slotCount; i++ {
-			table[writePos] = htEntry{codeLen, symbol}
-			writePos++
-		}
+		pairs = append(pairs, [2]byte{codeLen, symbol})
 	}
+
+	table := types.BuildHuffTable256Pairs(pairs)
 
 	// --- Bitstream reader (MSB-first, byte-refill when bits < 9) ---
 	if pos+1 >= len(src) {
@@ -122,47 +117,9 @@ func DecompressHuffSloane(src []byte) ([]byte, error) {
 	}
 
 	// --- Decompression loop ---
-	out := make([]byte, outSize)
-	wp := 0
-	var accum uint32
-	nibLeft := 8 // nibble slots remaining in current longword
-	lwLeft := lwCount
+	nw := types.NewNibbleWriter(lwCount, false)
 
-	flush := func() {
-		if wp+3 < outSize {
-			binary.BigEndian.PutUint32(out[wp:], accum)
-		}
-		wp += 4
-		accum = 0
-		nibLeft = 8
-		lwLeft--
-	}
-
-	putNibbles := func(color byte, count int) {
-		fill := uint32(color) * 0x11111111
-		for count > 0 && lwLeft > 0 {
-			if count < nibLeft {
-				// Partial fill — stays in current longword
-				newLeft := nibLeft - count
-				mask := sloaneNibMask[nibLeft] - sloaneNibMask[newLeft]
-				accum |= fill & mask
-				nibLeft = newLeft
-				break
-			} else if count == nibLeft {
-				// Exactly fills current longword
-				accum |= fill & sloaneNibMask[nibLeft]
-				flush()
-				break
-			} else {
-				// Overflows — fill current longword, flush, continue
-				accum |= fill & sloaneNibMask[nibLeft]
-				count -= nibLeft
-				flush()
-			}
-		}
-	}
-
-	for lwLeft > 0 {
+	for !nw.Done() {
 		code := peek8()
 
 		var sym byte
@@ -170,23 +127,17 @@ func DecompressHuffSloane(src []byte) ([]byte, error) {
 			sym = readEscape()
 		} else {
 			entry := table[code]
-			consume(entry.codeLen)
-			sym = entry.symbol
+			consume(entry.BitsUsed)
+			sym = entry.Symbol
 		}
 
 		color := sym & 0x0F
 		count := int(sym>>4) + 1
 
-		putNibbles(color, count)
+		if nw.PutNibbleRun(color, count) {
+			break
+		}
 	}
 
-	return out, nil
-}
-
-// sloaneNibMask is the cumulative mask for the lowest n nibbles of a 32-bit word.
-// sloaneNibMask[0] = 0x00000000, sloaneNibMask[1] = 0x0000000F, ..., sloaneNibMask[8] = 0xFFFFFFFF.
-var sloaneNibMask = [9]uint32{
-	0x00000000, 0x0000000F, 0x000000FF, 0x00000FFF,
-	0x0000FFFF, 0x000FFFFF, 0x00FFFFFF, 0x0FFFFFFF,
-	0xFFFFFFFF,
+	return nw.Bytes(), nil
 }

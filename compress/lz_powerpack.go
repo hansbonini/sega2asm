@@ -5,6 +5,10 @@ import (
 	"fmt"
 )
 
+func init() {
+	Register(Algorithm{Name: "lzpowerpack20", Family: FamilyLZ77, Description: "PowerPacker 2.0; backwards LZ77", Decompress: DecompressLZPowerPack20})
+}
+
 // DecompressLZPowerPack20 decompresses data using the PowerPacker 2.0 scheme
 // as found in James Pond 3 (and other Amiga-ported titles).
 //

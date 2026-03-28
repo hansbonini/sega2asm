@@ -4,6 +4,10 @@ import (
 	"fmt"
 )
 
+func init() {
+	Register(Algorithm{Name: "rlebahamut", Family: FamilyRLE, Description: "Bahamut Senki byteplane-interleaved RLE", Decompress: DecompressRLEBahamut})
+}
+
 // DecompressRLEBahamut decompresses font/tile data using the Bahamut Senki
 // byteplane-interleaved command-nibble scheme.
 //

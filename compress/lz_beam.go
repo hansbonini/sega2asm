@@ -1,6 +1,13 @@
 package compress
 
-import "fmt"
+import (
+	"fmt"
+	"sega2asm/types"
+)
+
+func init() {
+	Register(Algorithm{Name: "lzbeam", Family: FamilyLZ, Description: "Beam Software LZ; Elias-coded counts", Decompress: DecompressLZBeam})
+}
 
 // DecompressLZBeam decompresses data using the Beam Software compression format.
 //
@@ -31,33 +38,7 @@ func DecompressLZBeam(src []byte) ([]byte, error) {
 
 	rpos := 4
 	out := make([]byte, 0, outLen)
-	cmdData := src[cmdDataStart:]
-	cmdPos := 0
-	cmdByte := byte(0)
-	cmdBits := 0 // remaining bits in cmdByte
-
-	readBit := func() int {
-		if cmdBits <= 0 {
-			if cmdPos >= len(cmdData) {
-				return 0
-			}
-			cmdByte = cmdData[cmdPos]
-			cmdPos++
-			cmdBits = 8
-		}
-		bit := int((cmdByte >> 7) & 1)
-		cmdByte <<= 1
-		cmdBits--
-		return bit
-	}
-
-	readBits := func(n int) int {
-		v := 0
-		for i := 0; i < n; i++ {
-			v = (v << 1) | readBit()
-		}
-		return v
-	}
+	br := types.NewMSBBitReader(src, cmdDataStart)
 
 	// bitLen returns the number of bits needed to represent v (0→0, 1→1, 2-3→2, …).
 	bitLen := func(v int) int {
@@ -73,8 +54,8 @@ func DecompressLZBeam(src []byte) ([]byte, error) {
 	// Bit pattern: leading zeros double+extend the accumulator; a 1-bit stops the loop.
 	readCopyCount := func() int {
 		result := 1
-		for readBit() == 0 && len(out)+result < outLen {
-			result = (result << 1) | readBit()
+		for br.ReadBit() == 0 && len(out)+result < outLen {
+			result = (result << 1) | br.ReadBit()
 		}
 		return result
 	}
@@ -89,7 +70,7 @@ func DecompressLZBeam(src []byte) ([]byte, error) {
 		} else {
 			nbits = 8 + bitLen(writePos>>8)
 		}
-		return readBits(nbits)
+		return br.ReadBits(nbits)
 	}
 
 	copySrcToDst := func() {
@@ -122,7 +103,7 @@ func DecompressLZBeam(src []byte) ([]byte, error) {
 		offset := readOffset()
 		copyDstToDst(offset)
 
-		if len(out) < outLen && readBit() == 0 {
+		if len(out) < outLen && br.ReadBit() == 0 {
 			copySrcToDst()
 		}
 	}

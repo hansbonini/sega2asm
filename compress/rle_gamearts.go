@@ -5,6 +5,10 @@ import (
 	"fmt"
 )
 
+func init() {
+	Register(Algorithm{Name: "rlegamearts", Family: FamilyRLE, Description: "Game Arts 4-plane RLE", Decompress: DecompressRLEGameArts})
+}
+
 // DecompressRLEGameArts decompresses graphics data from Game Arts Mega Drive
 // games (e.g. Alisia Dragoon). Reverse-engineered from sub_FA88 / sub_FB72.
 //

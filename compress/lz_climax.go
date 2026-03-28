@@ -5,6 +5,10 @@ import (
 	"fmt"
 )
 
+func init() {
+	Register(Algorithm{Name: "lzclimax", Family: FamilyLZH, Description: "Camelot/Climax bitstream LZ + RLE", Decompress: DecompressLZClimax})
+}
+
 // DecompressLZClimax decompresses data using the Camelot/Climax "basic"
 // tile compressor found in Shining Force 2 (LoadBasicCompressedData).
 //

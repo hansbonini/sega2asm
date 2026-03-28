@@ -5,6 +5,10 @@ import (
 	"fmt"
 )
 
+func init() {
+	Register(Algorithm{Name: "lzancient", Family: FamilyLZ, Description: "Ancient LZ + RLE compression", Decompress: DecompressLZAncient})
+}
+
 // DecompressLZAncient decompresses data using the LZAncient format
 // (Beyond Oasis, Streets of Rage 2).
 //

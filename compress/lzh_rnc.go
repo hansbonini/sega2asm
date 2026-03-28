@@ -2,10 +2,16 @@ package compress
 
 import (
 	"encoding/binary"
-	"sega2asm/helpers"
+	"sega2asm/types"
 	"fmt"
 	"sort"
 )
+
+func init() {
+	Register(Algorithm{Name: "lzhrnc", Family: FamilyLZH, Description: "Rob Northen Compression (auto-detect method)", Decompress: DecompressLZHRNC})
+	Register(Algorithm{Name: "lzhrnc1", Family: FamilyLZH, Description: "Rob Northen Compression method 1", Decompress: DecompressLZHRNC1})
+	Register(Algorithm{Name: "lzhrnc2", Family: FamilyLZH, Description: "Rob Northen Compression method 2", Decompress: DecompressLZHRNC2})
+}
 
 // rncBR is a byte-by-byte bit reader that pops from LSB first.
 type rncBR struct {
@@ -146,7 +152,7 @@ func DecompressLZHRNC1(src []byte) ([]byte, error) {
 			if cmd < numCmds {
 				dist := decodeRNC(br, posTable) + 1
 				copyLen := decodeRNC(br, lenTable) + 2
-				helpers.CopyDist(&out, dist, copyLen)
+				types.CopyDist(&out, dist, copyLen)
 			}
 		}
 	}
@@ -190,7 +196,7 @@ func DecompressLZHRNC2(src []byte) ([]byte, error) {
 			break
 		}
 		count := br.pop(4) + 2
-		helpers.CopyDist(&out, d, count)
+		types.CopyDist(&out, d, count)
 		switch br.pop(2) {
 		case 1:
 			readRaw(1)

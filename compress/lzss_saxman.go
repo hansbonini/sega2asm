@@ -3,7 +3,13 @@ package compress
 import (
 	"encoding/binary"
 	"fmt"
+	"sega2asm/types"
 )
+
+func init() {
+	Register(Algorithm{Name: "lzsssaxman", Family: FamilyLZSS, Description: "Modified Okumura 1989 LZSS with size header", Decompress: DecompressLZSSSaxman})
+	Register(Algorithm{Name: "lzsssaxman_noheader", Family: FamilyLZSS, Description: "Saxman LZSS without size header", Decompress: DecompressLZSSSaxmanNoHeader})
+}
 
 // DecompressLZSSSaxman decompresses data using the Saxman (clownlzss) format.
 //
@@ -38,34 +44,14 @@ func decompressSaxman(src []byte, hasHeader bool) ([]byte, error) {
 	} else {
 		data = src
 	}
-	pos := 0
+	dr := types.NewLSBDescReader(data, 0)
 	var out []byte
-	var descByte byte
-	descBitsLeft := 0
-	read := func() byte {
-		if pos >= len(data) {
-			return 0
-		}
-		b := data[pos]
-		pos++
-		return b
-	}
-	popBit := func() int {
-		if descBitsLeft == 0 {
-			descByte = read()
-			descBitsLeft = 8
-		}
-		bit := int(descByte & 1)
-		descByte >>= 1
-		descBitsLeft--
-		return bit
-	}
-	for pos < len(data) {
-		if popBit() == 1 {
-			out = append(out, read())
+	for dr.Pos() < len(data) {
+		if dr.PopBit() == 1 {
+			out = append(out, dr.ReadByte())
 		} else {
-			b1 := int(read())
-			b2 := int(read())
+			b1 := int(dr.ReadByte())
+			b2 := int(dr.ReadByte())
 			dictIdx := (b1 | ((b2 << 4) & 0xF00)) + 18
 			count := (b2 & 0xF) + 3
 			outPos := len(out)

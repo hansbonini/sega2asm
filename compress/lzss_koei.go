@@ -2,6 +2,10 @@ package compress
 
 import "fmt"
 
+func init() {
+	Register(Algorithm{Name: "lzsskoei", Family: FamilyLZSS, Description: "KOEI LZSS; Elias-gamma length coding", Decompress: DecompressLZSSKoei})
+}
+
 // lzKoeiPLen is the position-length lookup table (p_len) used to determine
 // how many bits to read for a back-reference offset.
 var lzKoeiPLen = [64]byte{

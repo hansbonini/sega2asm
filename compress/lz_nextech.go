@@ -2,9 +2,14 @@ package compress
 
 import (
 	"encoding/binary"
-	"sega2asm/helpers"
 	"fmt"
+	"sega2asm/types"
 )
+
+func init() {
+	Register(Algorithm{Name: "lznextech", Family: FamilyLZ, Description: "Nextech / WolfTeam shared LZ", Decompress: DecompressLZNextech})
+	Register(Algorithm{Name: "lzwolfteam", Family: FamilyLZ, Description: "Nextech / WolfTeam shared LZ", Decompress: DecompressLZWolfteam})
+}
 
 // DecompressLZNextech decompresses data using the LZNextech format
 // (Crusader of Centy). Window 0x1000 with a special non-uniform initialization pattern.
@@ -28,34 +33,19 @@ func decompressNextech(src []byte) ([]byte, error) {
 		return nil, fmt.Errorf("lznextech: too short")
 	}
 	uncompSize := int(binary.LittleEndian.Uint32(src[4:8]))
-	pos := 8
-	win := helpers.NewWin(0x1000, 0xFEE, 0)
+	dr := types.NewLSBDescReader(src, 8)
+	win := types.NewWin(0x1000, 0xFEE, 0)
 	initWindowNextech(win)
 	var out []byte
-	decoded := 0
-	read := func() byte {
-		if pos >= len(src) {
-			return 0
-		}
-		b := src[pos]
-		pos++
-		return b
-	}
-	for decoded < uncompSize {
-		ctrl := read()
-		for bit := 0; bit < 8 && decoded < uncompSize; bit++ {
-			if (ctrl>>uint(bit))&1 == 1 {
-				b := read()
-				win.Emit(b, &out)
-				decoded++
-			} else {
-				hi := int(read())
-				lo := int(read())
-				length := (lo & 0xF) + 3
-				offset := ((lo & 0xF0) << 4) | hi
-				win.CopyFrom(offset, length, &out)
-				decoded += length
-			}
+	for len(out) < uncompSize {
+		if dr.PopBit() == 1 {
+			win.Emit(dr.ReadByte(), &out)
+		} else {
+			hi := int(dr.ReadByte())
+			lo := int(dr.ReadByte())
+			length := (lo & 0xF) + 3
+			offset := ((lo & 0xF0) << 4) | hi
+			win.CopyFrom(offset, length, &out)
 		}
 	}
 	if len(out) > uncompSize {
@@ -64,7 +54,7 @@ func decompressNextech(src []byte) ([]byte, error) {
 	return out, nil
 }
 
-func initWindowNextech(w *helpers.WinBuf) {
+func initWindowNextech(w *types.WinBuf) {
 	for i := 0; i < 0x100; i++ {
 		for j := 0; j < 0x0D && i*0x0D+j < w.Size; j++ {
 			w.Data[i*0x0D+j] = byte(i)

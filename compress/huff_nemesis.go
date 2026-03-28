@@ -3,7 +3,13 @@ package compress
 import (
 	"encoding/binary"
 	"fmt"
+
+	"sega2asm/types"
 )
+
+func init() {
+	Register(Algorithm{Name: "huffnemesis", Family: FamilyHuffman, Description: "Nemesis tile compression; Huffman-coded nybble runs", Decompress: DecompressHuffNemesis})
+}
 
 // DecompressHuffNemesis decompresses data using the Nemesis tile compression format.
 //
@@ -86,37 +92,10 @@ func DecompressHuffNemesis(src []byte) ([]byte, error) {
 		}
 		return v, true
 	}
-	var outBuf, prevBuf [4]byte
-	nybbleDone := 0
-	var out []byte
-	outputNybble := func(nyb byte) {
-		shift := uint(28 - (nybbleDone%8)*4)
-		var acc uint32
-		if nybbleDone%8 != 0 {
-			acc = uint32(outBuf[0])<<24 | uint32(outBuf[1])<<16 | uint32(outBuf[2])<<8 | uint32(outBuf[3])
-		}
-		acc = (acc &^ (0xF << shift)) | (uint32(nyb&0xF) << shift)
-		outBuf[0] = byte(acc >> 24)
-		outBuf[1] = byte(acc >> 16)
-		outBuf[2] = byte(acc >> 8)
-		outBuf[3] = byte(acc)
-		nybbleDone++
-		if nybbleDone%8 == 0 {
-			var final [4]byte
-			if xorMode {
-				for i := range final {
-					final[i] = outBuf[i] ^ prevBuf[i]
-				}
-			} else {
-				final = outBuf
-			}
-			prevBuf = final
-			out = append(out, final[:]...)
-			outBuf = [4]byte{}
-		}
-	}
-	nybsRemaining := totalTiles * 64
-	for nybsRemaining > 0 {
+
+	nw := types.NewNibbleWriter(totalTiles*8, xorMode)
+
+	for !nw.Done() {
 		code := 0
 		var run *nybbleRun
 		for n := 1; n <= 8; n++ {
@@ -132,9 +111,10 @@ func DecompressHuffNemesis(src []byte) ([]byte, error) {
 					goto done
 				}
 				runLen++
-				for i := 0; i < runLen && nybsRemaining > 0; i++ {
-					outputNybble(byte(nyb))
-					nybsRemaining--
+				for i := 0; i < runLen; i++ {
+					if nw.PutNibble(byte(nyb)) {
+						goto done
+					}
 				}
 				run = nil
 				goto nextRun
@@ -147,15 +127,16 @@ func DecompressHuffNemesis(src []byte) ([]byte, error) {
 			}
 		}
 		if run == nil {
-			return out, fmt.Errorf("huffnemesis: no code match")
+			return nw.Bytes(), fmt.Errorf("huffnemesis: no code match")
 		}
-		for i := 0; i < int(run.length) && nybsRemaining > 0; i++ {
-			outputNybble(run.value)
-			nybsRemaining--
+		for i := 0; i < int(run.length); i++ {
+			if nw.PutNibble(run.value) {
+				goto done
+			}
 		}
 		continue
 	nextRun:
 	}
 done:
-	return out, nil
+	return nw.Bytes(), nil
 }

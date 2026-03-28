@@ -2,6 +2,10 @@ package compress
 
 import "fmt"
 
+func init() {
+	Register(Algorithm{Name: "rlesc", Family: FamilyRLE, Description: "Software Creations RLE", Decompress: DecompressRLESC})
+}
+
 // DecompressRLESC decompresses data using the Software Creations
 // RLE format (Maximum Carnage, Venom, The Tick, Cutthroat Island).
 //

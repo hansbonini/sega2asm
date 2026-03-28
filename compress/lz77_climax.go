@@ -1,5 +1,11 @@
 package compress
 
+import "sega2asm/types"
+
+func init() {
+	Register(Algorithm{Name: "lz77climax", Family: FamilyLZ77, Description: "Climax LZ77; MSB-first control, 12-bit offset", Decompress: DecompressLZ77Climax})
+}
+
 // DecompressLZ77Climax decompresses data using the Climax LZ77 format (Landstalker / Climax engine).
 //
 // Stream structure: groups of up to 8 entries preceded by a control byte (MSB-first).
@@ -15,50 +21,21 @@ package compress
 // No size header; stream is self-terminating.
 // Reference: liblandstalker LZ77.cpp (lordmir)
 func DecompressLZ77Climax(src []byte) ([]byte, error) {
+	dr := types.NewMSBDescReader(src, 0)
 	var out []byte
-	pos := 0
-	ctrl := byte(0)
-	bitsLeft := 0
 
-	for pos < len(src) {
-		if bitsLeft == 0 {
-			ctrl = src[pos]
-			pos++
-			bitsLeft = 8
-		}
-		bit := ctrl & 0x80
-		ctrl <<= 1
-		bitsLeft--
-
-		if bit != 0 {
-			// Literal byte
-			if pos >= len(src) {
-				break
-			}
-			out = append(out, src[pos])
-			pos++
+	for dr.Pos() < len(src) {
+		if dr.PopBit() == 1 {
+			out = append(out, dr.ReadByte())
 		} else {
-			// Back-reference
-			if pos+1 >= len(src) {
-				break
-			}
-			b0 := src[pos]
-			b1 := src[pos+1]
-			pos += 2
+			b0 := dr.ReadByte()
+			b1 := dr.ReadByte()
 			offset := int(b0&0xF0)<<4 | int(b1)
 			length := 18 - int(b0&0x0F)
 			if offset == 0 {
 				break
 			}
-			base := len(out) - offset
-			for i := 0; i < length; i++ {
-				idx := base + i
-				if idx < 0 {
-					out = append(out, 0)
-				} else {
-					out = append(out, out[idx])
-				}
-			}
+			types.CopyDist(&out, offset, length)
 		}
 	}
 	return out, nil

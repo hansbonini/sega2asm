@@ -2,6 +2,10 @@ package compress
 
 import "fmt"
 
+func init() {
+	Register(Algorithm{Name: "lzhrefpack", Family: FamilyLZH, Description: "EA Canada RefPack; multi-format", Decompress: DecompressLZHRefpack})
+}
+
 // DecompressLZHRefpack decompresses a RefPack stream (EA Canada, e.g. FIFA 97).
 //
 // The format is auto-detected from the flags byte:

@@ -2,9 +2,13 @@ package compress
 
 import (
 	"encoding/binary"
-	"sega2asm/helpers"
+	"sega2asm/types"
 	"fmt"
 )
+
+func init() {
+	Register(Algorithm{Name: "lzrage", Family: FamilyLZ, Description: "Bit-stream LZ compressor", Decompress: DecompressLZRage})
+}
 
 // DecompressLZRage decompresses data using the Rage (clownlzss) format
 // (Streets of Rage series).
@@ -67,14 +71,14 @@ func DecompressLZRage(src []byte) ([]byte, error) {
 		case 3:
 			count := first & 0x1F
 			if lastDist > 0 {
-				helpers.CopyDist(&out, lastDist, count)
+				types.CopyDist(&out, lastDist, count)
 			}
 		default:
 			second := int(read())
 			count := ((first >> 5) & 3) + 4
 			lastDist = ((first << 8) & 0x1F00) | second
 			if lastDist > 0 {
-				helpers.CopyDist(&out, lastDist, count)
+				types.CopyDist(&out, lastDist, count)
 			}
 		}
 	}

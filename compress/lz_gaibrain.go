@@ -5,6 +5,10 @@ import (
 	"fmt"
 )
 
+func init() {
+	Register(Algorithm{Name: "lzgaibrain", Family: FamilyLZ, Description: "Gaibrain variable-split LZSS", Decompress: DecompressLZGaibrain})
+}
+
 // DecompressLZGaibrain decompresses data using the Gaibrain LZ scheme found in
 // Fatal Fury / Garou Densetsu and other Gaibrain-developed Mega Drive titles.
 //

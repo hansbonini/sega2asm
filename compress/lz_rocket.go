@@ -2,9 +2,13 @@ package compress
 
 import (
 	"encoding/binary"
-	"sega2asm/helpers"
 	"fmt"
+	"sega2asm/types"
 )
+
+func init() {
+	Register(Algorithm{Name: "lzrocket", Family: FamilyLZ, Description: "Konami Rocket Knight compression", Decompress: DecompressLZRocket})
+}
 
 // DecompressLZRocket decompresses data using the Rocket (clownlzss) format.
 //
@@ -25,40 +29,20 @@ func DecompressLZRocket(src []byte) ([]byte, error) {
 	}
 	uncompSize := int(binary.BigEndian.Uint16(src[0:2]))
 	compSize := int(binary.BigEndian.Uint16(src[2:4]))
-	pos := 4
+	dr := types.NewLSBDescReader(src, 4)
 	var out []byte
-	var descByte byte
-	descBitsLeft := 0
-	read := func() byte {
-		if pos >= len(src) {
-			return 0
-		}
-		b := src[pos]
-		pos++
-		return b
-	}
-	popBit := func() int {
-		if descBitsLeft == 0 {
-			descByte = read()
-			descBitsLeft = 8
-		}
-		bit := int(descByte & 1)
-		descByte >>= 1
-		descBitsLeft--
-		return bit
-	}
 	inputEnd := 4 + compSize
-	for pos < inputEnd && len(out) < uncompSize {
-		if popBit() == 1 {
-			out = append(out, read())
+	for dr.Pos() < inputEnd && len(out) < uncompSize {
+		if dr.PopBit() == 1 {
+			out = append(out, dr.ReadByte())
 		} else {
-			hi := int(read())
-			lo := int(read())
+			hi := int(dr.ReadByte())
+			lo := int(dr.ReadByte())
 			word := (hi << 8) | lo
 			dictIdx := (word + 0x40) & 0x3FF
 			count := (word >> 10) + 1
 			dist := ((0x400 + len(out) - dictIdx - 1) & 0x3FF) + 1
-			helpers.CopyDist(&out, dist, count)
+			types.CopyDist(&out, dist, count)
 		}
 	}
 	if len(out) > uncompSize {

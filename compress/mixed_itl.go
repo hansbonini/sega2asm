@@ -1,5 +1,9 @@
 package compress
 
+func init() {
+	Register(Algorithm{Name: "mixeditl", Family: FamilyMixed, Description: "I.T.L. non-zero-byte copy + XOR block", Decompress: DecompressMixedITL})
+}
+
 // DecompressMixedITL decompresses data using the I.T.L (Sega) format:
 // non-zero-byte literal selection + running XOR chain, operating on 32-byte blocks.
 // Reference: https://github.com/lab313ru/itl_comp/blob/master/main.c

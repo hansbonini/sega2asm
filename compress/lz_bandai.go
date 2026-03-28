@@ -2,9 +2,13 @@ package compress
 
 import (
 	"encoding/binary"
-	"sega2asm/helpers"
 	"fmt"
+	"sega2asm/types"
 )
+
+func init() {
+	Register(Algorithm{Name: "lzbandai", Family: FamilyLZ, Description: "Bandai LZ compression", Decompress: DecompressLZBandai})
+}
 
 // DecompressLZBandai decompresses data using the LZBandai format
 // (Dragon Ball Z: Buyuu Retsuden).
@@ -27,34 +31,19 @@ func DecompressLZBandai(src []byte) ([]byte, error) {
 	}
 	hdr := binary.LittleEndian.Uint16(src[0:2])
 	uncompSize := int(hdr&0x7FFF) + 1
-	pos := 2
-	win := helpers.NewWin(0x2000, 0, 0)
+	dr := types.NewLSBDescReader(src, 2)
+	win := types.NewWin(0x2000, 0, 0)
 	var out []byte
-	decoded := 0
-	read := func() byte {
-		if pos >= len(src) {
-			return 0
-		}
-		b := src[pos]
-		pos++
-		return b
-	}
-	for decoded < uncompSize {
-		ctrl := read()
-		for bit := 0; bit < 8 && decoded < uncompSize; bit++ {
-			if (ctrl>>uint(bit))&1 == 1 {
-				b := read()
-				win.Emit(b, &out)
-				decoded++
-			} else {
-				lo := int(read())
-				hi := int(read())
-				length := (lo & 0xF) + 3
-				offset := ((hi << 8) | lo) >> 4
-				base := (win.Cursor - offset + win.Size) & win.Mask
-				win.CopyFrom(base, length, &out)
-				decoded += length
-			}
+	for len(out) < uncompSize {
+		if dr.PopBit() == 1 {
+			win.Emit(dr.ReadByte(), &out)
+		} else {
+			lo := int(dr.ReadByte())
+			hi := int(dr.ReadByte())
+			length := (lo & 0xF) + 3
+			offset := ((hi << 8) | lo) >> 4
+			base := (win.Cursor - offset + win.Size) & win.Mask
+			win.CopyFrom(base, length, &out)
 		}
 	}
 	if len(out) > uncompSize {

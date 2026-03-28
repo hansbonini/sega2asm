@@ -2,9 +2,15 @@ package compress
 
 import (
 	"encoding/binary"
-	"sega2asm/helpers"
 	"fmt"
+	"sega2asm/types"
 )
+
+func init() {
+	Register(Algorithm{Name: "lzkonami1", Family: FamilyLZ, Description: "Konami first-generation LZ", Decompress: DecompressLZKonami1})
+	Register(Algorithm{Name: "lzkonami2", Family: FamilyLZ, Description: "Konami second-generation LZ", Decompress: DecompressLZKonami2})
+	Register(Algorithm{Name: "lzkonami3", Family: FamilyLZ, Description: "Konami third-generation LZ", Decompress: DecompressLZKonami3})
+}
 
 // DecompressLZKonami1 decompresses data using the LZKonami variant 1 format
 // (Animaniacs, Contra Hard Corps, Lethal Enforcers II, Sparkster).
@@ -27,44 +33,28 @@ func DecompressLZKonami1(src []byte) ([]byte, error) {
 		return nil, fmt.Errorf("lzkonami1: too short")
 	}
 	uncompSize := int(binary.BigEndian.Uint16(src[0:2]))
-	pos := 2
-	win := helpers.NewWin(0x400, 0x3C0, 0x20)
+	dr := types.NewLSBDescReader(src, 2)
+	win := types.NewWin(0x400, 0x3C0, 0x20)
 	var out []byte
-	decoded := 0
-	read := func() byte {
-		if pos >= len(src) {
-			return 0
-		}
-		b := src[pos]
-		pos++
-		return b
-	}
-outer1:
-	for decoded < uncompSize {
-		ctrl := read()
-		for bit := 0; bit < 8 && decoded < uncompSize; bit++ {
-			r := read()
-			if (ctrl>>uint(bit))&1 == 1 {
-				if r == 0x1F {
-					break outer1
-				}
-				if r > 0x80 {
-					length := int(r&0x1F) + 3
-					low := int(read())
-					offset := ((int(r)<<3)&0xFF00 | low) & win.Mask
-					win.CopyFrom(offset, length, &out)
-					decoded += length
-				} else if r == 0x80 {
-					length := int(r>>4) - 6
-					offset := (win.Cursor - int(r&0xF) + win.Size) & win.Mask
-					win.CopyFrom(offset, length, &out)
-					decoded += length
-				}
-				// r < 0x80 (not 0x1F): undefined per reference, ignore
-			} else {
-				win.Emit(r, &out)
-				decoded++
+	for len(out) < uncompSize {
+		bit := dr.PopBit()
+		r := dr.ReadByte()
+		if bit == 1 {
+			if r == 0x1F {
+				break
 			}
+			if r > 0x80 {
+				length := int(r&0x1F) + 3
+				low := int(dr.ReadByte())
+				offset := ((int(r)<<3)&0xFF00 | low) & win.Mask
+				win.CopyFrom(offset, length, &out)
+			} else if r == 0x80 {
+				length := int(r>>4) - 6
+				offset := (win.Cursor - int(r&0xF) + win.Size) & win.Mask
+				win.CopyFrom(offset, length, &out)
+			}
+		} else {
+			win.Emit(r, &out)
 		}
 	}
 	return out, nil
@@ -90,35 +80,23 @@ func DecompressLZKonami2(src []byte) ([]byte, error) {
 		return nil, fmt.Errorf("lzkonami2: too short")
 	}
 	compSize := int(binary.BigEndian.Uint16(src[0:2]))
-	pos := 2
-	end := pos + compSize
+	end := 2 + compSize
 	if end > len(src) {
 		end = len(src)
 	}
-	win := helpers.NewWin(0x400, 0x3C0, 0x20)
+	dr := types.NewLSBDescReader(src, 2)
+	win := types.NewWin(0x400, 0x3C0, 0x20)
 	var out []byte
-	read := func() byte {
-		if pos >= end {
-			return 0
-		}
-		b := src[pos]
-		pos++
-		return b
-	}
-	for pos < end {
-		ctrl := read()
-		for bit := 0; bit < 8 && pos <= end; bit++ {
-			if (ctrl>>uint(bit))&1 == 1 {
-				b := read()
-				win.Emit(b, &out)
-			} else {
-				hi := int(read())
-				lo := int(read())
-				word := (hi << 8) | lo
-				length := ((word & 0xFC00) >> 10) + 1
-				offset := word & 0x3FF
-				win.CopyFrom(offset, length, &out)
-			}
+	for dr.Pos() < end {
+		if dr.PopBit() == 1 {
+			win.Emit(dr.ReadByte(), &out)
+		} else {
+			hi := int(dr.ReadByte())
+			lo := int(dr.ReadByte())
+			word := (hi << 8) | lo
+			length := ((word & 0xFC00) >> 10) + 1
+			offset := word & 0x3FF
+			win.CopyFrom(offset, length, &out)
 		}
 	}
 	return out, nil
@@ -146,50 +124,33 @@ func DecompressLZKonami3(src []byte) ([]byte, error) {
 		return nil, fmt.Errorf("lzkonami3: too short")
 	}
 	uncompSize := int(binary.BigEndian.Uint16(src[0:2]))
-	pos := 2
-	win := helpers.NewWin(0x400, 0x3DF, 0)
+	dr := types.NewLSBDescReader(src, 2)
+	win := types.NewWin(0x400, 0x3DF, 0)
 	var out []byte
-	decoded := 0
-	read := func() byte {
-		if pos >= len(src) {
-			return 0
-		}
-		b := src[pos]
-		pos++
-		return b
-	}
-outer3:
-	for decoded < uncompSize {
-		ctrl := read()
-		for bit := 0; bit < 8 && decoded < uncompSize; bit++ {
-			r := read()
-			if (ctrl>>uint(bit))&1 == 1 {
-				if r == 0x1F {
-					break outer3
-				}
-				if r < 0x80 {
-					length := int(r&0x1F) + 3
-					low := int(read())
-					offset := (((int(r) & 0x60) << 3) | low) & win.Mask
-					win.CopyFrom(offset, length, &out)
-					decoded += length
-				} else if r <= 0xBF {
-					length := ((int(r) >> 4) & 0x3) + 2
-					offset := (win.Cursor - int(r&0xF) + win.Size) & win.Mask
-					win.CopyFrom(offset, length, &out)
-					decoded += length
-				} else {
-					length := int(r&0x3F) + 8
-					for i := 0; i < length && decoded < uncompSize; i++ {
-						b := read()
-						win.Emit(b, &out)
-						decoded++
-					}
-				}
-			} else {
-				win.Emit(r, &out)
-				decoded++
+	for len(out) < uncompSize {
+		bit := dr.PopBit()
+		r := dr.ReadByte()
+		if bit == 1 {
+			if r == 0x1F {
+				break
 			}
+			if r < 0x80 {
+				length := int(r&0x1F) + 3
+				low := int(dr.ReadByte())
+				offset := (((int(r) & 0x60) << 3) | low) & win.Mask
+				win.CopyFrom(offset, length, &out)
+			} else if r <= 0xBF {
+				length := ((int(r) >> 4) & 0x3) + 2
+				offset := (win.Cursor - int(r&0xF) + win.Size) & win.Mask
+				win.CopyFrom(offset, length, &out)
+			} else {
+				length := int(r&0x3F) + 8
+				for i := 0; i < length && len(out) < uncompSize; i++ {
+					win.Emit(dr.ReadByte(), &out)
+				}
+			}
+		} else {
+			win.Emit(r, &out)
 		}
 	}
 	return out, nil

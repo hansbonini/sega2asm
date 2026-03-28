@@ -5,6 +5,10 @@ import (
 	"fmt"
 )
 
+func init() {
+	Register(Algorithm{Name: "expgolombclimax", Family: FamilyExpGolomb, Description: "Climax/Camelot 4bpp tile exp-Golomb coding", Decompress: DecompressExpGolombClimax})
+}
+
 // DecompressExpGolombClimax decompresses tile graphics using the Climax/Camelot
 // format found in Shining Force 1 and related titles.
 //

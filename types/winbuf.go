@@ -1,4 +1,4 @@
-package helpers
+package types
 
 // WinBuf is a sliding-window ring buffer used by LZ-family decompressors.
 type WinBuf struct {

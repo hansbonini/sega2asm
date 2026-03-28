@@ -2,9 +2,13 @@ package compress
 
 import (
 	"encoding/binary"
-	"sega2asm/helpers"
 	"fmt"
+	"sega2asm/types"
 )
+
+func init() {
+	Register(Algorithm{Name: "lzsti", Family: FamilyLZ, Description: "STI LZ compression", Decompress: DecompressLZSTI})
+}
 
 // DecompressLZSTI decompresses data using the LZSTI format (Comix Zone).
 //
@@ -25,38 +29,18 @@ func DecompressLZSTI(src []byte) ([]byte, error) {
 		return nil, fmt.Errorf("lzsti: too short")
 	}
 	uncompSize := int(binary.BigEndian.Uint16(src[0:2]))
-	win := helpers.NewWin(0x400, 0, 0)
+	win := types.NewWin(0x400, 0, 0)
 	var out []byte
-	data := src[2:]
-	bytePos, bitBuf, bitsAvail := 0, 0, 0
-	readBit := func() int {
-		if bitsAvail == 0 {
-			if bytePos >= len(data) {
-				return 0
-			}
-			bitBuf = int(data[bytePos])
-			bytePos++
-			bitsAvail = 8
-		}
-		bitsAvail--
-		return (bitBuf >> uint(bitsAvail)) & 1
-	}
-	readBits := func(n int) int {
-		v := 0
-		for i := 0; i < n; i++ {
-			v = (v << 1) | readBit()
-		}
-		return v
-	}
+	br := types.NewMSBBitReader(src, 2)
 	decoded := 0
 	for decoded < uncompSize {
-		if readBit() == 1 {
-			b := byte(readBits(8))
+		if br.ReadBit() == 1 {
+			b := byte(br.ReadBits(8))
 			win.Emit(b, &out)
 			decoded++
 		} else {
-			offset := readBits(10)
-			length := readBits(4) + 2
+			offset := br.ReadBits(10)
+			length := br.ReadBits(4) + 2
 			win.CopyFrom(offset, length, &out)
 			decoded += length
 		}

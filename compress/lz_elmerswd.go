@@ -1,6 +1,13 @@
 package compress
 
-import "fmt"
+import (
+	"fmt"
+	"sega2asm/types"
+)
+
+func init() {
+	Register(Algorithm{Name: "lzelmerswd", Family: FamilyLZ, Description: "Elmer's SWD bitstream LZ", Decompress: DecompressLZElmerSWD})
+}
 
 // DecompressLZElmerSWD decompresses data in Elmer's SWD format, a bitstream-based
 // LZ scheme used in Ex-Mutants (Sega Genesis) by Malibu Interactive
@@ -42,19 +49,17 @@ func DecompressLZElmerSWD(src []byte) ([]byte, error) {
 		return nil, fmt.Errorf("elmerswd: input too short")
 	}
 
-	r := swdReader{src: src}
+	r := types.NewMSBWordBitReader(src, 0)
 	dst := make([]byte, 0, len(src)*2)
 
 	for {
-		// Command bit
-		bit, err := r.readBits(1)
+		bit, err := r.ReadBits(1)
 		if err != nil {
 			return nil, fmt.Errorf("elmerswd: %w", err)
 		}
 
 		if bit == 0 {
-			// Literal byte
-			b, err := r.readBits(8)
+			b, err := r.ReadBits(8)
 			if err != nil {
 				return nil, fmt.Errorf("elmerswd: %w", err)
 			}
@@ -90,8 +95,8 @@ func DecompressLZElmerSWD(src []byte) ([]byte, error) {
 
 // swdReadLength decodes the variable-length match length.
 // Returns (length, isEOF, error).
-func swdReadLength(r *swdReader) (int, bool, error) {
-	bit, err := r.readBits(1)
+func swdReadLength(r *types.MSBWordBitReader) (int, bool, error) {
+	bit, err := r.ReadBits(1)
 	if err != nil {
 		return 0, false, err
 	}
@@ -99,7 +104,7 @@ func swdReadLength(r *swdReader) (int, bool, error) {
 		return 2, false, nil
 	}
 
-	v, err := r.readBits(2)
+	v, err := r.ReadBits(2)
 	if err != nil {
 		return 0, false, err
 	}
@@ -107,7 +112,7 @@ func swdReadLength(r *swdReader) (int, bool, error) {
 		return 2 + v, false, nil
 	}
 
-	v, err = r.readBits(4)
+	v, err = r.ReadBits(4)
 	if err != nil {
 		return 0, false, err
 	}
@@ -115,7 +120,7 @@ func swdReadLength(r *swdReader) (int, bool, error) {
 		return 5 + v, false, nil
 	}
 
-	v, err = r.readBits(8)
+	v, err = r.ReadBits(8)
 	if err != nil {
 		return 0, false, err
 	}
@@ -126,60 +131,35 @@ func swdReadLength(r *swdReader) (int, bool, error) {
 }
 
 // swdReadOffset decodes the variable-width back-reference offset.
-func swdReadOffset(r *swdReader) (int, error) {
-	sel, err := r.readBits(2)
+func swdReadOffset(r *types.MSBWordBitReader) (int, error) {
+	sel, err := r.ReadBits(2)
 	if err != nil {
 		return 0, err
 	}
 	switch sel {
 	case 0:
-		v, err := r.readBits(5)
+		v, err := r.ReadBits(5)
 		if err != nil {
 			return 0, err
 		}
 		return v + 1, nil
 	case 1:
-		v, err := r.readBits(7)
+		v, err := r.ReadBits(7)
 		if err != nil {
 			return 0, err
 		}
 		return v + 0x21, nil
 	case 2:
-		v, err := r.readBits(9)
+		v, err := r.ReadBits(9)
 		if err != nil {
 			return 0, err
 		}
 		return v + 0xA1, nil
 	default: // 3
-		v, err := r.readBits(10)
+		v, err := r.ReadBits(10)
 		if err != nil {
 			return 0, err
 		}
 		return v + 0x2A1, nil
 	}
-}
-
-// swdReader is a big-endian bitstream reader that consumes 16-bit words,
-// mirroring the M68K rotate-based reader in the original decompressor.
-type swdReader struct {
-	src  []byte
-	pos  int    // byte position in src
-	bits uint32 // bit buffer (upper bits hold data)
-	n    int    // number of valid bits in buffer
-}
-
-func (r *swdReader) readBits(count int) (int, error) {
-	for r.n < count {
-		if r.pos+1 >= len(r.src) {
-			return 0, fmt.Errorf("unexpected end of input at byte %d", r.pos)
-		}
-		word := uint32(r.src[r.pos])<<8 | uint32(r.src[r.pos+1])
-		r.pos += 2
-		r.bits |= word << uint(16-r.n)
-		r.n += 16
-	}
-	val := int(r.bits >> uint(32-count))
-	r.bits <<= uint(count)
-	r.n -= count
-	return val, nil
 }

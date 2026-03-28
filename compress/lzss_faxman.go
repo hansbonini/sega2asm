@@ -2,9 +2,13 @@ package compress
 
 import (
 	"encoding/binary"
-	"sega2asm/helpers"
 	"fmt"
+	"sega2asm/types"
 )
+
+func init() {
+	Register(Algorithm{Name: "lzssfaxman", Family: FamilyLZSS, Description: "Modified Saxman for SMPS music data", Decompress: DecompressLZSSFaxman})
+}
 
 // DecompressLZSSFaxman decompresses data using the Faxman (clownlzss) format.
 //
@@ -26,54 +30,37 @@ func DecompressLZSSFaxman(src []byte) ([]byte, error) {
 		return nil, fmt.Errorf("faxman: too short")
 	}
 	remaining := int(binary.LittleEndian.Uint16(src[0:2]))
-	pos := 2
+	dr := types.NewLSBDescReader(src, 2)
 	var out []byte
-	var descByte byte
-	descBitsLeft := 0
 	startLen := 0
-	read := func() byte {
-		if pos >= len(src) {
-			return 0
-		}
-		b := src[pos]
-		pos++
-		return b
-	}
-	popBit := func() int {
-		if descBitsLeft == 0 {
-			descByte = read()
-			descBitsLeft = 8
-		}
-		remaining--
-		bit := int(descByte & 1)
-		descByte >>= 1
-		descBitsLeft--
-		return bit
-	}
 	zeroOrCopy := func(distance, count int) {
 		if distance > len(out)-startLen {
 			for i := 0; i < count; i++ {
 				out = append(out, 0)
 			}
 		} else {
-			helpers.CopyDist(&out, distance, count)
+			types.CopyDist(&out, distance, count)
 		}
 	}
 	for remaining > 0 {
-		if popBit() == 1 {
-			out = append(out, read())
+		remaining--
+		if dr.PopBit() == 1 {
+			out = append(out, dr.ReadByte())
 		} else {
-			if popBit() == 1 {
-				b1 := int(read())
-				b2 := int(read())
+			remaining--
+			if dr.PopBit() == 1 {
+				b1 := int(dr.ReadByte())
+				b2 := int(dr.ReadByte())
 				zeroOrCopy((b1|((b2<<3)&0x700))+1, (b2&0x1F)+3)
 			} else {
-				dist := 0x100 - int(read())
+				dist := 0x100 - int(dr.ReadByte())
 				count := 2
-				if popBit() == 1 {
+				remaining--
+				if dr.PopBit() == 1 {
 					count += 2
 				}
-				if popBit() == 1 {
+				remaining--
+				if dr.PopBit() == 1 {
 					count++
 				}
 				zeroOrCopy(dist, count)

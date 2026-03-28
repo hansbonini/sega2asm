@@ -2,6 +2,11 @@ package compress
 
 import "fmt"
 
+func init() {
+	Register(Algorithm{Name: "lzhwestone", Family: FamilyLZH, Description: "Westone Huffman+LZ tile decompressor", Decompress: DecompressLZHWestone})
+	Register(Algorithm{Name: "mixedwestone", Family: FamilyMixed, Description: "Westone block-based tile decompressor", Decompress: DecompressMixedWestone})
+}
+
 // westoneSPREAD[plane][nibble]: planar–chunky bit spread used by type-0x00 mode-2.
 // SPREAD[p][n] = Σ(k=0..3) ((n>>k)&1) << (k*4+p)
 // Each bit k of nibble n is placed at bit position (k*4+p) of a 16-bit word.

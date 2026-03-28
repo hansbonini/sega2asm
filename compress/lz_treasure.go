@@ -2,6 +2,10 @@ package compress
 
 import "fmt"
 
+func init() {
+	Register(Algorithm{Name: "lztreasure", Family: FamilyLZ, Description: "Treasure multi-mode LZ + RLE", Decompress: DecompressLZTreasure})
+}
+
 // DecompressLZTreasure decompresses data using the LZ Treasure format.
 //
 // Header: 2 bytes (big-endian) = total compressed size.

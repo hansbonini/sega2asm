@@ -3,7 +3,12 @@ package compress
 import (
 	"encoding/binary"
 	"fmt"
+	"sega2asm/types"
 )
+
+func init() {
+	Register(Algorithm{Name: "mixedmicroprose", Family: FamilyMixed, Description: "MicroProse delta-coded scanline scheme", Decompress: DecompressMixedMicroprose})
+}
 
 // DecompressMixedMicroprose decompresses tile graphics using the MicroProse
 // delta-coded scanline scheme found in Star Trek: The Next Generation -
@@ -44,36 +49,10 @@ func DecompressMixedMicroprose(src []byte) ([]byte, error) {
 		return nil, nil
 	}
 
-	// Bitstream reader at nibble granularity.
-	bytePos := 4
-	bitOff := 0
+	br := types.NewMSBBitReader(src, 4)
 
-	readBits := func(n int) (int, error) {
-		val := 0
-		for i := 0; i < n; i++ {
-			if bytePos >= len(src) {
-				return 0, fmt.Errorf("mixedmicroprose: unexpected end of input")
-			}
-			bit := (src[bytePos] >> uint(7-bitOff)) & 1
-			val = (val << 1) | int(bit)
-			bitOff++
-			if bitOff >= 8 {
-				bitOff = 0
-				bytePos++
-			}
-		}
-		return val, nil
-	}
-
-	getNibble := func() (byte, error) {
-		v, err := readBits(4)
-		return byte(v), err
-	}
-
-	getByte := func() (byte, error) {
-		v, err := readBits(8)
-		return byte(v), err
-	}
+	getNibble := func() byte { return byte(br.ReadBits(4)) }
+	getByte := func() byte { return byte(br.ReadBits(8)) }
 
 	// Output includes an initial [0,0,0,0] scanline (stripped at end).
 	dst := []byte{0, 0, 0, 0}
@@ -104,14 +83,11 @@ func DecompressMixedMicroprose(src []byte) ([]byte, error) {
 	}
 
 	for len(dst)-4 < dstSize {
-		cmd, err := getNibble()
-		if err != nil {
+		if br.EOF() {
 			break
 		}
-		param, err := getNibble()
-		if err != nil {
-			return nil, err
-		}
+		cmd := getNibble()
+		param := getNibble()
 
 		switch {
 		case cmd == 0x0: // RLE: repeat previous scanline (param+1) times
@@ -140,10 +116,7 @@ func DecompressMixedMicroprose(src []byte) ([]byte, error) {
 			appendScan([]byte{ref[3], ref[2], ref[1], ref[0]})
 
 		case cmd == 0x3: // MirrorBackExt
-			lo, err := getByte()
-			if err != nil {
-				return nil, err
-			}
+			lo := getByte()
 			off := int(param)*0x100 + int(lo) + 1
 			numScans := len(dst) / 4
 			refIdx := numScans - 1 - off
@@ -157,20 +130,13 @@ func DecompressMixedMicroprose(src []byte) ([]byte, error) {
 			for i := 0; i <= int(param); i++ {
 				scan := make([]byte, 4)
 				for j := 0; j < 4; j++ {
-					b, err := getByte()
-					if err != nil {
-						return nil, err
-					}
-					scan[j] = b
+					scan[j] = getByte()
 				}
 				appendScan(scan)
 			}
 
 		case cmd == 0x5: // SetByMask
-			mask, err := getByte()
-			if err != nil {
-				return nil, err
-			}
+			mask := getByte()
 			n := toNibs(prev())
 			for bit := 7; bit >= 0; bit-- {
 				if mask&(1<<uint(bit)) != 0 {
@@ -199,15 +165,8 @@ func DecompressMixedMicroprose(src []byte) ([]byte, error) {
 			appendScan(packNibs(n))
 
 		case cmd == 0x9: // OneBorder: R=param, then read L, C
-			lCol, err := getNibble()
-			if err != nil {
-				return nil, err
-			}
-			rCount, err := getNibble()
-			if err != nil {
-				return nil, err
-			}
-			// Build from right: rCount of param (rCol), rest lCol
+			lCol := getNibble()
+			rCount := getNibble()
 			var n [8]byte
 			for i := 0; i < 8; i++ {
 				n[i] = lCol
@@ -218,23 +177,10 @@ func DecompressMixedMicroprose(src []byte) ([]byte, error) {
 			appendScan(packNibs(n))
 
 		case cmd == 0xA: // TwoBorder: R=param, then read M, L, rCount, mCount
-			mCol, err := getNibble()
-			if err != nil {
-				return nil, err
-			}
-			lCol, err := getNibble()
-			if err != nil {
-				return nil, err
-			}
-			rCount, err := getNibble()
-			if err != nil {
-				return nil, err
-			}
-			mCount, err := getNibble()
-			if err != nil {
-				return nil, err
-			}
-			// Build from right: rCount of rCol, mCount of mCol, rest lCol
+			mCol := getNibble()
+			lCol := getNibble()
+			rCount := getNibble()
+			mCount := getNibble()
 			var n [8]byte
 			pos := 7
 			for i := 0; i < int(rCount) && pos >= 0; i++ {
@@ -251,27 +197,18 @@ func DecompressMixedMicroprose(src []byte) ([]byte, error) {
 			appendScan(packNibs(n))
 
 		case cmd == 0xB: // Extension: set byte pairs
-			p, err := getByte()
-			if err != nil {
-				return nil, err
-			}
+			p := getByte()
 			if param < 4 {
-				// SetPair: replace byte at position param
 				scan := make([]byte, 4)
 				copy(scan, prev())
 				scan[param] = p
 				appendScan(scan)
 			} else if param >= 0xA {
-				// BA-BF: copy previous scanline unchanged
 				scan := make([]byte, 4)
 				copy(scan, prev())
 				appendScan(scan)
 			} else {
-				// SetPairs: replace two bytes
-				p2, err := getByte()
-				if err != nil {
-					return nil, err
-				}
+				p2 := getByte()
 				scan := make([]byte, 4)
 				copy(scan, prev())
 				var pos1, pos2 byte

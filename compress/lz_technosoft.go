@@ -1,39 +1,27 @@
 package compress
 
-import "sega2asm/helpers"
+import "sega2asm/types"
+
+func init() {
+	Register(Algorithm{Name: "lztechnosoft", Family: FamilyLZ, Description: "Technosoft LZ variant; no size header", Decompress: DecompressLZTechnosoft})
+}
 
 // DecompressLZTechnosoft decompresses data using the LZTechnosoft format
 // (Elemental Master). Same encoding as LZNamco (window 0x1000, cursor 0xFEE, fill 0x00)
 // but with no size header; the decompressor consumes all input bytes.
 func DecompressLZTechnosoft(src []byte) ([]byte, error) {
-	pos := 0
-	win := helpers.NewWin(0x1000, 0xFEE, 0)
+	dr := types.NewLSBDescReader(src, 0)
+	win := types.NewWin(0x1000, 0xFEE, 0)
 	var out []byte
-	read := func() byte {
-		if pos >= len(src) {
-			return 0
-		}
-		b := src[pos]
-		pos++
-		return b
-	}
-	consumed := 0
-	for consumed < len(src) {
-		ctrl := read()
-		consumed++
-		for bit := 0; bit < 8 && consumed < len(src); bit++ {
-			if (ctrl>>uint(bit))&1 == 1 {
-				b := read()
-				consumed++
-				win.Emit(b, &out)
-			} else {
-				hi := int(read())
-				lo := int(read())
-				consumed += 2
-				length := (lo & 0xF) + 3
-				offset := ((lo & 0xF0) << 4) | hi
-				win.CopyFrom(offset, length, &out)
-			}
+	for dr.Pos() < len(src) {
+		if dr.PopBit() == 1 {
+			win.Emit(dr.ReadByte(), &out)
+		} else {
+			hi := int(dr.ReadByte())
+			lo := int(dr.ReadByte())
+			length := (lo & 0xF) + 3
+			offset := ((lo & 0xF0) << 4) | hi
+			win.CopyFrom(offset, length, &out)
 		}
 	}
 	return out, nil

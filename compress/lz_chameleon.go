@@ -2,9 +2,13 @@ package compress
 
 import (
 	"encoding/binary"
-	"sega2asm/helpers"
+	"sega2asm/types"
 	"fmt"
 )
+
+func init() {
+	Register(Algorithm{Name: "lzchameleon", Family: FamilyLZ, Description: "Kid Chameleon compressor", Decompress: DecompressLZChameleon})
+}
 
 // DecompressLZChameleon decompresses data using the Chameleon (clownlzss) format.
 //
@@ -92,7 +96,7 @@ func DecompressLZChameleon(src []byte) ([]byte, error) {
 				}
 			}
 			if dist > 0 {
-				helpers.CopyDist(&out, dist, count)
+				types.CopyDist(&out, dist, count)
 			}
 		}
 	}

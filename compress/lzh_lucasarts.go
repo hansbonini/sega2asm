@@ -5,6 +5,10 @@ import (
 	"fmt"
 )
 
+func init() {
+	Register(Algorithm{Name: "lzhlucasarts", Family: FamilyLZH, Description: "Adaptive Huffman + LZ sliding window", Decompress: DecompressLZHLucasArts})
+}
+
 // LZH parameters.
 const (
 	lzhN       = 4096

@@ -2,6 +2,10 @@ package compress
 
 import "fmt"
 
+func init() {
+	Register(Algorithm{Name: "mixedenigma", Family: FamilyMixed, Description: "Bit-packed compression for tilemaps", Decompress: DecompressMixedEnigma})
+}
+
 // DecompressMixedEnigma decompresses data using the Enigma (clownlzss) format,
 // designed for encoding Mega Drive VDP block map data as incrementing or literal words.
 //

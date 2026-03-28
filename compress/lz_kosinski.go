@@ -2,6 +2,10 @@ package compress
 
 import "fmt"
 
+func init() {
+	Register(Algorithm{Name: "lzkosinski", Family: FamilyLZ, Description: "Kosinski LZ with sliding-window back-references", Decompress: DecompressLZKosinski})
+}
+
 // DecompressLZKosinski decompresses data using the Kosinski compression format.
 //
 // No size header; stream is self-terminating via an end-of-stream token.

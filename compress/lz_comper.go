@@ -1,6 +1,10 @@
 package compress
 
-import "sega2asm/helpers"
+import "sega2asm/types"
+
+func init() {
+	Register(Algorithm{Name: "lzcomper", Family: FamilyLZ, Description: "Community format optimised for 68000 speed", Decompress: DecompressLZComper})
+}
 
 // DecompressLZComper decompresses data using the Comper (clownlzss) format.
 //
@@ -47,7 +51,7 @@ func DecompressLZComper(src []byte) ([]byte, error) {
 			if rawCount == 0 {
 				break
 			}
-			helpers.CopyDist(&out, (0x100-rawDist)*2, (rawCount+1)*2)
+			types.CopyDist(&out, (0x100-rawDist)*2, (rawCount+1)*2)
 		}
 	}
 	return out, nil

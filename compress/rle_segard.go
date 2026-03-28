@@ -2,6 +2,10 @@ package compress
 
 import "fmt"
 
+func init() {
+	Register(Algorithm{Name: "rlesegard", Family: FamilyRLE, Description: "SegaRD block-based RLE graphics", Decompress: DecompressRLESegard})
+}
+
 // DecompressRLESegard decompresses data using the Sega RD (Resource Data) format.
 //
 // Stream structure: sequence of blocks terminated by a count byte of 0xFF.

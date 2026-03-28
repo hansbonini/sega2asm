@@ -2,135 +2,95 @@ package compress
 
 import "fmt"
 
-// Decompress decompresses src using the named algorithm.
-//
-// Compression name strings accepted by the YAML `compression:` field:
-//
-//	Original:     huffnemesis huffnemesis2 lzkosinski  lzkosinskiplus  mixedenigma  rlesegard
-//	clownlzss:    lzsssaxman  lzsssaxman_noheader  lzcomper  lzrocket  lzssfaxman  lzrage  lzchameleon
-//	py-port:      lznamco  lzstrike  lztechnosoft
-//	              lzkonami1  lzkonami2  lzkonami3
-//	              lzancient  lzbandai  lznextech  lzwolfteam  lzsti  rlesc
-//	RNC:          lzhrnc  lzhrnc1  lzhrnc2
-//	Blizzard:     lzssblizzard
-//	LucasArts:    lzhlucasarts
-//	Climax:       lz77climax  expgolombclimax  lzclimax
-//	Westone:      lzhwestone  mixedwestone
-//	KOEI:         lzsskoei
-//	Game Arts:    rlegamearts
-//	PowerPacker:  lzpowerpack20
-//	Bahamut:      rlebahamut
-//	Gaibrain:     lzgaibrain
-//	MicroProse:   mixedmicroprose
-//	EA Canada:    lzhrefpack
-//	Elmer SWD:    lzelmerswd
-//	Sloane:       huffsloane
-//	Pass-through: none  (empty)
-func Decompress(compression string, src []byte) ([]byte, error) {
-	switch compression {
-	case "huffnemesis":
-		return DecompressHuffNemesis(src)
-	case "lzkosinski":
-		return DecompressLZKosinski(src)
-	case "lzkosinskiplus":
-		return DecompressLZKosinskiPlus(src)
-	case "mixedenigma":
-		return DecompressMixedEnigma(src)
-	case "rlesegard":
-		return DecompressRLESegard(src)
-	case "lzsssaxman":
-		return DecompressLZSSSaxman(src)
-	case "lzsssaxman_noheader":
-		return DecompressLZSSSaxmanNoHeader(src)
-	case "lzcomper":
-		return DecompressLZComper(src)
-	case "lzrocket":
-		return DecompressLZRocket(src)
-	case "lzssfaxman":
-		return DecompressLZSSFaxman(src)
-	case "lzrage":
-		return DecompressLZRage(src)
-	case "lzchameleon":
-		return DecompressLZChameleon(src)
-	case "lznamco":
-		return DecompressLZNamco(src)
-	case "lzstrike":
-		return DecompressLZStrike(src)
-	case "lztechnosoft":
-		return DecompressLZTechnosoft(src)
-	case "lzkonami1":
-		return DecompressLZKonami1(src)
-	case "lzkonami2":
-		return DecompressLZKonami2(src)
-	case "lzkonami3":
-		return DecompressLZKonami3(src)
-	case "lzancient":
-		return DecompressLZAncient(src)
-	case "lzbandai":
-		return DecompressLZBandai(src)
-	case "lznextech":
-		return DecompressLZNextech(src)
-	case "lzwolfteam":
-		return DecompressLZWolfteam(src)
-	case "lzsti":
-		return DecompressLZSTI(src)
-	case "rlesc":
-		return DecompressRLESC(src)
-	case "lzhrnc":
-		return DecompressLZHRNC(src)
-	case "lzhrnc1":
-		return DecompressLZHRNC1(src)
-	case "lzhrnc2":
-		return DecompressLZHRNC2(src)
-	case "lzcompile":
-		return DecompressLZCompile(src)
-	case "mixeditl":
-		return DecompressMixedITL(src)
-	case "lzfactor5":
-		return DecompressLZFactor5(src)
-	case "lzbeam":
-		return DecompressLZBeam(src)
-	case "lztreasure":
-		return DecompressLZTreasure(src)
-	case "lzssblizzard":
-		return DecompressLZSSBlizzard(src)
-	case "lzhlucasarts":
-		return DecompressLZHLucasArts(src)
-	case "lz77climax":
-		return DecompressLZ77Climax(src)
-	case "expgolombclimax":
-		return DecompressExpGolombClimax(src)
-	case "lzclimax":
-		return DecompressLZClimax(src)
-	case "lzhwestone":
-		return DecompressLZHWestone(src)
-	case "mixedwestone":
-		return DecompressMixedWestone(src)
-	case "lzsskoei":
-		return DecompressLZSSKoei(src)
-	case "rlegamearts":
-		return DecompressRLEGameArts(src)
-	case "lzpowerpack20":
-		return DecompressLZPowerPack20(src)
-	case "rlebahamut":
-		return DecompressRLEBahamut(src)
-	case "huffnemesis2":
-		return DecompressHuffNemesis2(src)
-	case "lzgaibrain":
-		return DecompressLZGaibrain(src)
-	case "mixedmicroprose":
-		return DecompressMixedMicroprose(src)
-	case "lzhrefpack":
-		return DecompressLZHRefpack(src)
-	case "lzelmerswd":
-		return DecompressLZElmerSWD(src)
-	case "huffsloane":
-		return DecompressHuffSloane(src)
-	case "none", "":
-		dst := make([]byte, len(src))
-		copy(dst, src)
-		return dst, nil
+// Family classifies a compression algorithm by its fundamental technique.
+type Family int
+
+const (
+	FamilyLZ        Family = iota // Lempel-Ziv (sliding window, back-references)
+	FamilyLZSS                    // LZSS variant (flag-driven literal/match)
+	FamilyLZ77                    // LZ77 variant (control byte + offset/length)
+	FamilyLZH                     // LZ + Huffman entropy coding
+	FamilyHuffman                 // Pure Huffman / entropy coding
+	FamilyRLE                     // Run-length encoding
+	FamilyMixed                   // Combination of techniques (RLE+LZ, delta, etc.)
+	FamilyExpGolomb               // Exponential-Golomb / spatial coding
+	FamilyNone                    // No compression (pass-through)
+)
+
+// String returns the human-readable name of the compression family.
+func (f Family) String() string {
+	switch f {
+	case FamilyLZ:
+		return "LZ"
+	case FamilyLZSS:
+		return "LZSS"
+	case FamilyLZ77:
+		return "LZ77"
+	case FamilyLZH:
+		return "LZH"
+	case FamilyHuffman:
+		return "Huffman"
+	case FamilyRLE:
+		return "RLE"
+	case FamilyMixed:
+		return "Mixed"
+	case FamilyExpGolomb:
+		return "Exp-Golomb"
+	case FamilyNone:
+		return "None"
 	default:
+		return "Unknown"
+	}
+}
+
+// Decompressor is the function signature shared by all decompression algorithms.
+type Decompressor func(src []byte) ([]byte, error)
+
+// Algorithm describes a registered compression format.
+type Algorithm struct {
+	Name        string       // Identifier used in YAML configs (e.g. "huffnemesis")
+	Family      Family       // Compression family classification
+	Description string       // Short description of the algorithm
+	Decompress  Decompressor // Decompression function
+}
+
+// registry maps algorithm names to their Algorithm descriptors.
+var registry = map[string]*Algorithm{}
+
+// algorithms preserves insertion order for iteration.
+var algorithms []*Algorithm
+
+// Register adds an algorithm to the global registry.
+func Register(a Algorithm) {
+	alg := &Algorithm{
+		Name:        a.Name,
+		Family:      a.Family,
+		Description: a.Description,
+		Decompress:  a.Decompress,
+	}
+	registry[a.Name] = alg
+	algorithms = append(algorithms, alg)
+}
+
+// Lookup returns the Algorithm for the given name, or nil if not found.
+func Lookup(name string) *Algorithm {
+	return registry[name]
+}
+
+// Algorithms returns all registered algorithms in registration order.
+func Algorithms() []*Algorithm {
+	return algorithms
+}
+
+// Decompress decompresses src using the named algorithm.
+// Algorithm names are registered via init() in each algorithm file.
+func Decompress(compression string, src []byte) ([]byte, error) {
+	if compression == "" {
+		compression = "none"
+	}
+	alg := Lookup(compression)
+	if alg == nil {
 		return nil, fmt.Errorf("unknown compression %q", compression)
 	}
+	return alg.Decompress(src)
 }
