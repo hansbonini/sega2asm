@@ -1,0 +1,38 @@
+name: spidermanvskingpin
+# Spider-Man (World) (Sega) — Sega Genesis / Mega Drive
+# SHA-1 verified against original ROM
+sha1: "250f7a7301a028450eef2f2a9dcec91f99ecccbd"
+
+options:
+  platform: genesis
+  region: ntsc
+  basename: spidermanvskingpin
+  base_path: ./out/
+  target_path: ../Spider-Man (World) (Sega).md
+  asm_path: asm
+  asset_path: assets
+  build_path: build
+  symbols_path: ./spidermanvskingpin_symbols.txt
+  charmap_path: ./spidermanvskingpin_default.tbl
+  header_output: true
+  incbin: true
+
+segments:
+  - name: header
+    type: header
+    start: 0x000000
+    end:   0x000200
+
+  - name: gfx_segalogo
+    type: gfxcomp
+    compression: huffsloane
+    start: 0x0007F658
+    end:   0x0007FA5A
+    subdir: gfx/compressed
+
+  - name: gfx_font
+    type: gfxcomp
+    compression: huffsloane
+    start: 0x0007FA5A
+    end:   0x0007FD87
+    subdir: gfx/compressed
