@@ -1,4 +1,4 @@
-package splitter
+package segments
 
 import (
 	"fmt"
@@ -8,14 +8,11 @@ import (
 )
 
 // vdpAnnotator holds compiled regexes for a specific VDP ctrl symbol name.
-// Build once per segment via newVDPAnnotator.
 type vdpAnnotator struct {
 	reMoveW *regexp.Regexp
 	reMoveL *regexp.Regexp
 }
 
-// newVDPAnnotator compiles regexes that match the VDP control port either by
-// its raw address ($C00004) or by an optional symbol name (e.g. "VDP_CTRL").
 func newVDPAnnotator(ctrlSym string) *vdpAnnotator {
 	dest := `\$(?:00)?[Cc]00004(?:\.l)?`
 	if ctrlSym != "" {
@@ -28,9 +25,6 @@ func newVDPAnnotator(ctrlSym string) *vdpAnnotator {
 	}
 }
 
-// annotate appends a human-readable VDP comment to an instruction line
-// when it is an immediate write to the VDP control port ($C00004).
-// Returns the line unchanged if no VDP annotation applies.
 func (a *vdpAnnotator) annotate(line string) string {
 	if m := a.reMoveL.FindStringSubmatch(line); m != nil {
 		val, err := strconv.ParseUint(m[1], 16, 32)
@@ -50,9 +44,8 @@ func (a *vdpAnnotator) annotate(line string) string {
 	return line
 }
 
-// vdpWordComment decodes a single 16-bit write to VDP_CTRL.
 func vdpWordComment(w uint16) string {
-	if w>>14 == 2 { // bits 15-14 = 10 → VDP register write
+	if w>>14 == 2 {
 		reg := (w >> 8) & 0x1F
 		val := uint8(w & 0xFF)
 		return fmt.Sprintf("VDP reg #%d = $%02X (%s)", reg, val, vdpRegDesc(int(reg), val))
@@ -60,12 +53,10 @@ func vdpWordComment(w uint16) string {
 	return ""
 }
 
-// vdpLongComment decodes a 32-bit write to VDP_CTRL (two consecutive 16-bit commands).
 func vdpLongComment(v uint32) string {
 	hi := uint16(v >> 16)
 	lo := uint16(v)
 
-	// Both words are register writes.
 	if hi>>14 == 2 && lo>>14 == 2 {
 		return vdpWordComment(hi) + " | " + vdpWordComment(lo)
 	}
@@ -76,9 +67,6 @@ func vdpLongComment(v uint32) string {
 		return vdpWordComment(lo)
 	}
 
-	// Address / DMA command.
-	// hi: CD1 CD0 A13..A0
-	// lo: 0..0 CD5..CD2 0 0 A15 A14
 	cd0_1 := uint8((hi >> 14) & 0x3)
 	cd2_5 := uint8((lo >> 4) & 0xF)
 	cd := cd0_1 | (cd2_5 << 2)
@@ -118,9 +106,7 @@ func vdpMemType(cd uint8) string {
 
 func vdpRegDesc(reg int, val uint8) string {
 	switch reg {
-	case 0: // Mode Register 1
-		// Bit 4: display disable  Bit 3: H/V counter latch
-		// Bit 1: H interrupt enable  Bit 0: left column blank
+	case 0:
 		parts := []string{}
 		if val&0x10 != 0 {
 			parts = append(parts, "DispOff")
@@ -132,15 +118,13 @@ func vdpRegDesc(reg int, val uint8) string {
 			parts = append(parts, "HInt")
 		}
 		if val&0x01 != 0 {
-			parts = append(parts, "LCB") // left column blank
+			parts = append(parts, "LCB")
 		}
 		if len(parts) == 0 {
 			return "Mode1: off"
 		}
 		return "Mode1: " + strings.Join(parts, "|")
-	case 1: // Mode Register 2
-		// Bit 7: VRAM 128K  Bit 6: display on  Bit 5: V interrupt
-		// Bit 4: DMA enable  Bit 3: V30 (240-line)  Bit 2: Mode 5
+	case 1:
 		parts := []string{}
 		if val&0x80 != 0 {
 			parts = append(parts, "VRAM128K")
@@ -171,21 +155,18 @@ func vdpRegDesc(reg int, val uint8) string {
 	case 5:
 		return fmt.Sprintf("Sprites=$%04X", uint32(val&0x7F)<<9)
 	case 6:
-		// Bit 5: sprite table address MSB (128 KB VRAM mode)
 		return fmt.Sprintf("Sprites_hi=%d", (val>>5)&1)
 	case 7:
 		pal := (val >> 4) & 0x3
 		col := val & 0xF
 		return fmt.Sprintf("BgColor=PAL%d[%d]", pal, col)
 	case 8:
-		return fmt.Sprintf("SMSHScroll=$%02X", val) // SMS compatibility; unused on MD
+		return fmt.Sprintf("SMSHScroll=$%02X", val)
 	case 9:
-		return fmt.Sprintf("SMSVScroll=$%02X", val) // SMS compatibility; unused on MD
+		return fmt.Sprintf("SMSVScroll=$%02X", val)
 	case 10:
 		return fmt.Sprintf("HInt every %d lines", int(val)+1)
-	case 11: // Mode Register 3
-		// Bit 3: ext V scroll (2-cell column)  Bit 2: IE2 (external interrupt)
-		// Bits 1-0: H scroll mode
+	case 11:
 		hscrollModes := [4]string{"FullScreen", "Invalid", "Cell", "Line"}
 		parts := []string{}
 		if val&0x08 != 0 {
@@ -196,8 +177,7 @@ func vdpRegDesc(reg int, val uint8) string {
 		}
 		parts = append(parts, "HScroll="+hscrollModes[val&0x03])
 		return "Mode3: " + strings.Join(parts, "|")
-	case 12: // Mode Register 4
-		// Bit 7+0: H40 (RS0/RS1)  Bits 2-1: interlace  Bit 3: shadow/highlight
+	case 12:
 		h40 := (val&0x01 != 0) || (val&0x80 != 0)
 		interlace := [4]string{"", " Int2xRes", " Int2x", " IntDouble"}[(val>>1)&0x3]
 		shadow := ""
@@ -212,7 +192,6 @@ func vdpRegDesc(reg int, val uint8) string {
 	case 13:
 		return fmt.Sprintf("HScroll=$%04X", uint32(val&0x3F)<<10)
 	case 14:
-		// Bits for 128 KB VRAM: bit 1 = PlaneA MSB, bit 0 = PlaneB MSB
 		return fmt.Sprintf("NTBase_hi: PlaneA_b=%d PlaneB_b=%d", (val>>1)&1, val&1)
 	case 15:
 		return fmt.Sprintf("AutoInc=%d", val)

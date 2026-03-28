@@ -6,17 +6,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 
-	"sega2asm/audio"
 	"sega2asm/charmap"
-	"sega2asm/compress"
 	"sega2asm/config"
-	"sega2asm/disasm/m68k"
-	"sega2asm/disasm/z80"
-	"sega2asm/gfx"
 	"sega2asm/rom"
+	"sega2asm/segments"
 	"sega2asm/symbols"
 )
 
@@ -102,8 +97,22 @@ func (s *Splitter) Run() error {
 		}
 	}
 
+	// ── Build segment processing context ──────────────────────────────────
+	ctx := &segments.Context{
+		ROM:      r,
+		Syms:     syms,
+		Charmap:  cmap,
+		AsmDir:   asmDir,
+		AssetDir: assetDir,
+		DryRun:   s.opts.DryRun,
+		Verbose:  s.opts.Verbose,
+		Log:      s.log,
+		Logv:     s.logv,
+		Warn:     s.warn,
+	}
+
 	// ── Build global include list ─────────────────────────────────────────
-	var includes []incEntry
+	var includes []segments.Include
 	var splitHints []string
 
 	// ── Process segments ─────────────────────────────────────────────────
@@ -124,80 +133,50 @@ func (s *Splitter) Run() error {
 			continue
 		}
 
-		var outPath string
-		var err error
-		isBin := false
+		// Set the current segment on the context.
+		ctx.Seg = seg
+		ctx.ExtraBins = nil
 
-		switch strings.ToLower(seg.Type) {
-		case "header":
-			var paths []string
-			paths, err = s.writeHeader(r, seg, asmDir, syms)
-			if err != nil {
-				s.warn("  error: %v", err)
-				continue
-			}
-			for _, p := range paths {
-				if p != "" {
-					includes = append(includes, incEntry{path: p})
-				}
-			}
-			continue
-		case "m68k":
-			var segHints []string
-			outPath, segHints, err = s.writeM68K(r, seg, asmDir, syms, cmap)
-			splitHints = append(splitHints, segHints...)
-		case "z80":
-			// Collect consecutive bin segments that share the same subdir — they
-			// are embedded data sections (PCM/music) logically belonging to this
-			// Z80 driver slot. Write their binaries now and embed them as incbin
-			// directives at the end of the Z80 .asm file. Skip them in the main loop.
-			var extraBins []incEntry
+		// Z80 lookahead: absorb consecutive bin segments as embedded data.
+		if strings.EqualFold(seg.Type, "z80") {
+			var extraBins []segments.Include
 			for j := i + 1; j < len(segs); j++ {
 				next := segs[j]
 				if !strings.EqualFold(next.Type, "bin") || next.SubDir != seg.SubDir {
 					break
 				}
-				binPath, binErr := s.writeBin(r, next, assetDir)
-				if binErr == nil {
-					extraBins = append(extraBins, incEntry{path: binPath, addr: uint32(next.Start)})
+				// Write the bin segment.
+				ctx.Seg = next
+				binResult, binErr := segments.Lookup("bin")(ctx)
+				if binErr == nil && len(binResult.Includes) > 0 {
+					extraBins = append(extraBins, binResult.Includes[0])
 				}
-				i++ // absorb this segment
+				i++
 			}
-			outPath, err = s.writeZ80(r, seg, asmDir, syms, extraBins)
-			// Z80 .asm is included in main ASM via include (not incbin); isBin stays false.
-		case "gfx":
-			outPath, err = s.writeGFX(r, seg, assetDir, false)
-			isBin = true
-		case "gfxcomp":
-			outPath, err = s.writeGFX(r, seg, assetDir, true)
-			isBin = true
-		case "pcm":
-			outPath, err = s.writePCM(r, seg, assetDir)
-			isBin = true
-		case "text":
-			outPath, err = s.writeText(r, seg, assetDir, cmap)
-		case "bin":
-			outPath, err = s.writeBin(r, seg, assetDir)
-			isBin = true
-		default:
-			s.warn("  unknown segment type %q – writing as bin", seg.Type)
-			outPath, err = s.writeBin(r, seg, assetDir)
-			isBin = true
+			ctx.Seg = seg
+			ctx.ExtraBins = extraBins
 		}
 
+		// Look up the processor for this segment type.
+		typeName := strings.ToLower(seg.Type)
+		fn := segments.Lookup(typeName)
+		if fn == nil {
+			s.warn("  unknown segment type %q – writing as bin", seg.Type)
+			fn = segments.Lookup("bin")
+		}
+
+		result, err := fn(ctx)
 		if err != nil {
 			s.warn("  error: %v", err)
 			continue
 		}
 
-		if outPath != "" {
-			addr := uint32(0)
-			if isBin {
-				addr = uint32(seg.Start)
-			}
-			includes = append(includes, incEntry{path: outPath, addr: addr, name: seg.Name})
-		}
+		includes = append(includes, result.Includes...)
+		splitHints = append(splitHints, result.Hints...)
+		s.labelHits += result.LabelHits
 	}
+
+	s.labelTotal = len(syms.Ordered)
 
 	// ── Write ports.asm and prepend to includes ───────────────────────────
 	if cfg.Options.HeaderOutput && !s.opts.DryRun {
@@ -205,7 +184,7 @@ func (s *Splitter) Run() error {
 		if err != nil {
 			return fmt.Errorf("writing ports.asm: %w", err)
 		}
-		includes = append([]incEntry{{path: portsPath}}, includes...)
+		includes = append([]segments.Include{{Path: portsPath}}, includes...)
 		s.log("[OUT] Hardware registers: %s", portsPath)
 
 		varsPath, err := s.writeVariables(syms, asmDir)
@@ -213,7 +192,7 @@ func (s *Splitter) Run() error {
 			return fmt.Errorf("writing variables.asm: %w", err)
 		}
 		if varsPath != "" {
-			includes = append([]incEntry{{path: varsPath}}, includes...)
+			includes = append([]segments.Include{{Path: varsPath}}, includes...)
 			s.log("[OUT] RAM variables: %s", varsPath)
 		}
 	}
@@ -241,413 +220,6 @@ func (s *Splitter) Run() error {
 	}
 
 	return nil
-}
-
-// ---------------------------------------------------------------------------
-// Segment writers
-// ---------------------------------------------------------------------------
-
-func (s *Splitter) writeHeader(r *rom.ROM, seg config.Segment, dir string, syms *symbols.Table) ([]string, error) {
-	segDir := filepath.Join(dir, func() string {
-		if seg.SubDir != "" {
-			return seg.SubDir
-		}
-		return strings.ToLower(seg.Type)
-	}())
-	interruptsPath := filepath.Join(segDir, "interrupts.asm")
-	headerPath := s.segPath(seg, dir, ".asm")
-
-	if s.opts.DryRun {
-		return []string{interruptsPath, headerPath}, nil
-	}
-	if err := os.MkdirAll(segDir, 0755); err != nil {
-		return nil, err
-	}
-
-	// ── interrupts.asm ($000000–$0000FF) ──────────────────────────────────
-	var iv strings.Builder
-	iv.WriteString("; Auto-generated by sega2asm\n")
-	iv.WriteString("; Interrupt Vector Table\n\n")
-	iv.WriteString("\torg\t$000000\n\n")
-
-	vectorLabels := []string{
-		"InitialSSP", "InitialPC", "BusError", "AddressError",
-		"IllegalInstr", "ZeroDivide", "CHKExcept", "TRAPVExcept",
-		"PrivilegeViol", "TraceExcept", "Line1010Emul", "Line1111Emul",
-		"Reserved0C", "Reserved0D", "Reserved0E", "UninitialisedISR",
-		"Reserved10", "Reserved11", "Reserved12", "Reserved13",
-		"Reserved14", "Reserved15", "Reserved16", "Reserved17",
-		"SpuriousIRQ", "IRQ1", "EXT_IRQ", "IRQ3",
-		"HBLANK_IRQ", "IRQ5", "VBLANK_IRQ", "IRQ7",
-	}
-	resolveVec := func(addr uint32) string {
-		if name := syms.Label(addr); name != "" {
-			return name
-		}
-		return fmt.Sprintf("$%08X", addr)
-	}
-	for i, label := range vectorLabels {
-		v := r.Read32(uint32(i * 4))
-		iv.WriteString(fmt.Sprintf("%-24s\tdc.l\t%s\n", label+":", resolveVec(v)))
-	}
-	for i := 32; i < 64; i++ {
-		v := r.Read32(uint32(i * 4))
-		iv.WriteString(fmt.Sprintf("TRAP_%02d:\t\t\tdc.l\t%s\n", i-32, resolveVec(v)))
-	}
-	if err := os.WriteFile(interruptsPath, []byte(iv.String()), 0644); err != nil {
-		return nil, err
-	}
-
-	// ── header.asm ($000100–$0001FF) ──────────────────────────────────────
-	var hb strings.Builder
-	hb.WriteString("; Auto-generated by sega2asm\n")
-	hb.WriteString("; Mega Drive ROM Header\n\n")
-	hb.WriteString("\torg\t$000100\n\n")
-
-	h := r.Header
-	hb.WriteString(fmt.Sprintf("\tdc.b\t'%-16s'\n", h.SystemName))
-	hb.WriteString(fmt.Sprintf("\tdc.b\t'%-16s'\n", h.Copyright))
-	hb.WriteString(fmt.Sprintf("\tdc.b\t'%-48s'\n", h.DomesticName))
-	hb.WriteString(fmt.Sprintf("\tdc.b\t'%-48s'\n", h.OverseasName))
-	hb.WriteString(fmt.Sprintf("\tdc.b\t'%s'\n", h.SerialType))
-	hb.WriteString(fmt.Sprintf("\tdc.b\t'%-12s'\n", h.Serial))
-	hb.WriteString(fmt.Sprintf("\tdc.w\t$%04X\t; Checksum\n", h.Checksum))
-	hb.WriteString(fmt.Sprintf("\tdc.b\t'%-16s'\n", h.DeviceSupport))
-	hb.WriteString("\tdc.l\tRomStart\n")
-	hb.WriteString("\tdc.l\tRomEnd\n")
-	hb.WriteString("\tdc.l\tRAM_START\n")
-	hb.WriteString("\tdc.l\tRAM_END\n")
-	hb.WriteString(fmt.Sprintf("\tdc.b\t'%-12s'\n", h.SRAMInfo))
-	hb.WriteString(fmt.Sprintf("\tdc.b\t'%-52s'\n", h.Notes))
-	hb.WriteString(fmt.Sprintf("\tdc.b\t'%-16s'\t; Region\n", h.RegionCodes))
-
-	if err := os.WriteFile(headerPath, []byte(hb.String()), 0644); err != nil {
-		return nil, err
-	}
-
-	return []string{interruptsPath, headerPath}, nil
-}
-
-func (s *Splitter) writeM68K(r *rom.ROM, seg config.Segment, dir string, syms *symbols.Table, cmap *charmap.Map) (string, []string, error) {
-	outPath := s.segPath(seg, dir, ".asm")
-	if s.opts.DryRun {
-		return outPath, nil, nil
-	}
-	asmDir := filepath.Dir(outPath)
-	if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil {
-		return "", nil, err
-	}
-
-	start := uint32(seg.Start)
-	end := uint32(seg.End)
-	if int(end) > r.Size {
-		end = uint32(r.Size)
-	}
-	data := r.Slice(start, end)
-
-	// Build hints map
-	hints := buildHintsMap(seg.Hints)
-
-	// Pass start as baseAddr: PC = start+pos, matching ROM symbol addresses.
-	// Branch/jump targets computed with correct ROM addresses are then
-	// resolved to label names from syms.ByAddr inside the disassembler.
-	results := m68k.DisassembleBlock(data, start, 0, uint32(len(data)), syms.ByAddr)
-
-	// Resolve the VDP ctrl symbol name: prefer user-defined symbol, fall back
-	// to the built-in hw port name so the annotator matches regardless of
-	// whether VDP_CTRL is in the symbols file.
-	vdpCtrlSym := syms.Label(0xC00004)
-	if !syms.Has(0xC00004) {
-		if name := m68k.HWPortName(0xC00004); name != "" {
-			vdpCtrlSym = name
-		}
-	}
-	vdp := newVDPAnnotator(vdpCtrlSym)
-
-	// Collect all branch/jump targets that fall within this segment so we can
-	// emit loc_XXXXXX: labels at the target addresses.
-	branchTargets := make(map[uint32]bool)
-	for _, res := range results {
-		if res.Target != 0 && res.Target >= start && res.Target < end {
-			branchTargets[res.Target] = true
-		}
-	}
-
-	var sb strings.Builder
-	sb.WriteString("; Auto-generated by sega2asm\n")
-	sb.WriteString(fmt.Sprintf("; Segment: %s  $%06X–$%06X\n\n", seg.Name, start, end))
-	sb.WriteString(fmt.Sprintf("\torg\t$%06X\n\n", start))
-
-	// Sort hint offsets so we can detect gaps during the linear pass.
-	sortedHintOffs := make([]uint32, 0, len(hints))
-	for off := range hints {
-		sortedHintOffs = append(sortedHintOffs, off)
-	}
-	sort.Slice(sortedHintOffs, func(i, j int) bool { return sortedHintOffs[i] < sortedHintOffs[j] })
-	hintPtr := 0
-
-	labelHits := 0
-	lastHintEnd := uint32(0)
-
-	// flushHint emits a hint (with optional symbol label) at a given segment offset.
-	// Used both for normal hits and for gaps the disassembler jumped over.
-	flushHint := func(off uint32) {
-		if off < lastHintEnd {
-			return
-		}
-		hintAddr := start + off
-		if syms.Has(hintAddr) {
-			labelHits++
-			sb.WriteByte('\n')
-			sb.WriteString(syms.Label(hintAddr) + ":")
-			sb.WriteString(fmt.Sprintf("\t\t\t\t; $%06X\n", hintAddr))
-		}
-		s.emitHint(&sb, hints[off], data, off, cmap, syms, asmDir)
-		lastHintEnd = off + uint32(hints[off].Length)
-	}
-
-	for _, res := range results {
-		addr := res.Addr
-		curOff := addr - start
-
-		// Emit any hints whose start address was skipped because the disassembler
-		// decoded a multi-byte instruction that landed past them.
-		for hintPtr < len(sortedHintOffs) && sortedHintOffs[hintPtr] < curOff {
-			flushHint(sortedHintOffs[hintPtr])
-			hintPtr++
-		}
-
-		// Emit the appropriate label for this address (at most one per address).
-		// Priority: user symbol > EntryPoint > segment name > branch target.
-		labelEmitted := false
-		if syms.Has(addr) {
-			labelHits++
-			s.logv("  [label] %s = $%06X", syms.Label(addr), addr)
-			sb.WriteByte('\n')
-			sb.WriteString(syms.Label(addr) + ":")
-			sb.WriteString(fmt.Sprintf("\t\t\t\t; $%06X\n", addr))
-			labelEmitted = true
-		} else if addr == r.InitialPC {
-			sb.WriteByte('\n')
-			sb.WriteString("EntryPoint:")
-			sb.WriteString(fmt.Sprintf("\t\t\t\t; $%06X\n", addr))
-			labelEmitted = true
-		} else if addr == start && seg.Name != "" {
-			sb.WriteByte('\n')
-			sb.WriteString(seg.Name + ":")
-			sb.WriteString(fmt.Sprintf("\t\t\t\t; $%06X\n", addr))
-			labelEmitted = true
-		} else if branchTargets[addr] {
-			sb.WriteByte('\n')
-			sb.WriteString(fmt.Sprintf("loc_%06X:", addr))
-			sb.WriteString(fmt.Sprintf("\t\t\t\t; $%06X\n", addr))
-			labelEmitted = true
-		}
-
-		// Check hints: override with explicit data directives.
-		if hint, ok := hints[curOff]; ok {
-			// Advance pointer past this offset (handled here, not in the gap loop).
-			for hintPtr < len(sortedHintOffs) && sortedHintOffs[hintPtr] <= curOff {
-				hintPtr++
-			}
-			s.emitHint(&sb, hint, data, curOff, cmap, syms, asmDir)
-			lastHintEnd = curOff + uint32(hint.Length)
-			continue
-		}
-
-		// Don't emit disassembly for instructions that overlap with a hint's data.
-		if curOff < lastHintEnd {
-			continue
-		}
-
-		// Emit address comment only when no label was written above.
-		if !labelEmitted {
-			sb.WriteString(fmt.Sprintf("; $%06X\n", addr))
-		}
-		sb.WriteString(vdp.annotate(res.Text))
-		sb.WriteByte('\n')
-	}
-
-	// Flush any hints that fall after the last disassembled result.
-	for hintPtr < len(sortedHintOffs) {
-		flushHint(sortedHintOffs[hintPtr])
-		hintPtr++
-	}
-
-	s.labelHits += labelHits
-	s.labelTotal = len(syms.Ordered)
-	hints2 := s.suggestM68KSplits(results, seg, syms, r.Data)
-
-	return outPath, hints2, os.WriteFile(outPath, []byte(sb.String()), 0644)
-}
-
-func (s *Splitter) writeZ80(r *rom.ROM, seg config.Segment, dir string, syms *symbols.Table, extraBins []incEntry) (string, error) {
-	outPath := s.segPath(seg, dir, ".asm")
-	if s.opts.DryRun {
-		return outPath, nil
-	}
-	if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil {
-		return "", err
-	}
-
-	start := uint32(seg.Start)
-	end := uint32(seg.End)
-	if int(end) > r.Size {
-		end = uint32(r.Size)
-	}
-	data := r.Slice(start, end)
-
-	// Z80 uses its own address space.  z80_org defaults to $0000 (most drivers)
-	// but can be set in the YAML for overlays that load at a non-zero Z80 address.
-	z80Org := uint32(seg.Z80Org)
-	results := z80.DisassembleBlock(data, 0, z80Org, uint32(len(data)), syms.ByAddr)
-
-	var sb strings.Builder
-	sb.WriteString("; Auto-generated by sega2asm\n")
-	sb.WriteString(fmt.Sprintf("; Z80 Segment: %s  ROM:$%06X–$%06X\n\n", seg.Name, start, end))
-	sb.WriteString(fmt.Sprintf("\torg\t$%04X\n\n", z80Org))
-
-	labelHits := 0
-	for _, res := range results {
-		addr := res.Addr
-		hasLabel := syms.Has(addr)
-		if hasLabel {
-			labelHits++
-			s.logv("  [label] %s = $%04X", syms.Label(addr), addr)
-			sb.WriteByte('\n')
-			sb.WriteString(syms.Label(addr) + ":")
-			sb.WriteString(fmt.Sprintf("\t\t\t\t; $%04X\n", addr))
-		} else if addr == z80Org && seg.Name != "" {
-			// Emit the segment name as the entry-point label for this Z80 split.
-			sb.WriteByte('\n')
-			sb.WriteString(seg.Name + ":")
-			sb.WriteString(fmt.Sprintf("\t\t\t\t; $%04X\n", addr))
-		} else {
-			sb.WriteString(fmt.Sprintf("; $%04X\n", addr))
-		}
-		sb.WriteString(res.Text)
-		sb.WriteByte('\n')
-	}
-	s.labelHits += labelHits
-	s.labelTotal = len(syms.Ordered)
-
-	// Append incbin directives for embedded data sections (PCM/music data that
-	// immediately follows the Z80 code within the same driver slot).
-	if len(extraBins) > 0 {
-		sb.WriteString("\n; Embedded data\n")
-		for _, e := range extraBins {
-			sb.WriteString(fmt.Sprintf("\tincbin\t'%s'\n", filepath.ToSlash(e.path)))
-		}
-	}
-
-	return outPath, os.WriteFile(outPath, []byte(sb.String()), 0644)
-}
-
-func (s *Splitter) writeGFX(r *rom.ROM, seg config.Segment, dir string, compressed bool) (string, error) {
-	binPath := s.segPath(seg, dir, ".bin")
-	pngPath := s.segPath(seg, dir, ".png")
-	if s.opts.DryRun {
-		return binPath, nil
-	}
-	if err := os.MkdirAll(filepath.Dir(binPath), 0755); err != nil {
-		return "", err
-	}
-
-	rawData := r.Slice(uint32(seg.Start), uint32(seg.End))
-
-	// Always save original (possibly compressed) bytes for incbin.
-	if err := os.WriteFile(binPath, rawData, 0644); err != nil {
-		return "", err
-	}
-
-	// Decompress and save decompressed binary + render PNG for reference only.
-	gfxData := rawData
-	if compressed {
-		dec, err := compress.Decompress(seg.Compression, rawData)
-		if err != nil {
-			s.warn("  decompression failed (%s): %v – PNG skipped", seg.Compression, err)
-		} else {
-			gfxData = dec
-			decPath := s.segPath(seg, dir, ".decompressed.bin")
-			if err := os.WriteFile(decPath, gfxData, 0644); err != nil {
-				s.warn("  writing decompressed bin failed: %v", err)
-			}
-		}
-	}
-	opts := gfx.Options{TilesPerRow: 16, Scale: 2, BPP: seg.BPP}
-	if err := gfx.DumpTiles(gfxData, pngPath, opts); err != nil {
-		s.warn("  PNG render failed: %v", err)
-	} else {
-		s.logv("  tiles: %d  saved: %s", gfx.TileCount(gfxData, opts.BPP), pngPath)
-	}
-	return binPath, nil
-}
-
-func (s *Splitter) writePCM(r *rom.ROM, seg config.Segment, dir string) (string, error) {
-	binPath := s.segPath(seg, dir, ".bin")
-	wavPath := s.segPath(seg, dir, ".wav")
-	if s.opts.DryRun {
-		return binPath, nil
-	}
-	if err := os.MkdirAll(filepath.Dir(binPath), 0755); err != nil {
-		return "", err
-	}
-
-	data := r.Slice(uint32(seg.Start), uint32(seg.End))
-
-	// Save original raw PCM bytes for incbin.
-	if err := os.WriteFile(binPath, data, 0644); err != nil {
-		return "", err
-	}
-
-	// Convert to WAV for preview only.
-	rate := seg.SampleRate
-	if rate == 0 {
-		rate = 7040
-	}
-	if err := audio.PCMToWAV(data, wavPath, rate); err != nil {
-		s.warn("  PCM → WAV failed: %v", err)
-	} else {
-		s.logv("  PCM → WAV: %s (%d samples @ %d Hz)", wavPath, len(data), rate)
-	}
-	return binPath, nil
-}
-
-func (s *Splitter) writeText(r *rom.ROM, seg config.Segment, dir string, cmap *charmap.Map) (string, error) {
-	outPath := s.segPath(seg, dir, ".txt")
-	if s.opts.DryRun {
-		return outPath, nil
-	}
-	if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil {
-		return "", err
-	}
-
-	data := r.Slice(uint32(seg.Start), uint32(seg.End))
-	var out string
-	if !cmap.Empty() {
-		out = cmap.DecodeString(data, 0x00)
-	} else {
-		// ASCII fallback
-		out = strings.Map(func(r rune) rune {
-			if r >= 0x20 && r < 0x7F {
-				return r
-			}
-			return '.'
-		}, string(data))
-	}
-	return outPath, os.WriteFile(outPath, []byte(out), 0644)
-}
-
-func (s *Splitter) writeBin(r *rom.ROM, seg config.Segment, dir string) (string, error) {
-	outPath := s.segPath(seg, dir, ".bin")
-	if s.opts.DryRun {
-		return outPath, nil
-	}
-	if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil {
-		return "", err
-	}
-	data := r.Slice(uint32(seg.Start), uint32(seg.End))
-	return outPath, os.WriteFile(outPath, data, 0644)
 }
 
 // ---------------------------------------------------------------------------
@@ -714,14 +286,7 @@ RAM_END			equ	$00FFFFFF	; Work RAM end
 // RAM variables file
 // ---------------------------------------------------------------------------
 
-// writeVariables emits include/variables.asm with equ definitions for every
-// RAM symbol in the symbols table (addresses >= $FF0000 in 24-bit space,
-// i.e. uint32 >= $00FF0000 or in the sign-extended range $FFFF8000–$FFFFFFFF).
 func (s *Splitter) writeVariables(syms *symbols.Table, asmDir string) (string, error) {
-	// Collect RAM symbols (not ROM, not HW registers).
-	// ROM: $000000–$7FFFFF. HW registers: $A00000–$FEFFFF (handled by ports.asm).
-	// RAM: $FF0000–$FFFFFF (24-bit) → stored as $00FF0000–$00FFFFFF or
-	//      $FFFF8000–$FFFFFFFF (sign-extended .w form).
 	var ramSyms []symbols.Symbol
 	for _, sym := range syms.Ordered {
 		addr := sym.Addr
@@ -753,30 +318,21 @@ func (s *Splitter) writeVariables(syms *symbols.Table, asmDir string) (string, e
 // Main ASM include file
 // ---------------------------------------------------------------------------
 
-// incEntry pairs an output file with the ROM start address it covers.
-// For .asm files addr is 0 (the file already contains its own org directive).
-// For .bin files addr is the segment start, emitted as "org $ADDR\nname:\n\tincbin".
-type incEntry struct {
-	path string
-	addr uint32
-	name string // segment name, used as label for bin entries
-}
-
-func (s *Splitter) writeMainASM(path string, includes []incEntry, romEnd uint32) error {
+func (s *Splitter) writeMainASM(path string, includes []segments.Include, romEnd uint32) error {
 	var sb strings.Builder
 	sb.WriteString("; Auto-generated by sega2asm\n")
 	sb.WriteString(fmt.Sprintf("; Project: %s\n\n", s.cfg.Name))
 	sb.WriteString("\torg\t$00000000\n")
 	sb.WriteString("RomStart:\n\n")
 	for _, inc := range includes {
-		if strings.HasSuffix(inc.path, ".asm") {
-			sb.WriteString(fmt.Sprintf("\tinclude\t'%s'\n", inc.path))
-		} else if strings.HasSuffix(inc.path, ".bin") {
-			sb.WriteString(fmt.Sprintf("\n\torg\t$%06X\n", inc.addr))
-			if inc.name != "" {
-				sb.WriteString(inc.name + ":\n")
+		if strings.HasSuffix(inc.Path, ".asm") || strings.HasSuffix(inc.Path, ".txt") {
+			sb.WriteString(fmt.Sprintf("\tinclude\t'%s'\n", inc.Path))
+		} else if strings.HasSuffix(inc.Path, ".bin") {
+			sb.WriteString(fmt.Sprintf("\n\torg\t$%06X\n", inc.Addr))
+			if inc.Name != "" {
+				sb.WriteString(inc.Name + ":\n")
 			}
-			sb.WriteString(fmt.Sprintf("\tincbin\t'%s'\n", inc.path))
+			sb.WriteString(fmt.Sprintf("\tincbin\t'%s'\n", inc.Path))
 		}
 	}
 	sb.WriteString(fmt.Sprintf("\n\torg\t$%08X\n", romEnd))
@@ -788,22 +344,6 @@ func (s *Splitter) writeMainASM(path string, includes []incEntry, romEnd uint32)
 // Helpers
 // ---------------------------------------------------------------------------
 
-func (s *Splitter) segPath(seg config.Segment, baseDir, ext string) string {
-	if seg.OutputPath != "" {
-		return seg.OutputPath
-	}
-	subdir := seg.SubDir
-	if subdir == "" {
-		subdir = strings.ToLower(seg.Type)
-	}
-	name := seg.Name
-	if name == "" {
-		name = fmt.Sprintf("seg_%06X", uint32(seg.Start))
-	}
-	return filepath.Join(baseDir, subdir, name+ext)
-}
-
-// log prints always. logv prints only in verbose mode.
 func (s *Splitter) log(format string, args ...any) {
 	fmt.Printf(format+"\n", args...)
 }
@@ -816,140 +356,4 @@ func (s *Splitter) logv(format string, args ...any) {
 
 func (s *Splitter) warn(format string, args ...any) {
 	fmt.Printf("[WARN] "+format+"\n", args...)
-}
-
-// buildHintsMap converts a slice of hints to offset → hint map.
-func buildHintsMap(hints []config.Hint) map[uint32]config.Hint {
-	m := make(map[uint32]config.Hint, len(hints))
-	for _, h := range hints {
-		m[h.Offset] = h
-	}
-	return m
-}
-
-// emitHint writes data directive bytes based on a hint.
-// asmDir is the directory of the output ASM file, used for bin hints.
-func (s *Splitter) emitHint(sb *strings.Builder, hint config.Hint, data []byte, offset uint32, cmap *charmap.Map, syms *symbols.Table, asmDir string) {
-	if hint.Label != "" {
-		sb.WriteString(hint.Label + ":\n")
-	}
-	length := hint.Length
-	if length <= 0 {
-		length = 1
-	}
-	end := int(offset) + length
-	if end > len(data) {
-		end = len(data)
-	}
-
-	switch hint.Type {
-	case "data_byte":
-		for i := int(offset); i < end; i++ {
-			sb.WriteString(fmt.Sprintf("\tdc.b\t$%02X\n", data[i]))
-		}
-	case "data_word":
-		for i := int(offset); i < end-1; i += 2 {
-			w := uint16(data[i])<<8 | uint16(data[i+1])
-			sb.WriteString(fmt.Sprintf("\tdc.w\t$%04X\n", w))
-		}
-	case "data_long":
-		for i := int(offset); i < end-3; i += 4 {
-			l := uint32(data[i])<<24 | uint32(data[i+1])<<16 | uint32(data[i+2])<<8 | uint32(data[i+3])
-			sb.WriteString(fmt.Sprintf("\tdc.l\t$%08X\n", l))
-		}
-	case "ptr_table":
-		for i := int(offset); i < end-3; i += 4 {
-			addr := uint32(data[i])<<24 | uint32(data[i+1])<<16 | uint32(data[i+2])<<8 | uint32(data[i+3])
-			label := syms.Label(addr)
-			if label == "" {
-				label = fmt.Sprintf("$%06X", addr)
-			}
-			sb.WriteString(fmt.Sprintf("\tdc.l\t%s\n", label))
-		}
-	case "vdp_regs":
-		// Each 16-bit word is a VDP register write or control command.
-		// Emits dc.w $XXXX with a decoded comment.
-		for i := int(offset); i < end-1; i += 2 {
-			w := uint16(data[i])<<8 | uint16(data[i+1])
-			comment := vdpWordComment(w)
-			if comment == "" {
-				sb.WriteString(fmt.Sprintf("\tdc.w\t$%04X\n", w))
-			} else {
-				sb.WriteString(fmt.Sprintf("\tdc.w\t$%04X\t; %s\n", w, comment))
-			}
-		}
-	case "vdp_cmds":
-		// Each 32-bit longword is a VDP control port command (address set / DMA / reg pair).
-		// Emits dc.l $XXXXXXXX with a decoded comment.
-		for i := int(offset); i < end-3; i += 4 {
-			l := uint32(data[i])<<24 | uint32(data[i+1])<<16 | uint32(data[i+2])<<8 | uint32(data[i+3])
-			comment := vdpLongComment(l)
-			if comment == "" {
-				sb.WriteString(fmt.Sprintf("\tdc.l\t$%08X\n", l))
-			} else {
-				sb.WriteString(fmt.Sprintf("\tdc.l\t$%08X\t; %s\n", l, comment))
-			}
-		}
-	case "ptr_table_rel":
-		// Each entry is a signed 16-bit offset relative to hint.Base.
-		// Emits: dc.w <target_label> - <base_label>
-		baseAddr := uint32(hint.Base)
-		baseLabel := syms.Label(baseAddr)
-		if baseLabel == "" {
-			if hint.Label != "" {
-				baseLabel = hint.Label
-			} else {
-				baseLabel = fmt.Sprintf("$%06X", baseAddr)
-			}
-		}
-		for i := int(offset); i < end-1; i += 2 {
-			delta := int16(uint16(data[i])<<8 | uint16(data[i+1]))
-			target := uint32(int32(baseAddr) + int32(delta))
-			targetLabel := syms.Label(target)
-			if targetLabel == "" {
-				targetLabel = fmt.Sprintf("loc_%06X", target)
-			}
-			sb.WriteString(fmt.Sprintf("\tdc.w\t%s-%s\n", targetLabel, baseLabel))
-		}
-	case "bin":
-		// Extract bytes to a binary file and emit an incbin directive.
-		fileName := hint.File
-		if fileName == "" {
-			if hint.Label != "" {
-				fileName = hint.Label + ".bin"
-			} else {
-				fileName = fmt.Sprintf("blob_%06X.bin", offset)
-			}
-		}
-		if asmDir != "" {
-			binPath := filepath.Join(asmDir, fileName)
-			if err := os.MkdirAll(filepath.Dir(binPath), 0755); err == nil {
-				_ = os.WriteFile(binPath, data[offset:end], 0644)
-			}
-		}
-		sb.WriteString(fmt.Sprintf("\tincbin\t\"%s\"\n", fileName))
-	case "text":
-		if !cmap.Empty() {
-			decoded := cmap.DecodeString(data[offset:end], 0x00)
-			sb.WriteString(fmt.Sprintf("\tdc.b\t'%s',0\n", decoded))
-		} else {
-			sb.WriteString(fmt.Sprintf("\tdc.b\t'%s',0\n", sanitiseASCII(data[offset:end])))
-		}
-	case "skip":
-		sb.WriteString(fmt.Sprintf("\teven\t; skip %d bytes\n", length))
-	default:
-		sb.WriteString(fmt.Sprintf("\tdc.b\t$%02X\t; unknown hint type\n", data[offset]))
-	}
-}
-
-func sanitiseASCII(b []byte) string {
-	s := make([]byte, len(b))
-	for i, c := range b {
-		if c >= 0x20 && c < 0x7F && c != '\'' {
-			s[i] = c
-		} else {
-			s[i] = '.'
-		}
-	}
-	return string(s)
 }

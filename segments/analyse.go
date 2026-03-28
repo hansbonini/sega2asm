@@ -1,4 +1,4 @@
-package splitter
+package segments
 
 import (
 	"fmt"
@@ -10,37 +10,24 @@ import (
 	"sega2asm/symbols"
 )
 
-// splitSuggestion represents a suggested segment boundary.
 type splitSuggestion struct {
 	addr    uint32
 	reasons []string
 }
 
 // suggestM68KSplits analyses disassembly results and returns YAML-ready split
-// suggestion lines and boundary-health warnings. A split boundary is suggested
-// when an address is:
-//
-//   - a JSR/BSR target that immediately follows a flow terminator (strong), or
-//   - a JSR/BSR target called more than once (medium).
-//
-// Boundary warnings are emitted when:
-//
-//   - the segment ends without a flow terminator (cut mid-function), or
-//   - an unconditional branch/jump escapes the segment into ROM (wrong boundary).
-func (s *Splitter) suggestM68KSplits(results []m68k.Result, seg config.Segment, syms *symbols.Table, rom []byte) []string {
+// suggestion lines and boundary-health warnings.
+func suggestM68KSplits(results []m68k.Result, seg config.Segment, syms *symbols.Table, rom []byte) []string {
 	segStart := uint32(seg.Start)
 	segEnd := uint32(seg.End)
 
-	// callCount[addr] = number of JSR/BSR instructions targeting addr.
 	callCount := map[uint32]int{}
-	// afterTerminator[addr] = true if addr immediately follows rts/rte/jmp/bra/illegal.
 	afterTerminator := map[uint32]bool{}
 
-	// Boundary health diagnostics.
 	var boundaryWarnings []string
 
 	prevTerminator := false
-	for i, res := range results {
+	for _, res := range results {
 		if prevTerminator && res.Addr > segStart && res.Addr < segEnd {
 			afterTerminator[res.Addr] = true
 		}
@@ -55,15 +42,11 @@ func (s *Splitter) suggestM68KSplits(results []m68k.Result, seg config.Segment, 
 		case m68k.FlowReturn, m68k.FlowHalt:
 			prevTerminator = true
 		case m68k.FlowJump:
-			// Unconditional jmp/bra is also a terminator.
 			prevTerminator = true
 		}
-		_ = i
 	}
 
-	// ── Check: segment ends mid-function ─────────────────────────────────
-	// Walk backward through results to find the last actual code instruction
-	// (skip dc.w/dc.l/dc.b data entries emitted by convertDeadDataToDCW).
+	// Check: segment ends mid-function.
 	lastCodeFlow := m68k.FlowNone
 	lastCodeAddr := uint32(0)
 	for i := len(results) - 1; i >= 0; i-- {
@@ -83,12 +66,11 @@ func (s *Splitter) suggestM68KSplits(results []m68k.Result, seg config.Segment, 
 			fmt.Sprintf("  [WARN] segment %q ends mid-function at $%06X (last insn has no flow terminator) — end boundary may be too early",
 				seg.Name, lastCodeAddr))
 
-		// Scan ROM forward from seg.End for the next word-aligned rts ($4E75).
 		newEnd := "0x??????"
 		segEndOff := int(seg.End)
 		for off := segEndOff; off+1 < len(rom); off += 2 {
 			if rom[off] == 0x4E && (rom[off+1] == 0x75 || rom[off+1] == 0x73) {
-				newEnd = fmt.Sprintf("0x%06X", off+2) // end is exclusive (past the rts/rte)
+				newEnd = fmt.Sprintf("0x%06X", off+2)
 				break
 			}
 		}
@@ -100,7 +82,6 @@ func (s *Splitter) suggestM68KSplits(results []m68k.Result, seg config.Segment, 
 		boundaryWarnings = append(boundaryWarnings, fmt.Sprintf("      end:   %s", newEnd))
 	}
 
-	// Build suggestion map.
 	hints := map[uint32]*splitSuggestion{}
 	add := func(addr uint32, reason string) {
 		h, ok := hints[addr]
@@ -122,7 +103,6 @@ func (s *Splitter) suggestM68KSplits(results []m68k.Result, seg config.Segment, 
 		add(addr, "after_terminator")
 	}
 
-	// Keep only strong (called + after terminator) or heavily called (≥2).
 	var suggestions []splitSuggestion
 	for addr, h := range hints {
 		hasCall := false
@@ -149,8 +129,6 @@ func (s *Splitter) suggestM68KSplits(results []m68k.Result, seg config.Segment, 
 	})
 
 	var lines []string
-
-	// Boundary health warnings come first.
 	lines = append(lines, boundaryWarnings...)
 
 	if len(suggestions) == 0 {
@@ -160,7 +138,6 @@ func (s *Splitter) suggestM68KSplits(results []m68k.Result, seg config.Segment, 
 	lines = append(lines, fmt.Sprintf("[HINT] Split suggestions for %q ($%06X–$%06X) — %d boundaries:",
 		seg.Name, segStart, segEnd, len(suggestions)))
 
-	// Build ordered boundary list: segStart + suggested + segEnd.
 	boundaries := make([]uint32, 0, len(suggestions)+2)
 	boundaries = append(boundaries, segStart)
 	for _, sg := range suggestions {
