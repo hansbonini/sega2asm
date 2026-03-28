@@ -6,8 +6,8 @@ import (
 
 	"github.com/spf13/cobra"
 	"sega2asm/compress"
-	"sega2asm/config"
 	"sega2asm/splitter"
+	"sega2asm/types"
 )
 
 const version = "1.0.0"
@@ -48,7 +48,7 @@ func newRootCmd() *cobra.Command {
 			// Silence usage for runtime errors (past argument validation)
 			cmd.SilenceUsage = true
 
-			cfg, err := config.Load(configFile)
+			cfg, err := types.LoadConfig(configFile)
 			if err != nil {
 				return fmt.Errorf("loading config: %w", err)
 			}
