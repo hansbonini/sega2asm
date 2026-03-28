@@ -1,5 +1,4 @@
-// Package rom handles loading and parsing Sega Mega Drive / Genesis ROMs.
-package rom
+package types
 
 import (
 	"encoding/binary"
@@ -8,83 +7,68 @@ import (
 	"strings"
 )
 
-// Header represents the Mega Drive ROM header located at $000100-$0001FF.
-type Header struct {
-	SystemName   string // "SEGA MEGA DRIVE" or similar
-	Copyright    string // Publisher / year
-	DomesticName string // Japanese title
-	OverseasName string // International title
-	SerialType   string // Game type (GM = game, AI = AI type)
-	Serial       string // Serial number
-	Checksum     uint16 // ROM checksum
-	DeviceSupport string // Supported IO devices
-	ROMStart     uint32 // Start address of ROM data
-	ROMEnd       uint32 // End address of ROM data
-	RAMStart     uint32 // Start address of work RAM
-	RAMEnd       uint32 // End address of work RAM
-	SRAMInfo     string // Save RAM indicator
-	SRAMStart    uint32 // Save RAM start
-	SRAMEnd      uint32 // Save RAM end
-	Notes        string // Modem / notes
-	RegionCodes  string // Region support
+// ROMHeader represents the Mega Drive ROM header located at $000100-$0001FF.
+type ROMHeader struct {
+	SystemName    string
+	Copyright     string
+	DomesticName  string
+	OverseasName  string
+	SerialType    string
+	Serial        string
+	Checksum      uint16
+	DeviceSupport string
+	ROMStart      uint32
+	ROMEnd        uint32
+	RAMStart      uint32
+	RAMEnd        uint32
+	SRAMInfo      string
+	SRAMStart     uint32
+	SRAMEnd       uint32
+	Notes         string
+	RegionCodes   string
 }
 
-// ROM holds the loaded ROM binary and its parsed header.
+// ROM holds a loaded ROM binary and its parsed header.
 type ROM struct {
 	Data      []byte
-	Header    *Header
+	Header    *ROMHeader
 	Size      int
-	InitialPC uint32 // Reset vector: ROM[$000004] — entry point of the game
+	InitialPC uint32
 }
 
-// Load reads a Mega Drive ROM file, detecting interleaved formats.
-func Load(path string) (*ROM, error) {
+// LoadROM reads a Mega Drive ROM file, detecting interleaved formats.
+func LoadROM(path string) (*ROM, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("reading ROM %q: %w", path, err)
 	}
-
-	// Detect and de-interleave SMD format (512-byte header + interleaved blocks)
 	if isSMD(data) {
 		data, err = deSMD(data)
 		if err != nil {
 			return nil, fmt.Errorf("de-interleaving SMD: %w", err)
 		}
 	}
-
 	r := &ROM{Data: data, Size: len(data)}
-	r.Header = parseHeader(data)
+	r.Header = parseROMHeader(data)
 	if len(data) >= 8 {
 		r.InitialPC = binary.BigEndian.Uint32(data[4:8])
 	}
 	return r, nil
 }
 
-// isSMD detects a Super Magic Drive interleaved ROM.
 func isSMD(data []byte) bool {
-	if len(data) < 512 {
-		return false
-	}
-	// SMD header magic: bytes 8-9 should be 0xAA 0xBB, or check for typical patterns
-	if data[8] == 0xAA && data[9] == 0xBB {
-		return true
-	}
-	return false
+	return len(data) >= 512 && data[8] == 0xAA && data[9] == 0xBB
 }
 
-// deSMD de-interleaves an SMD-format ROM.
 func deSMD(data []byte) ([]byte, error) {
 	if len(data) < 512 {
 		return nil, fmt.Errorf("SMD too small")
 	}
-	// Skip 512-byte header
 	src := data[512:]
 	out := make([]byte, len(src))
-
 	blockSize := 0x4000
 	for i := 0; i < len(src)/blockSize; i++ {
 		block := src[i*blockSize : (i+1)*blockSize]
-		// Odd bytes → first half, even bytes → second half
 		half := blockSize / 2
 		for j := 0; j < half; j++ {
 			out[i*blockSize+j] = block[half+j]
@@ -94,13 +78,11 @@ func deSMD(data []byte) ([]byte, error) {
 	return out, nil
 }
 
-// parseHeader extracts the Mega Drive ROM header.
-func parseHeader(data []byte) *Header {
+func parseROMHeader(data []byte) *ROMHeader {
 	if len(data) < 0x200 {
-		return &Header{}
+		return &ROMHeader{}
 	}
-
-	h := &Header{}
+	h := &ROMHeader{}
 	h.SystemName = strings.TrimRight(string(data[0x100:0x110]), " \x00")
 	h.Copyright = strings.TrimRight(string(data[0x110:0x120]), " \x00")
 	h.DomesticName = strings.TrimRight(string(data[0x120:0x150]), " \x00")
@@ -145,7 +127,7 @@ func (r *ROM) Read32(offset uint32) uint32 {
 	return binary.BigEndian.Uint32(r.Data[offset:])
 }
 
-// Slice returns a slice of the ROM data at [start, end).
+// Slice returns a copy of the ROM data at [start, end).
 func (r *ROM) Slice(start, end uint32) []byte {
 	if int(start) >= len(r.Data) {
 		return nil
@@ -158,7 +140,7 @@ func (r *ROM) Slice(start, end uint32) []byte {
 	return dst
 }
 
-// PrintHeader prints a formatted ROM header summary.
+// PrintHeader returns a formatted ROM header summary.
 func (r *ROM) PrintHeader() string {
 	if r.Header == nil {
 		return "(no header)"

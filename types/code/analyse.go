@@ -1,13 +1,12 @@
-package segments
+package code
 
 import (
 	"fmt"
 	"sort"
 	"strings"
 
-	"sega2asm/config"
 	"sega2asm/disasm/m68k"
-	"sega2asm/symbols"
+	"sega2asm/types"
 )
 
 type splitSuggestion struct {
@@ -17,7 +16,7 @@ type splitSuggestion struct {
 
 // suggestM68KSplits analyses disassembly results and returns YAML-ready split
 // suggestion lines and boundary-health warnings.
-func suggestM68KSplits(results []m68k.Result, seg config.Segment, syms *symbols.Table, rom []byte) []string {
+func suggestM68KSplits(results []m68k.Result, seg types.Segment, syms *types.SymbolTable, rom []byte) []string {
 	segStart := uint32(seg.Start)
 	segEnd := uint32(seg.End)
 

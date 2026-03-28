@@ -3,7 +3,7 @@ package segments
 import (
 	"os"
 
-	"sega2asm/audio"
+	"sega2asm/types/audio"
 )
 
 func init() {
@@ -26,13 +26,10 @@ func processPCM(ctx *Context) (*Result, error) {
 	}
 
 	rate := ctx.Seg.SampleRate
-	if rate == 0 {
-		rate = 7040
-	}
-	if err := audio.PCMToWAV(data, wavPath, rate); err != nil {
+	if err := audio.WritePCMAsWAV(data, wavPath, rate); err != nil {
 		ctx.Warn("  PCM → WAV failed: %v", err)
 	} else {
-		ctx.Logv("  PCM → WAV: %s (%d samples @ %d Hz)", wavPath, len(data), rate)
+		ctx.Logv("  PCM → WAV: %s (%d samples @ %d Hz)", wavPath, len(data), audio.NormalizeSampleRate(rate))
 	}
 	return &Result{
 		Includes: []Include{{Path: binPath, Addr: ctx.Start(), Name: ctx.Seg.Name}},

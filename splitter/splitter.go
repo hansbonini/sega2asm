@@ -8,11 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"sega2asm/charmap"
-	"sega2asm/config"
-	"sega2asm/rom"
 	"sega2asm/segments"
-	"sega2asm/symbols"
+	"sega2asm/types"
 )
 
 // Options controls splitter runtime behaviour.
@@ -23,14 +20,14 @@ type Options struct {
 
 // Splitter is the main splitting engine.
 type Splitter struct {
-	cfg        *config.Config
+	cfg        *types.Config
 	opts       Options
 	labelHits  int
 	labelTotal int
 }
 
 // New creates a Splitter.
-func New(cfg *config.Config, opts Options) *Splitter {
+func New(cfg *types.Config, opts Options) *Splitter {
 	return &Splitter{cfg: cfg, opts: opts}
 }
 
@@ -44,7 +41,7 @@ func (s *Splitter) Run() error {
 		return fmt.Errorf("options.target_path not set in config")
 	}
 	s.log("[ROM] Loading %s", romPath)
-	r, err := rom.Load(romPath)
+	r, err := types.LoadROM(romPath)
 	if err != nil {
 		return err
 	}
@@ -61,7 +58,7 @@ func (s *Splitter) Run() error {
 	}
 
 	// ── Load symbols ─────────────────────────────────────────────────────
-	syms, err := symbols.Load(cfg.Options.SymbolsPath)
+	syms, err := types.LoadSymbols(cfg.Options.SymbolsPath)
 	if err != nil {
 		return err
 	}
@@ -75,7 +72,7 @@ func (s *Splitter) Run() error {
 	}
 
 	// ── Load charmap ─────────────────────────────────────────────────────
-	cmap, err := charmap.Load(cfg.Options.CharmapPath)
+	cmap, err := types.LoadCharmap(cfg.Options.CharmapPath)
 	if err != nil {
 		return err
 	}
@@ -286,8 +283,8 @@ RAM_END			equ	$00FFFFFF	; Work RAM end
 // RAM variables file
 // ---------------------------------------------------------------------------
 
-func (s *Splitter) writeVariables(syms *symbols.Table, asmDir string) (string, error) {
-	var ramSyms []symbols.Symbol
+func (s *Splitter) writeVariables(syms *types.SymbolTable, asmDir string) (string, error) {
+	var ramSyms []types.Symbol
 	for _, sym := range syms.Ordered {
 		addr := sym.Addr
 		if addr >= 0x00FF0000 && addr <= 0x00FFFFFF {

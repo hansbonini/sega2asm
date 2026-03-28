@@ -1,4 +1,4 @@
-package segments
+package code
 
 import (
 	"fmt"

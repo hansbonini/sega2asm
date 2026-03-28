@@ -1,4 +1,4 @@
-package segments
+package code
 
 import (
 	"fmt"
@@ -7,16 +7,17 @@ import (
 	"strings"
 
 	"sega2asm/disasm/z80"
+	"sega2asm/types"
 )
 
 func init() {
-	Register("z80", processZ80)
+	types.Register("z80", processZ80)
 }
 
-func processZ80(ctx *Context) (*Result, error) {
+func processZ80(ctx *types.Context) (*types.Result, error) {
 	outPath := ctx.SegPath(ctx.AsmDir, ".asm")
 	if ctx.DryRun {
-		return &Result{Includes: []Include{{Path: outPath}}}, nil
+		return &types.Result{Includes: []types.Include{{Path: outPath}}}, nil
 	}
 	if err := ctx.EnsureDir(outPath); err != nil {
 		return nil, err
@@ -62,8 +63,8 @@ func processZ80(ctx *Context) (*Result, error) {
 		}
 	}
 
-	return &Result{
-		Includes:  []Include{{Path: outPath}},
+	return &types.Result{
+		Includes:  []types.Include{{Path: outPath}},
 		LabelHits: labelHits,
 	}, os.WriteFile(outPath, []byte(sb.String()), 0644)
 }

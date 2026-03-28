@@ -1,5 +1,4 @@
-// Package helpers provides shared utility functions used across sega2asm.
-package helpers
+package types
 
 import (
 	"fmt"

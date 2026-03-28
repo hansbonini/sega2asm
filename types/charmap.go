@@ -1,8 +1,4 @@
-// Package charmap loads .tbl charmap files used for text segment disassembly.
-// Format (standard THINGY/WindHex .tbl):
-//   XX=Character
-//   XXYY=Multi-byte-character
-package charmap
+package types
 
 import (
 	"bufio"
@@ -11,15 +7,16 @@ import (
 	"strings"
 )
 
-// Map translates ROM byte sequences to readable strings.
-type Map struct {
-	entries map[string]string // hex key → string
-	maxLen  int               // maximum key byte length
+// CharMap translates ROM byte sequences to readable strings.
+// Format: standard THINGY/WindHex .tbl files.
+type CharMap struct {
+	entries map[string]string
+	maxLen  int
 }
 
-// Load reads a .tbl file. Returns an empty map if path is empty/missing.
-func Load(path string) (*Map, error) {
-	m := &Map{entries: make(map[string]string)}
+// LoadCharmap reads a .tbl file. Returns an empty map if path is empty/missing.
+func LoadCharmap(path string) (*CharMap, error) {
+	m := &CharMap{entries: make(map[string]string)}
 	if path == "" {
 		return m, nil
 	}
@@ -52,9 +49,9 @@ func Load(path string) (*Map, error) {
 	return m, scanner.Err()
 }
 
-// Lookup attempts to decode bytes starting at data[pos], returning the
-// decoded string and number of bytes consumed. Returns ("", 0) on no match.
-func (m *Map) Lookup(data []byte, pos int) (string, int) {
+// Lookup attempts to decode bytes starting at data[pos].
+// Returns the decoded string and number of bytes consumed, or ("", 0) on no match.
+func (m *CharMap) Lookup(data []byte, pos int) (string, int) {
 	if len(m.entries) == 0 {
 		return "", 0
 	}
@@ -62,7 +59,6 @@ func (m *Map) Lookup(data []byte, pos int) (string, int) {
 	if maxLen > len(data)-pos {
 		maxLen = len(data) - pos
 	}
-	// Try longest match first
 	for l := maxLen; l >= 1; l-- {
 		key := fmt.Sprintf("%X", data[pos:pos+l])
 		if len(key) < l*2 {
@@ -75,9 +71,8 @@ func (m *Map) Lookup(data []byte, pos int) (string, int) {
 	return "", 0
 }
 
-// DecodeString decodes a slice of bytes using the charmap, stopping at
-// terminator byte (0x00 by default). Falls back to hex escapes.
-func (m *Map) DecodeString(data []byte, terminator byte) string {
+// DecodeString decodes bytes using the charmap, stopping at terminator (default 0x00).
+func (m *CharMap) DecodeString(data []byte, terminator byte) string {
 	var sb strings.Builder
 	i := 0
 	for i < len(data) {
@@ -96,6 +91,4 @@ func (m *Map) DecodeString(data []byte, terminator byte) string {
 }
 
 // Empty returns true if no entries are loaded.
-func (m *Map) Empty() bool {
-	return len(m.entries) == 0
-}
+func (m *CharMap) Empty() bool { return len(m.entries) == 0 }

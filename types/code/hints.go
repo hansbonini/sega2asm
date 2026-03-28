@@ -1,4 +1,4 @@
-package segments
+package code
 
 import (
 	"fmt"
@@ -6,14 +6,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"sega2asm/charmap"
-	"sega2asm/config"
-	"sega2asm/symbols"
+	"sega2asm/types"
 )
 
 // buildHintsMap converts a slice of hints to offset → hint map.
-func buildHintsMap(hints []config.Hint) map[uint32]config.Hint {
-	m := make(map[uint32]config.Hint, len(hints))
+func buildHintsMap(hints []types.Hint) map[uint32]types.Hint {
+	m := make(map[uint32]types.Hint, len(hints))
 	for _, h := range hints {
 		m[h.Offset] = h
 	}
@@ -21,7 +19,7 @@ func buildHintsMap(hints []config.Hint) map[uint32]config.Hint {
 }
 
 // emitHint writes data directive bytes based on a hint.
-func emitHint(sb *strings.Builder, hint config.Hint, data []byte, offset uint32, cmap *charmap.Map, syms *symbols.Table, asmDir string) {
+func emitHint(sb *strings.Builder, hint types.Hint, data []byte, offset uint32, cmap *types.CharMap, syms *types.SymbolTable, asmDir string) {
 	if hint.Label != "" {
 		sb.WriteString(hint.Label + ":\n")
 	}

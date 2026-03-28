@@ -1,4 +1,4 @@
-package segments
+package code
 
 import (
 	"fmt"
@@ -8,16 +8,17 @@ import (
 	"strings"
 
 	"sega2asm/disasm/m68k"
+	"sega2asm/types"
 )
 
 func init() {
-	Register("m68k", processM68K)
+	types.Register("m68k", processM68K)
 }
 
-func processM68K(ctx *Context) (*Result, error) {
+func processM68K(ctx *types.Context) (*types.Result, error) {
 	outPath := ctx.SegPath(ctx.AsmDir, ".asm")
 	if ctx.DryRun {
-		return &Result{Includes: []Include{{Path: outPath}}}, nil
+		return &types.Result{Includes: []types.Include{{Path: outPath}}}, nil
 	}
 	asmDir := filepath.Dir(outPath)
 	if err := ctx.EnsureDir(outPath); err != nil {
@@ -147,8 +148,8 @@ func processM68K(ctx *Context) (*Result, error) {
 
 	splitHints := suggestM68KSplits(results, seg, syms, ctx.ROM.Data)
 
-	return &Result{
-		Includes:  []Include{{Path: outPath}},
+	return &types.Result{
+		Includes:  []types.Include{{Path: outPath}},
 		Hints:     splitHints,
 		LabelHits: labelHits,
 	}, os.WriteFile(outPath, []byte(sb.String()), 0644)

@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"sega2asm/disasm"
-	"sega2asm/helpers"
 	"sega2asm/types"
 )
 
@@ -75,7 +74,7 @@ func (d *Disassembler) Next() Result {
 		// Emit as DC.W
 		d.Pos = startPos + 2
 		end = d.Pos
-		word := helpers.ReadBEU16(d.Data, startPos)
+		word := types.ReadBEU16(d.Data, startPos)
 		text = fmt.Sprintf("\tdc.w\t$%04X", word)
 	}
 
@@ -96,7 +95,7 @@ func (d *Disassembler) Next() Result {
 // ---------------------------------------------------------------------------
 
 func (d *Disassembler) decode() (string, bool) {
-	op := helpers.ReadBEU16(d.Data, d.Pos)
+	op := types.ReadBEU16(d.Data, d.Pos)
 	d.Pos += 2
 
 	switch op >> 12 {
@@ -733,7 +732,7 @@ func (d *Disassembler) readImmU16() uint16 {
 	if d.Pos+2 > len(d.Data) {
 		return 0
 	}
-	v := helpers.ReadBEU16(d.Data, d.Pos)
+	v := types.ReadBEU16(d.Data, d.Pos)
 	d.Pos += 2
 	return v
 }
@@ -742,7 +741,7 @@ func (d *Disassembler) readImmU32() uint32 {
 	if d.Pos+4 > len(d.Data) {
 		return 0
 	}
-	v := helpers.ReadBEU32(d.Data, d.Pos)
+	v := types.ReadBEU32(d.Data, d.Pos)
 	d.Pos += 4
 	return v
 }
@@ -753,21 +752,21 @@ func (d *Disassembler) readImm(n int) uint32 {
 		if d.Pos+2 > len(d.Data) {
 			return 0
 		}
-		v := helpers.ReadBEU16(d.Data, d.Pos)
+		v := types.ReadBEU16(d.Data, d.Pos)
 		d.Pos += 2
 		return uint32(v & 0xFF)
 	case 2:
 		if d.Pos+2 > len(d.Data) {
 			return 0
 		}
-		v := helpers.ReadBEU16(d.Data, d.Pos)
+		v := types.ReadBEU16(d.Data, d.Pos)
 		d.Pos += 2
 		return uint32(v)
 	case 4:
 		if d.Pos+4 > len(d.Data) {
 			return 0
 		}
-		v := helpers.ReadBEU32(d.Data, d.Pos)
+		v := types.ReadBEU32(d.Data, d.Pos)
 		d.Pos += 4
 		return v
 	}
@@ -822,15 +821,15 @@ func eaAbsTarget(ea uint16, data []byte, posAfterOpword int, base uint32) uint32
 	switch ea & 7 {
 	case 0: // absolute short (.w)
 		if posAfterOpword+2 <= len(data) {
-			return uint32(helpers.ReadBEU16(data, posAfterOpword))
+			return uint32(types.ReadBEU16(data, posAfterOpword))
 		}
 	case 1: // absolute long (.l)
 		if posAfterOpword+4 <= len(data) {
-			return helpers.ReadBEU32(data, posAfterOpword)
+			return types.ReadBEU32(data, posAfterOpword)
 		}
 	case 2: // PC-relative (d16,PC) — PC points past the displacement word
 		if posAfterOpword+2 <= len(data) {
-			disp := int16(helpers.ReadBEU16(data, posAfterOpword))
+			disp := int16(types.ReadBEU16(data, posAfterOpword))
 			pc := base + uint32(posAfterOpword+2)
 			return uint32(int32(pc) + int32(disp))
 		}

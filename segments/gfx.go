@@ -4,7 +4,8 @@ import (
 	"os"
 
 	"sega2asm/compress"
-	"sega2asm/gfx"
+	"sega2asm/types"
+	_ "sega2asm/types/gfx"
 )
 
 func init() {
@@ -43,11 +44,11 @@ func processGFX(ctx *Context, compressed bool) (*Result, error) {
 			}
 		}
 	}
-	opts := gfx.Options{TilesPerRow: 16, Scale: 2, BPP: ctx.Seg.BPP}
-	if err := gfx.DumpTiles(gfxData, pngPath, opts); err != nil {
+	opts := types.GfxOptions{TilesPerRow: 16, Scale: 2, BPP: ctx.Seg.BPP}
+	if err := types.DumpTiles(gfxData, pngPath, opts); err != nil {
 		ctx.Warn("  PNG render failed: %v", err)
 	} else {
-		ctx.Logv("  tiles: %d  saved: %s", gfx.TileCount(gfxData, opts.BPP), pngPath)
+		ctx.Logv("  tiles: %d  saved: %s", types.TileCount(gfxData, opts.BPP), pngPath)
 	}
 	return &Result{
 		Includes: []Include{{Path: binPath, Addr: ctx.Start(), Name: ctx.Seg.Name}},
