@@ -72,9 +72,11 @@ Inspired by [ethteck/splat](https://github.com/ethteck/splat) and [nathancassano
 | `lzcomper` | LZ | Community format optimised for 68000 decompression speed at the cost of ratio | Community / Sonic hacks |
 | `lzssfaxman` | LZSS | Modified Saxman tuned to compress SMPS music data | Sonic hacks / SMPS tools |
 | `lzbluesky` | Mixed | BlueSky Software LZ+RLE; 2-byte BE size header (output size−1), 2 KB ring buffer, flag byte MSB-first (0=literal, 1=back-ref with 11-bit ring offset or RLE fill byte) | Shadowrun |
+| `rlesegaam` | RLE | Sega AM RLE (no header); byte<0x80=literal, byte≥0x80: count=(b−0x80)+1 then fill value ($80=1 copy … $FF=128 copies) | Sword of Vermilion |
+| `lzsculptured` | Mixed | Sculptured Software multi-mode LZ+RLE; 4-byte header (u16be mode + u16be param); mode 0: byte-cmd stream (RLE/short-ref/literal/LZ); modes 1/3/4: MSB-first control-byte bitstream (byte or word stride); mode 2: simplified bitstream; mode 5: table-relative dictionary | Mortal Kombat 3, Tecmo Super Baseball, Ultimate Mortal Kombat, SeaQuest DSV, Virtual Bart, WWF Raw, WWF Wrestlemania - The Arcade Game |
 | `none` | — | No compression; data copied verbatim | — |
 
-> **Total: 295 unique games covered across 47 compression formats**
+> **Total: 297 unique games covered across 49 compression formats**
 
 **Labels & symbols:**
 - Reads `symbols.txt` in multiple formats (name=addr, addr:name, space-separated)
