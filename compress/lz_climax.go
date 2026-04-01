@@ -1,12 +1,17 @@
 package compress
 
 import (
+	"sega2asm/types"
 	"encoding/binary"
 	"fmt"
 )
 
 func init() {
-	Register(Algorithm{Name: "lzclimax", Family: FamilyLZH, Description: "Camelot/Climax bitstream LZ + RLE", Decompress: DecompressLZClimax})
+	types.RegisterAlgorithm(types.Algorithm{Name: "lzclimax", Family: types.FamilyLZH, Description: "Camelot/Climax bitstream LZ + RLE", Decompress: DecompressLZClimax})
+	types.RegisterSignature(types.CompressSig{
+		Name: "lzclimax", WordAligned: true,
+		Sig: []byte{0x74, 0x1F, 0xC4, 0x41, 0x92, 0x42, 0x0C, 0x41, 0x00, 0x20},
+	})
 }
 
 // DecompressLZClimax decompresses data using the Camelot/Climax "basic"

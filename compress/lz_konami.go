@@ -7,9 +7,13 @@ import (
 )
 
 func init() {
-	Register(Algorithm{Name: "lzkonami1", Family: FamilyLZ, Description: "Konami first-generation LZ", Decompress: DecompressLZKonami1})
-	Register(Algorithm{Name: "lzkonami2", Family: FamilyLZ, Description: "Konami second-generation LZ", Decompress: DecompressLZKonami2})
-	Register(Algorithm{Name: "lzkonami3", Family: FamilyLZ, Description: "Konami third-generation LZ", Decompress: DecompressLZKonami3})
+	types.RegisterAlgorithm(types.Algorithm{Name: "lzkonami1", Family: types.FamilyLZ, Description: "Konami first-generation LZ", Decompress: DecompressLZKonami1})
+	types.RegisterAlgorithm(types.Algorithm{Name: "lzkonami2", Family: types.FamilyLZ, Description: "Konami second-generation LZ", Decompress: DecompressLZKonami2})
+	types.RegisterAlgorithm(types.Algorithm{Name: "lzkonami3", Family: types.FamilyLZ, Description: "Konami third-generation LZ", Decompress: DecompressLZKonami3})
+	types.RegisterSignature(types.CompressSig{
+		Name: "lzkonami3", WordAligned: true,
+		Sig: []byte{0x14, 0x00, 0xE8, 0x4A, 0x02, 0x42, 0x00, 0x03, 0x52, 0x42, 0x02},
+	})
 }
 
 // DecompressLZKonami1 decompresses data using the LZKonami variant 1 format

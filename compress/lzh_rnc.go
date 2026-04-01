@@ -8,9 +8,18 @@ import (
 )
 
 func init() {
-	Register(Algorithm{Name: "lzhrnc", Family: FamilyLZH, Description: "Rob Northen Compression (auto-detect method)", Decompress: DecompressLZHRNC})
-	Register(Algorithm{Name: "lzhrnc1", Family: FamilyLZH, Description: "Rob Northen Compression method 1", Decompress: DecompressLZHRNC1})
-	Register(Algorithm{Name: "lzhrnc2", Family: FamilyLZH, Description: "Rob Northen Compression method 2", Decompress: DecompressLZHRNC2})
+	types.RegisterAlgorithm(types.Algorithm{Name: "lzhrnc", Family: types.FamilyLZH, Description: "Rob Northen Compression (auto-detect method)", Decompress: DecompressLZHRNC})
+	types.RegisterSignature(types.CompressSig{
+		Name: "lzhrnc", WordAligned: false,
+		Sig: []byte{0x52, 0x4E, 0x43},
+		Validator: func(rom []byte, offset int) bool {
+			if offset+4 > len(rom) { return false }
+			method := rom[offset+3]
+			return method == 0x01 || method == 0x02
+		},
+	})
+	types.RegisterAlgorithm(types.Algorithm{Name: "lzhrnc1", Family: types.FamilyLZH, Description: "Rob Northen Compression method 1", Decompress: DecompressLZHRNC1})
+	types.RegisterAlgorithm(types.Algorithm{Name: "lzhrnc2", Family: types.FamilyLZH, Description: "Rob Northen Compression method 2", Decompress: DecompressLZHRNC2})
 }
 
 // rncBR is a byte-by-byte bit reader that pops from LSB first.

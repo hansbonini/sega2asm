@@ -6,7 +6,7 @@ import (
 )
 
 func init() {
-	Register(Algorithm{Name: "lzbeam", Family: FamilyLZ, Description: "Beam Software LZ; Elias-coded counts", Decompress: DecompressLZBeam})
+	types.RegisterAlgorithm(types.Algorithm{Name: "lzbeam", Family: types.FamilyLZ, Description: "Beam Software LZ; Elias-coded counts", Decompress: DecompressLZBeam})
 }
 
 // DecompressLZBeam decompresses data using the Beam Software compression format.

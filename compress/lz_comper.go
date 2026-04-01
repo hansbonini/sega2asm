@@ -3,7 +3,7 @@ package compress
 import "sega2asm/types"
 
 func init() {
-	Register(Algorithm{Name: "lzcomper", Family: FamilyLZ, Description: "Community format optimised for 68000 speed", Decompress: DecompressLZComper})
+	types.RegisterAlgorithm(types.Algorithm{Name: "lzcomper", Family: types.FamilyLZ, Description: "Community format optimised for 68000 speed", Decompress: DecompressLZComper})
 }
 
 // DecompressLZComper decompresses data using the Comper (clownlzss) format.

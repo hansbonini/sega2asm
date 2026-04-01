@@ -1,12 +1,21 @@
 package compress
 
 import (
+	"sega2asm/types"
 	"encoding/binary"
 	"fmt"
 )
 
 func init() {
-	Register(Algorithm{Name: "lzgaibrain", Family: FamilyLZ, Description: "Gaibrain variable-split LZSS", Decompress: DecompressLZGaibrain})
+	types.RegisterAlgorithm(types.Algorithm{Name: "lzgaibrain", Family: types.FamilyLZ, Description: "Gaibrain variable-split LZSS", Decompress: DecompressLZGaibrain})
+	types.RegisterSignature(types.CompressSig{
+		Name: "lzgaibrain", WordAligned: true,
+		Sig: []byte{
+			0x3E, 0x18, 0x34, 0x07, 0x02, 0x47, 0x3F, 0xFF, 0xBF, 0x42,
+			0xE5, 0x5A, 0x72, 0x04, 0x92, 0x42, 0x74, 0x01, 0xE3, 0x6A,
+			0x53, 0x42,
+		},
+	})
 }
 
 // DecompressLZGaibrain decompresses data using the Gaibrain LZ scheme found in

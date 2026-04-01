@@ -7,8 +7,8 @@ import (
 )
 
 func init() {
-	Register(Algorithm{Name: "lzsssaxman", Family: FamilyLZSS, Description: "Modified Okumura 1989 LZSS with size header", Decompress: DecompressLZSSSaxman})
-	Register(Algorithm{Name: "lzsssaxman_noheader", Family: FamilyLZSS, Description: "Saxman LZSS without size header", Decompress: DecompressLZSSSaxmanNoHeader})
+	types.RegisterAlgorithm(types.Algorithm{Name: "lzsssaxman", Family: types.FamilyLZSS, Description: "Modified Okumura 1989 LZSS with size header", Decompress: DecompressLZSSSaxman})
+	types.RegisterAlgorithm(types.Algorithm{Name: "lzsssaxman_noheader", Family: types.FamilyLZSS, Description: "Saxman LZSS without size header", Decompress: DecompressLZSSSaxmanNoHeader})
 }
 
 // DecompressLZSSSaxman decompresses data using the Saxman (clownlzss) format.

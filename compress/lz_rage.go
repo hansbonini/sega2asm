@@ -7,7 +7,7 @@ import (
 )
 
 func init() {
-	Register(Algorithm{Name: "lzrage", Family: FamilyLZ, Description: "Bit-stream LZ compressor", Decompress: DecompressLZRage})
+	types.RegisterAlgorithm(types.Algorithm{Name: "lzrage", Family: types.FamilyLZ, Description: "Bit-stream LZ compressor", Decompress: DecompressLZRage})
 }
 
 // DecompressLZRage decompresses data using the Rage (clownlzss) format

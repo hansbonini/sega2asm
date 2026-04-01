@@ -7,7 +7,14 @@ import (
 )
 
 func init() {
-	Register(Algorithm{Name: "lzchameleon", Family: FamilyLZ, Description: "Kid Chameleon compressor", Decompress: DecompressLZChameleon})
+	types.RegisterAlgorithm(types.Algorithm{Name: "lzchameleon", Family: types.FamilyLZ, Description: "Kid Chameleon compressor", Decompress: DecompressLZChameleon})
+	types.RegisterSignature(types.CompressSig{
+		Name: "lzchameleon", WordAligned: true,
+		Sig: []byte{
+			0xBE, 0x4A, 0x63, 0x4C, 0x60, 0x00, 0x01, 0x54, 0xE7, 0x49, 0x3C, 0x01, 0xCC, 0x44, 0x1C, 0x19,
+			0x9D, 0xC6, 0xD2, 0x01, 0x65, 0x06, 0xD2, 0x01, 0x65, 0x18, 0x60, 0x18, 0xD2, 0x01, 0x64, 0x10,
+		},
+	})
 }
 
 // DecompressLZChameleon decompresses data using the Chameleon (clownlzss) format.

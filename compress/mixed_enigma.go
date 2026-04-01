@@ -1,9 +1,19 @@
 package compress
 
-import "fmt"
+import (
+	"fmt"
+	"sega2asm/types"
+)
 
 func init() {
-	Register(Algorithm{Name: "mixedenigma", Family: FamilyMixed, Description: "Bit-packed compression for tilemaps", Decompress: DecompressMixedEnigma})
+	types.RegisterAlgorithm(types.Algorithm{Name: "mixedenigma", Family: types.FamilyMixed, Description: "Bit-packed compression for tilemaps", Decompress: DecompressMixedEnigma})
+	types.RegisterSignature(types.CompressSig{
+		Name: "mixedenigma", WordAligned: true,
+		Sig: []byte{
+			0x70, 0x07, 0x3E, 0x06, 0x9E, 0x40, 0x32, 0x05, 0xEE, 0x69, 0x02, 0x41, 0x00, 0x7F, 0x34, 0x01,
+			0x0C, 0x41, 0x00, 0x40, 0x64, 0x04, 0x70, 0x06, 0xE2, 0x4A,
+		},
+	})
 }
 
 // DecompressMixedEnigma decompresses data using the Enigma (clownlzss) format,

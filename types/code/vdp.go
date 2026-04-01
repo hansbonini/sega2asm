@@ -7,25 +7,25 @@ import (
 	"strings"
 )
 
-// vdpAnnotator holds compiled regexes for a specific VDP ctrl symbol name.
-type vdpAnnotator struct {
+// VDPAnnotator holds compiled regexes for a specific VDP ctrl symbol name.
+type VDPAnnotator struct {
 	reMoveW *regexp.Regexp
 	reMoveL *regexp.Regexp
 }
 
-func newVDPAnnotator(ctrlSym string) *vdpAnnotator {
+func NewVDPAnnotator(ctrlSym string) *VDPAnnotator {
 	dest := `\$(?:00)?[Cc]00004(?:\.l)?`
 	if ctrlSym != "" {
 		dest = dest + `|` + regexp.QuoteMeta(ctrlSym)
 	}
 	dest = `\s*,\s*\(?(?:` + dest + `)\)?`
-	return &vdpAnnotator{
+	return &VDPAnnotator{
 		reMoveW: regexp.MustCompile(`(?i)move\.w\s+#\$([0-9A-F]{1,4})` + dest),
 		reMoveL: regexp.MustCompile(`(?i)move\.l\s+#\$([0-9A-F]{1,8})` + dest),
 	}
 }
 
-func (a *vdpAnnotator) annotate(line string) string {
+func (a *VDPAnnotator) Annotate(line string) string {
 	if m := a.reMoveL.FindStringSubmatch(line); m != nil {
 		val, err := strconv.ParseUint(m[1], 16, 32)
 		if err == nil {

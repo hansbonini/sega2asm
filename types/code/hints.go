@@ -9,8 +9,8 @@ import (
 	"sega2asm/types"
 )
 
-// buildHintsMap converts a slice of hints to offset → hint map.
-func buildHintsMap(hints []types.Hint) map[uint32]types.Hint {
+// BuildHintsMap converts a slice of hints to offset → hint map.
+func BuildHintsMap(hints []types.Hint) map[uint32]types.Hint {
 	m := make(map[uint32]types.Hint, len(hints))
 	for _, h := range hints {
 		m[h.Offset] = h
@@ -18,8 +18,8 @@ func buildHintsMap(hints []types.Hint) map[uint32]types.Hint {
 	return m
 }
 
-// emitHint writes data directive bytes based on a hint.
-func emitHint(sb *strings.Builder, hint types.Hint, data []byte, offset uint32, cmap *types.CharMap, syms *types.SymbolTable, asmDir string) {
+// EmitHint writes data directive bytes based on a hint.
+func EmitHint(sb *strings.Builder, hint types.Hint, data []byte, offset uint32, cmap *types.CharMap, syms *types.SymbolTable, asmDir string) {
 	if hint.Label != "" {
 		sb.WriteString(hint.Label + ":\n")
 	}

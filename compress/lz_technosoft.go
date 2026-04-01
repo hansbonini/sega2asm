@@ -3,7 +3,11 @@ package compress
 import "sega2asm/types"
 
 func init() {
-	Register(Algorithm{Name: "lztechnosoft", Family: FamilyLZ, Description: "Technosoft LZ variant; no size header", Decompress: DecompressLZTechnosoft})
+	types.RegisterAlgorithm(types.Algorithm{Name: "lztechnosoft", Family: types.FamilyLZ, Description: "Technosoft LZ variant; no size header", Decompress: DecompressLZTechnosoft})
+	types.RegisterSignature(types.CompressSig{
+		Name: "lztechnosoft", WordAligned: true,
+		Sig: []byte{0x55, 0x87, 0x12, 0x18, 0x10, 0x18, 0x2A, 0x00, 0xC0, 0x7C, 0x00, 0xF0, 0xE9, 0x40, 0x80, 0x41},
+	})
 }
 
 // DecompressLZTechnosoft decompresses data using the LZTechnosoft format

@@ -14,9 +14,9 @@ type splitSuggestion struct {
 	reasons []string
 }
 
-// suggestM68KSplits analyses disassembly results and returns YAML-ready split
+// SuggestM68KSplits analyses disassembly results and returns YAML-ready split
 // suggestion lines and boundary-health warnings.
-func suggestM68KSplits(results []m68k.Result, seg types.Segment, syms *types.SymbolTable, rom []byte) []string {
+func SuggestM68KSplits(results []m68k.Result, seg types.Segment, syms *types.SymbolTable, rom []byte) []string {
 	segStart := uint32(seg.Start)
 	segEnd := uint32(seg.End)
 

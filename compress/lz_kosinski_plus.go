@@ -3,7 +3,7 @@ package compress
 import "sega2asm/types"
 
 func init() {
-	Register(Algorithm{Name: "lzkosinskiplus", Family: FamilyLZ, Description: "Extended Kosinski with larger offset/count fields", Decompress: DecompressLZKosinskiPlus})
+	types.RegisterAlgorithm(types.Algorithm{Name: "lzkosinskiplus", Family: types.FamilyLZ, Description: "Extended Kosinski with larger offset/count fields", Decompress: DecompressLZKosinskiPlus})
 }
 
 // DecompressLZKosinskiPlus decompresses data using the KosinskiPlus (clownlzss) format,

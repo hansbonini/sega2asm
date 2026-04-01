@@ -127,7 +127,7 @@ func (r *ROM) Read32(offset uint32) uint32 {
 	return binary.BigEndian.Uint32(r.Data[offset:])
 }
 
-// Slice returns a copy of the ROM data at [start, end).
+// Slice returns a view of the ROM data at [start, end).
 func (r *ROM) Slice(start, end uint32) []byte {
 	if int(start) >= len(r.Data) {
 		return nil
@@ -135,9 +135,7 @@ func (r *ROM) Slice(start, end uint32) []byte {
 	if int(end) > len(r.Data) {
 		end = uint32(len(r.Data))
 	}
-	dst := make([]byte, end-start)
-	copy(dst, r.Data[start:end])
-	return dst
+	return r.Data[start:end]
 }
 
 // PrintHeader returns a formatted ROM header summary.

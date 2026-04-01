@@ -1,9 +1,19 @@
 package compress
 
-import "fmt"
+import (
+	"fmt"
+	"sega2asm/types"
+)
 
 func init() {
-	Register(Algorithm{Name: "lzsskoei", Family: FamilyLZSS, Description: "KOEI LZSS; Elias-gamma length coding", Decompress: DecompressLZSSKoei})
+	types.RegisterAlgorithm(types.Algorithm{Name: "lzsskoei", Family: types.FamilyLZSS, Description: "KOEI LZSS; Elias-gamma length coding", Decompress: DecompressLZSSKoei})
+	types.RegisterSignature(types.CompressSig{
+		Name: "lzsskoei", WordAligned: true,
+		Sig: []byte{
+			0x36, 0x13, 0x02, 0x83, 0x00, 0x00, 0x01, 0xFC, 0xE4, 0x83, 0x06, 0x43, 0x00, 0x80, 0x0C, 0x43,
+			0x00, 0xFF,
+		},
+	})
 }
 
 // lzKoeiPLen is the position-length lookup table (p_len) used to determine

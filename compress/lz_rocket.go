@@ -7,7 +7,7 @@ import (
 )
 
 func init() {
-	Register(Algorithm{Name: "lzrocket", Family: FamilyLZ, Description: "Konami Rocket Knight compression", Decompress: DecompressLZRocket})
+	types.RegisterAlgorithm(types.Algorithm{Name: "lzrocket", Family: types.FamilyLZ, Description: "Konami Rocket Knight compression", Decompress: DecompressLZRocket})
 }
 
 // DecompressLZRocket decompresses data using the Rocket (clownlzss) format.

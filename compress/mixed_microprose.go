@@ -7,7 +7,14 @@ import (
 )
 
 func init() {
-	Register(Algorithm{Name: "mixedmicroprose", Family: FamilyMixed, Description: "MicroProse delta-coded scanline scheme", Decompress: DecompressMixedMicroprose})
+	types.RegisterAlgorithm(types.Algorithm{Name: "mixedmicroprose", Family: types.FamilyMixed, Description: "MicroProse delta-coded scanline scheme", Decompress: DecompressMixedMicroprose})
+	types.RegisterSignature(types.CompressSig{
+		Name: "mixedmicroprose", WordAligned: false,
+		Sig: []byte{
+			0x26, 0x0C, 0x52, 0x8C, 0x16, 0x32, 0x38, 0x00, 0xC6, 0x87, 0x20, 0x03, 0x02, 0x40, 0x00, 0xF0,
+			0xE4, 0x08, 0x0C, 0x40, 0x00, 0x2C,
+		},
+	})
 }
 
 // DecompressMixedMicroprose decompresses tile graphics using the MicroProse

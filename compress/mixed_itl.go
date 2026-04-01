@@ -1,7 +1,9 @@
 package compress
 
+import "sega2asm/types"
+
 func init() {
-	Register(Algorithm{Name: "mixeditl", Family: FamilyMixed, Description: "I.T.L. non-zero-byte copy + XOR block", Decompress: DecompressMixedITL})
+	types.RegisterAlgorithm(types.Algorithm{Name: "mixeditl", Family: types.FamilyMixed, Description: "I.T.L. non-zero-byte copy + XOR block", Decompress: DecompressMixedITL})
 }
 
 // DecompressMixedITL decompresses data using the I.T.L (Sega) format:

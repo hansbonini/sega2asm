@@ -1,12 +1,13 @@
 package compress
 
 import (
+	"sega2asm/types"
 	"encoding/binary"
 	"fmt"
 )
 
 func init() {
-	Register(Algorithm{Name: "lzhlucasarts", Family: FamilyLZH, Description: "Adaptive Huffman + LZ sliding window", Decompress: DecompressLZHLucasArts})
+	types.RegisterAlgorithm(types.Algorithm{Name: "lzhlucasarts", Family: types.FamilyLZH, Description: "Adaptive Huffman + LZ sliding window", Decompress: DecompressLZHLucasArts})
 }
 
 // LZH parameters.

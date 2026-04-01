@@ -1,12 +1,17 @@
 package compress
 
 import (
+	"sega2asm/types"
 	"encoding/binary"
 	"fmt"
 )
 
 func init() {
-	Register(Algorithm{Name: "lzpowerpack20", Family: FamilyLZ77, Description: "PowerPacker 2.0; backwards LZ77", Decompress: DecompressLZPowerPack20})
+	types.RegisterAlgorithm(types.Algorithm{Name: "lzpowerpack20", Family: types.FamilyLZ77, Description: "PowerPacker 2.0; backwards LZ77", Decompress: DecompressLZPowerPack20})
+	types.RegisterSignature(types.CompressSig{
+		Name: "lzpowerpack20", WordAligned: true,
+		Sig: []byte{0x5C, 0x54, 0xE2, 0xAD, 0xE0, 0x89, 0xD7, 0xC1, 0x2A, 0x41, 0x61, 0x1E},
+	})
 }
 
 // DecompressLZPowerPack20 decompresses data using the PowerPacker 2.0 scheme

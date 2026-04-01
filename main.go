@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"sega2asm/compress"
+	_ "sega2asm/compress"
 	"sega2asm/splitter"
 	"sega2asm/types"
 )
@@ -97,7 +97,7 @@ func newDetectCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			matches := compress.Detect(data)
+			matches := types.Detect(data)
 			if len(matches) == 0 {
 				fmt.Println("No known compression signatures found.")
 				return nil

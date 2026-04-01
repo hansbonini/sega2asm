@@ -1,10 +1,20 @@
 package compress
 
-import "fmt"
+import (
+	"fmt"
+	"sega2asm/types"
+)
 
 func init() {
-	Register(Algorithm{Name: "lzhwestone", Family: FamilyLZH, Description: "Westone Huffman+LZ tile decompressor", Decompress: DecompressLZHWestone})
-	Register(Algorithm{Name: "mixedwestone", Family: FamilyMixed, Description: "Westone block-based tile decompressor", Decompress: DecompressMixedWestone})
+	types.RegisterAlgorithm(types.Algorithm{Name: "lzhwestone", Family: types.FamilyLZH, Description: "Westone Huffman+LZ tile decompressor", Decompress: DecompressLZHWestone})
+	types.RegisterSignature(types.CompressSig{
+		Name: "lzhwestone", WordAligned: true,
+		Sig: []byte{
+			0x12, 0x18, 0x14, 0x18, 0xE1, 0x4A, 0x14, 0x18, 0x48, 0x42, 0x14, 0x18, 0xE1, 0x4A, 0x14, 0x18,
+			0x86, 0x82, 0x24,
+		},
+	})
+	types.RegisterAlgorithm(types.Algorithm{Name: "mixedwestone", Family: types.FamilyMixed, Description: "Westone block-based tile decompressor", Decompress: DecompressMixedWestone})
 }
 
 // westoneSPREAD[plane][nibble]: planar–chunky bit spread used by type-0x00 mode-2.

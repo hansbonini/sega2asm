@@ -7,7 +7,7 @@ import (
 )
 
 func init() {
-	Register(Algorithm{Name: "lzssfaxman", Family: FamilyLZSS, Description: "Modified Saxman for SMPS music data", Decompress: DecompressLZSSFaxman})
+	types.RegisterAlgorithm(types.Algorithm{Name: "lzssfaxman", Family: types.FamilyLZSS, Description: "Modified Saxman for SMPS music data", Decompress: DecompressLZSSFaxman})
 }
 
 // DecompressLZSSFaxman decompresses data using the Faxman (clownlzss) format.

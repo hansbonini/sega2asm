@@ -77,12 +77,7 @@ func (ctx *Context) EnsureDir(path string) error {
 
 // ROMData returns the ROM bytes for the current segment, clamped to ROM size.
 func (ctx *Context) ROMData() []byte {
-	start := uint32(ctx.Seg.Start)
-	end := uint32(ctx.Seg.End)
-	if int(end) > ctx.ROM.Size {
-		end = uint32(ctx.ROM.Size)
-	}
-	return ctx.ROM.Slice(start, end)
+	return ctx.ROM.Slice(ctx.Start(), ctx.End())
 }
 
 // Start returns the segment start address.

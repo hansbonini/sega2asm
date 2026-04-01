@@ -7,8 +7,8 @@ import (
 )
 
 func init() {
-	Register(Algorithm{Name: "lznextech", Family: FamilyLZ, Description: "Nextech / WolfTeam shared LZ", Decompress: DecompressLZNextech})
-	Register(Algorithm{Name: "lzwolfteam", Family: FamilyLZ, Description: "Nextech / WolfTeam shared LZ", Decompress: DecompressLZWolfteam})
+	types.RegisterAlgorithm(types.Algorithm{Name: "lznextech", Family: types.FamilyLZ, Description: "Nextech / WolfTeam shared LZ", Decompress: DecompressLZNextech})
+	types.RegisterAlgorithm(types.Algorithm{Name: "lzwolfteam", Family: types.FamilyLZ, Description: "Nextech / WolfTeam shared LZ", Decompress: DecompressLZWolfteam})
 }
 
 // DecompressLZNextech decompresses data using the LZNextech format

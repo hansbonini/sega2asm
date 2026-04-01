@@ -1,9 +1,19 @@
 package compress
 
-import "fmt"
+import (
+	"fmt"
+	"sega2asm/types"
+)
 
 func init() {
-	Register(Algorithm{Name: "lzhrefpack", Family: FamilyLZH, Description: "EA Canada RefPack; multi-format", Decompress: DecompressLZHRefpack})
+	types.RegisterAlgorithm(types.Algorithm{Name: "lzhrefpack", Family: types.FamilyLZH, Description: "EA Canada RefPack; multi-format", Decompress: DecompressLZHRefpack})
+	types.RegisterSignature(types.CompressSig{
+		Name: "lzhrefpack", WordAligned: true,
+		Sig: []byte{
+			0x08, 0x03, 0x00, 0x00, 0x67, 0x00, 0x00, 0x04, 0x56, 0x48,
+			0x02, 0x03, 0x00, 0xFE, 0x0C, 0x03, 0x00, 0x10,
+		},
+	})
 }
 
 // DecompressLZHRefpack decompresses a RefPack stream (EA Canada, e.g. FIFA 97).

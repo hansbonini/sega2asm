@@ -1,9 +1,19 @@
 package compress
 
-import "fmt"
+import (
+	"fmt"
+	"sega2asm/types"
+)
 
 func init() {
-	Register(Algorithm{Name: "rlesc", Family: FamilyRLE, Description: "Software Creations RLE", Decompress: DecompressRLESC})
+	types.RegisterAlgorithm(types.Algorithm{Name: "rlesc", Family: types.FamilyRLE, Description: "Software Creations RLE", Decompress: DecompressRLESC})
+	types.RegisterSignature(types.CompressSig{
+		Name: "rlesc", WordAligned: true,
+		Sig: []byte{
+			0x10, 0x18, 0xB6, 0x00, 0x66, 0x16, 0x10, 0x18, 0x14, 0x18, 0x53, 0x02, 0x02,
+			0x42, 0x00, 0xFF, 0x4E, 0x92, 0x51, 0xCA, 0xFF, 0xFC, 0x57, 0x44, 0x66,
+		},
+	})
 }
 
 // DecompressRLESC decompresses data using the Software Creations

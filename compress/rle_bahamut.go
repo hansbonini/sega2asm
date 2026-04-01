@@ -1,11 +1,18 @@
 package compress
 
 import (
+	"sega2asm/types"
 	"fmt"
 )
 
 func init() {
-	Register(Algorithm{Name: "rlebahamut", Family: FamilyRLE, Description: "Bahamut Senki byteplane-interleaved RLE", Decompress: DecompressRLEBahamut})
+	types.RegisterAlgorithm(types.Algorithm{Name: "rlebahamut", Family: types.FamilyRLE, Description: "Bahamut Senki byteplane-interleaved RLE", Decompress: DecompressRLEBahamut})
+	types.RegisterSignature(types.CompressSig{
+		Name: "rlebahamut", WordAligned: true,
+		Sig: []byte{
+			0x14, 0x00, 0xC4, 0x7C, 0x00, 0x0F, 0x53, 0x42, 0x6A, 0x04, 0x74, 0x00, 0x14, 0x18, 0xC0, 0x7C, 0x00, 0x70, 0xE4, 0x48,
+		},
+	})
 }
 
 // DecompressRLEBahamut decompresses font/tile data using the Bahamut Senki

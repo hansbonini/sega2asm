@@ -1,9 +1,16 @@
 package compress
 
-import "fmt"
+import (
+	"fmt"
+	"sega2asm/types"
+)
 
 func init() {
-	Register(Algorithm{Name: "lztreasure", Family: FamilyLZ, Description: "Treasure multi-mode LZ + RLE", Decompress: DecompressLZTreasure})
+	types.RegisterAlgorithm(types.Algorithm{Name: "lztreasure", Family: types.FamilyLZ, Description: "Treasure multi-mode LZ + RLE", Decompress: DecompressLZTreasure})
+	types.RegisterSignature(types.CompressSig{
+		Name: "lztreasure", WordAligned: true,
+		Sig: []byte{0x46, 0xFC, 0x27, 0x00, 0x3A, 0xBC, 0x8F, 0x02, 0x24, 0x0B, 0xE5, 0x8A, 0xE4, 0x4A, 0x00, 0x42},
+	})
 }
 
 // DecompressLZTreasure decompresses data using the LZ Treasure format.

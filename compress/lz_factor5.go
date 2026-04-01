@@ -1,9 +1,12 @@
 package compress
 
-import "fmt"
+import (
+	"fmt"
+	"sega2asm/types"
+)
 
 func init() {
-	Register(Algorithm{Name: "lzfactor5", Family: FamilyLZ, Description: "Factor 5 LZ; auto-detected v1/v2", Decompress: DecompressLZFactor5})
+	types.RegisterAlgorithm(types.Algorithm{Name: "lzfactor5", Family: types.FamilyLZ, Description: "Factor 5 LZ; auto-detected v1/v2", Decompress: DecompressLZFactor5})
 }
 
 // DecompressLZFactor5 decompresses data using the Factor 5 LZ format (version '1' or '2').

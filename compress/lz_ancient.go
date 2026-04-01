@@ -1,12 +1,17 @@
 package compress
 
 import (
+	"sega2asm/types"
 	"encoding/binary"
 	"fmt"
 )
 
 func init() {
-	Register(Algorithm{Name: "lzancient", Family: FamilyLZ, Description: "Ancient LZ + RLE compression", Decompress: DecompressLZAncient})
+	types.RegisterAlgorithm(types.Algorithm{Name: "lzancient", Family: types.FamilyLZ, Description: "Ancient LZ + RLE compression", Decompress: DecompressLZAncient})
+	types.RegisterSignature(types.CompressSig{
+		Name: "lzancient", WordAligned: true,
+		Sig: []byte{0x02, 0x00, 0x00, 0x60, 0xE7, 0x18, 0x06, 0x40, 0x00, 0x03, 0x02, 0x01, 0x00, 0x1F},
+	})
 }
 
 // DecompressLZAncient decompresses data using the LZAncient format

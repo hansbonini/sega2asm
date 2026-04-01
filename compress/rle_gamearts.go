@@ -1,12 +1,13 @@
 package compress
 
 import (
+	"sega2asm/types"
 	"encoding/binary"
 	"fmt"
 )
 
 func init() {
-	Register(Algorithm{Name: "rlegamearts", Family: FamilyRLE, Description: "Game Arts 4-plane RLE", Decompress: DecompressRLEGameArts})
+	types.RegisterAlgorithm(types.Algorithm{Name: "rlegamearts", Family: types.FamilyRLE, Description: "Game Arts 4-plane RLE", Decompress: DecompressRLEGameArts})
 }
 
 // DecompressRLEGameArts decompresses graphics data from Game Arts Mega Drive

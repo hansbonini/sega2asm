@@ -3,7 +3,11 @@ package compress
 import "sega2asm/types"
 
 func init() {
-	Register(Algorithm{Name: "lzssblizzard", Family: FamilyLZSS, Description: "Okumura 1989 LZSS; 4096-byte ring buffer", Decompress: DecompressLZSSBlizzard})
+	types.RegisterAlgorithm(types.Algorithm{Name: "lzssblizzard", Family: types.FamilyLZSS, Description: "Okumura 1989 LZSS; 4096-byte ring buffer", Decompress: DecompressLZSSBlizzard})
+	types.RegisterSignature(types.CompressSig{
+		Name: "lzssblizzard", WordAligned: true,
+		Sig: []byte{0x12, 0x18, 0x14, 0xC1, 0xE1, 0x46, 0x1C, 0x01, 0xE3},
+	})
 }
 
 // DecompressLZSSBlizzard decompresses data using the Blizzard LZSS format

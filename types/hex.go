@@ -2,6 +2,7 @@ package types
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -9,22 +10,29 @@ import (
 //
 //	$XXXX     — splat/asm68k style
 //	0xXXXX    — C-style hex
-//	XXXX      — bare hex digits
+//	XXXX      — bare hex digits (A–F accepted)
 //	decimal   — plain base-10 integer
 func ParseHex(s string) (uint32, error) {
 	s = strings.TrimSpace(s)
 	if strings.HasPrefix(s, "$") {
-		s = "0x" + s[1:]
+		v, err := strconv.ParseUint(s[1:], 16, 32)
+		if err != nil {
+			return 0, fmt.Errorf("not a number: %q", s)
+		}
+		return uint32(v), nil
 	}
-	var v uint32
-	if _, err := fmt.Sscanf(s, "0x%X", &v); err == nil {
-		return v, nil
+	if strings.HasPrefix(s, "0x") || strings.HasPrefix(s, "0X") {
+		v, err := strconv.ParseUint(s[2:], 16, 32)
+		if err != nil {
+			return 0, fmt.Errorf("not a number: %q", s)
+		}
+		return uint32(v), nil
 	}
-	if _, err := fmt.Sscanf(s, "0X%X", &v); err == nil {
-		return v, nil
+	if v, err := strconv.ParseUint(s, 10, 32); err == nil {
+		return uint32(v), nil
 	}
-	if _, err := fmt.Sscanf(s, "%d", &v); err == nil {
-		return v, nil
+	if v, err := strconv.ParseUint(s, 16, 32); err == nil {
+		return uint32(v), nil
 	}
 	return 0, fmt.Errorf("not a number: %q", s)
 }

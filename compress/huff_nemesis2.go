@@ -8,7 +8,19 @@ import (
 )
 
 func init() {
-	Register(Algorithm{Name: "huffnemesis2", Family: FamilyHuffman, Description: "Nemesis variant; canonical Huffman table, optional XOR delta", Decompress: DecompressHuffNemesis2})
+	types.RegisterAlgorithm(types.Algorithm{Name: "huffnemesis2", Family: types.FamilyHuffman, Description: "Nemesis variant; canonical Huffman table, optional XOR delta", Decompress: DecompressHuffNemesis2})
+	types.RegisterSignature(types.CompressSig{
+		Name: "huffnemesis2", WordAligned: true,
+		Sig: []byte{
+			0x34, 0x18, 0xE3, 0x4A, 0x64, 0x04, 0xD6, 0xFC, 0x00, 0x0A,
+			0xE5, 0x4A, 0x3A, 0x42, 0x76, 0x08, 0x74, 0x00, 0x78, 0x00,
+		},
+		Validator: func(rom []byte, offset int) bool {
+			if offset+44 > len(rom) { return false }
+			return rom[offset+40] == 0x0C && rom[offset+41] == 0x41 &&
+				rom[offset+42] == 0x00 && rom[offset+43] == 0xFC
+		},
+	})
 }
 
 // DecompressHuffNemesis2 decompresses 4bpp tile data using the Mega Drive

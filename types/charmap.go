@@ -2,6 +2,7 @@ package types
 
 import (
 	"bufio"
+	"encoding/hex"
 	"fmt"
 	"os"
 	"strings"
@@ -60,10 +61,7 @@ func (m *CharMap) Lookup(data []byte, pos int) (string, int) {
 		maxLen = len(data) - pos
 	}
 	for l := maxLen; l >= 1; l-- {
-		key := fmt.Sprintf("%X", data[pos:pos+l])
-		if len(key) < l*2 {
-			key = strings.Repeat("0", l*2-len(key)) + key
-		}
+		key := strings.ToUpper(hex.EncodeToString(data[pos : pos+l]))
 		if ch, ok := m.entries[key]; ok {
 			return ch, l
 		}

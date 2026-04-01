@@ -7,8 +7,12 @@ import (
 )
 
 func init() {
-	Register(Algorithm{Name: "lznamco", Family: FamilyLZ, Description: "Namco LZ; 0x400-byte sliding window", Decompress: DecompressLZNamco})
-	Register(Algorithm{Name: "lzstrike", Family: FamilyLZ, Description: "Namco LZ variant; 0x800-byte window", Decompress: DecompressLZStrike})
+	types.RegisterAlgorithm(types.Algorithm{Name: "lznamco", Family: types.FamilyLZ, Description: "Namco LZ; 0x400-byte sliding window", Decompress: DecompressLZNamco})
+	types.RegisterSignature(types.CompressSig{
+		Name: "lznamco", WordAligned: true,
+		Sig: []byte{0x18, 0x18, 0x12, 0x18, 0x36, 0x01},
+	})
+	types.RegisterAlgorithm(types.Algorithm{Name: "lzstrike", Family: types.FamilyLZ, Description: "Namco LZ variant; 0x800-byte window", Decompress: DecompressLZStrike})
 }
 
 // DecompressLZNamco decompresses data using the LZNamco format

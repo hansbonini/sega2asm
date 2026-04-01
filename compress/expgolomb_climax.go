@@ -1,12 +1,17 @@
 package compress
 
 import (
+	"sega2asm/types"
 	"encoding/binary"
 	"fmt"
 )
 
 func init() {
-	Register(Algorithm{Name: "expgolombclimax", Family: FamilyExpGolomb, Description: "Climax/Camelot 4bpp tile exp-Golomb coding", Decompress: DecompressExpGolombClimax})
+	types.RegisterAlgorithm(types.Algorithm{Name: "expgolombclimax", Family: types.FamilyExpGolomb, Description: "Climax/Camelot 4bpp tile exp-Golomb coding", Decompress: DecompressExpGolombClimax})
+	types.RegisterSignature(types.CompressSig{
+		Name: "expgolombclimax", WordAligned: true,
+		Sig: []byte{0x7C, 0x80, 0x7E, 0x0F, 0x42, 0x43, 0x78, 0xFF, 0x7A, 0x02},
+	})
 }
 
 // DecompressExpGolombClimax decompresses tile graphics using the Climax/Camelot

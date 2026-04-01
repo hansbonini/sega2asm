@@ -6,7 +6,11 @@ import (
 )
 
 func init() {
-	Register(Algorithm{Name: "lzelmerswd", Family: FamilyLZ, Description: "Elmer's SWD bitstream LZ", Decompress: DecompressLZElmerSWD})
+	types.RegisterAlgorithm(types.Algorithm{Name: "lzelmerswd", Family: types.FamilyLZ, Description: "Elmer's SWD bitstream LZ", Decompress: DecompressLZElmerSWD})
+	types.RegisterSignature(types.CompressSig{
+		Name: "lzelmerswd", WordAligned: true,
+		Sig: []byte{0x32, 0x18, 0x48, 0x41, 0x7E, 0x0F, 0x42, 0x41, 0xE3, 0x99, 0x4A, 0x41},
+	})
 }
 
 // DecompressLZElmerSWD decompresses data in Elmer's SWD format, a bitstream-based

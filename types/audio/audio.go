@@ -7,45 +7,25 @@ import (
 	"os"
 )
 
-// Encoder converts raw audio data and writes to the given path.
-type Encoder interface {
-	Name() string
-	Ext() string
-	Encode(data []byte, path string, sampleRate int) error
-}
-
-// encoders maps name → encoder implementation.
-var encoders = map[string]Encoder{}
-
-// RegisterEncoder registers an audio encoder by name.
-func RegisterEncoder(e Encoder) { encoders[e.Name()] = e }
-
-// Get returns the encoder for the given name, or nil.
-func Get(name string) Encoder { return encoders[name] }
-
-// WAV returns the WAV encoder (convenience shortcut).
-func WAV() Encoder { return encoders["wav"] }
-
 // WriteWAVHeader writes a standard RIFF WAV header for 8-bit unsigned mono PCM.
+// The header is written as a single 44-byte buffer.
 func WriteWAVHeader(f *os.File, dataSize uint32, sampleRate int) error {
-	writeStr := func(s string) { f.WriteString(s) }
-	writeU32 := func(v uint32) { binary.Write(f, binary.LittleEndian, v) }
-	writeU16 := func(v uint16) { binary.Write(f, binary.LittleEndian, v) }
-
-	writeStr("RIFF")
-	writeU32(36 + dataSize)
-	writeStr("WAVE")
-	writeStr("fmt ")
-	writeU32(16)                 // fmt chunk size
-	writeU16(1)                  // PCM format
-	writeU16(1)                  // mono
-	writeU32(uint32(sampleRate)) // sample rate
-	writeU32(uint32(sampleRate)) // byte rate (8-bit mono)
-	writeU16(1)                  // block align
-	writeU16(8)                  // bits per sample
-	writeStr("data")
-	writeU32(dataSize)
-	return nil
+	var buf [44]byte
+	copy(buf[0:4], "RIFF")
+	binary.LittleEndian.PutUint32(buf[4:], 36+dataSize)
+	copy(buf[8:12], "WAVE")
+	copy(buf[12:16], "fmt ")
+	binary.LittleEndian.PutUint32(buf[16:], 16)              // fmt chunk size
+	binary.LittleEndian.PutUint16(buf[20:], 1)               // PCM format
+	binary.LittleEndian.PutUint16(buf[22:], 1)               // mono
+	binary.LittleEndian.PutUint32(buf[24:], uint32(sampleRate)) // sample rate
+	binary.LittleEndian.PutUint32(buf[28:], uint32(sampleRate)) // byte rate (8-bit mono)
+	binary.LittleEndian.PutUint16(buf[32:], 1)               // block align
+	binary.LittleEndian.PutUint16(buf[34:], 8)               // bits per sample
+	copy(buf[36:40], "data")
+	binary.LittleEndian.PutUint32(buf[40:], dataSize)
+	_, err := f.Write(buf[:])
+	return err
 }
 
 // DefaultSampleRate is the typical Mega Drive PCM sample rate.

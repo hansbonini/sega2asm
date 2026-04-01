@@ -3,9 +3,9 @@ package segments
 import (
 	"os"
 
-	"sega2asm/compress"
 	"sega2asm/types"
-	_ "sega2asm/types/gfx"
+	_ "sega2asm/compress"
+	_ "sega2asm/gfx"
 )
 
 func init() {
@@ -33,7 +33,7 @@ func processGFX(ctx *Context, compressed bool) (*Result, error) {
 	// Decompress if needed, then render PNG for reference.
 	gfxData := rawData
 	if compressed {
-		dec, err := compress.Decompress(ctx.Seg.Compression, rawData)
+		dec, err := types.Decompress(ctx.Seg.Compression, rawData)
 		if err != nil {
 			ctx.Warn("  decompression failed (%s): %v – PNG skipped", ctx.Seg.Compression, err)
 		} else {

@@ -3,7 +3,7 @@ package compress
 import "sega2asm/types"
 
 func init() {
-	Register(Algorithm{Name: "lz77climax", Family: FamilyLZ77, Description: "Climax LZ77; MSB-first control, 12-bit offset", Decompress: DecompressLZ77Climax})
+	types.RegisterAlgorithm(types.Algorithm{Name: "lz77climax", Family: types.FamilyLZ77, Description: "Climax LZ77; MSB-first control, 12-bit offset", Decompress: DecompressLZ77Climax})
 }
 
 // DecompressLZ77Climax decompresses data using the Climax LZ77 format (Landstalker / Climax engine).
