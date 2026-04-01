@@ -71,9 +71,10 @@ Inspired by [ethteck/splat](https://github.com/ethteck/splat) and [nathancassano
 | `rlebahamut` | RLE + Mixed | Bahamut Senki byteplane-interleaved command-nibble scheme; even/odd byte planes at stride 2; 7 commands (terminate, RLE fill, literal copy, incrementing fill, repeated sub-run, repeated incremental run, uncompressed passthrough); length in low nibble with 8-bit extended length | Bahamut Senki |
 | `lzcomper` | LZ | Community format optimised for 68000 decompression speed at the cost of ratio | Community / Sonic hacks |
 | `lzssfaxman` | LZSS | Modified Saxman tuned to compress SMPS music data | Sonic hacks / SMPS tools |
+| `lzbluesky` | Mixed | BlueSky Software LZ+RLE; 2-byte BE size header (output size−1), 2 KB ring buffer, flag byte MSB-first (0=literal, 1=back-ref with 11-bit ring offset or RLE fill byte) | Shadowrun |
 | `none` | — | No compression; data copied verbatim | — |
 
-> **Total: 293 unique games covered across 46 compression formats**
+> **Total: 295 unique games covered across 47 compression formats**
 
 **Labels & symbols:**
 - Reads `symbols.txt` in multiple formats (name=addr, addr:name, space-separated)
