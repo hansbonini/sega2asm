@@ -23,6 +23,7 @@ import struct
 
 from PIL import Image
 from unicorn import Uc, UC_ARCH_M68K, UC_MODE_BIG_ENDIAN, UC_PROT_ALL, UcError
+from unicorn import UC_HOOK_MEM_READ_UNMAPPED, UC_HOOK_MEM_WRITE_UNMAPPED, UC_HOOK_MEM_FETCH_UNMAPPED
 from unicorn import m68k_const as m68k
 from unicorn.m68k_const import UC_CPU_M68K_M68000, UC_M68K_REG_A7, UC_M68K_REG_PC, UC_M68K_REG_SR
 
@@ -362,6 +363,13 @@ class MD:
         self._ram = ctypes.create_string_buffer(0x10000)
         mu.mem_map_ptr(0xFF0000, 0x10000, UC_PROT_ALL, self._ram)
         mu.mem_map_ptr(0xFFFF0000, 0x10000, UC_PROT_ALL, self._ram)
+        # Any other address the game forms (a long add of a negative word
+        # offset, say) is what the 24-bit bus makes of it: RAM is mirrored
+        # through $E00000-$FFFFFF, the cartridge through $000000-$3FFFFF,
+        # and the rest reads as nothing. Map the page on first touch.
+        self._rom = rom[:0x400000]
+        mu.hook_add(UC_HOOK_MEM_READ_UNMAPPED | UC_HOOK_MEM_WRITE_UNMAPPED | UC_HOOK_MEM_FETCH_UNMAPPED,
+                    self._unmapped)
         self.mu = mu
         self.frame = 0
         self._dac_acc = 0.0
@@ -372,6 +380,20 @@ class MD:
         self.pc = struct.unpack('>I', rom[4:8])[0]
         mu.reg_write(UC_M68K_REG_A7, ssp & 0xFFFFFFFF)
         mu.reg_write(UC_M68K_REG_SR, 0x2700)
+
+    def _unmapped(self, uc, access, addr, size, value, data):
+        page = addr & ~0xFFFF
+        target = addr & 0xFFFFFF
+        try:
+            if target >= 0xE00000:
+                uc.mem_map_ptr(page, 0x10000, UC_PROT_ALL, self._ram)
+            else:
+                uc.mem_map(page, 0x10000)
+                if target < 0x400000:
+                    uc.mem_write(page, self._rom[target & ~0xFFFF:(target & ~0xFFFF) + 0x10000])
+        except UcError:
+            return False  # a page partly in use: the access stays an error
+        return True
 
     def read_mem(self, addr, n):
         addr &= 0xFFFFFF

@@ -797,16 +797,35 @@ scaled by whole numbers:
   as the ROM's routines do (all out attack and defence, counter attack,
   press up, offside trap), send a player on a run (push along the centre or
   the wings) or press harder (zone press), and their label shows in the
-  HUD. Pausing (Start) opens a menu with up to three substitutions from the
-  bench.
+  HUD. Substitutions are made from the match menu at the next dead ball,
+  as in the original (X, or the pause menu's EDIT SCREEN).
+* **Pause menu and replay**: Start freezes the game and the pause object
+  for the pad's kind opens a box in the window band in the middle of the
+  screen, two lines a frame each way (`matchflow_func_018BD8`: RESUME,
+  REPLAY, STRATEGY and EDIT SCREEN for a 3-button pad; `_018A7A`: RESUME
+  and REPLAY for a 6-button one, whose Mode button picks strategies and X
+  asks for the menu). STRATEGY takes the side's four strategy slots in
+  turn, then none; the band closes before play resumes. The replay ring
+  (`state_match_frame_2`) keeps the last six seconds: 45 snapshots of
+  everyone's position, height and facing, the ball, the camera and who is
+  controlled every 8 frames, with the animation frames of frames 2 and 6
+  between them; a goal freezes it 16 frames in. REPLAY fades to the
+  replay (`state_match_8`), which interpolates between snapshots in
+  eighths and plays by itself to the end; A plays backwards, C forwards, B
+  toggles slow motion (half speed while the direction's button is held),
+  and once a button has been pressed the REPLAY logo blinks over the
+  controls' icons in the top rows and only Start leaves, back to the pause
+  menu (or to play after a goal). The officials are not drawn meanwhile.
 * **On screen** (`ISSMatch`): the stadium, weather and flags, sprites from
   the exported frames with the teams' kits (the away side changes kit on a
   clash), the referee and linesman following play, the landing marker of
   lofted balls, `camera_update`'s lead toward the attacking goal, the HUD
-  with the live radar, banners, commentary, crowd and effects.
+  with the live radar, the banners in the band that opens in the middle of
+  the screen (a line a frame to 20, `hblank_hud_split`), commentary, crowd
+  and effects.
 
-Not reproduced (yet): the original's in-match pause menu and replay (the
-port's pause offers continue, substitutions and the match menu).
+Not reproduced (yet): the name plates of the controlled players in the
+window's bottom rows (`hud_update`'s DISPLAY option).
 `iss_selftest.gd` plays a whole CPU match headless, drives a player
 through the pad input, plays a level knockout match to penalties, runs a
 league, a tournament, the International Cup and both paths of the World
@@ -817,10 +836,12 @@ strategies and substitutions, runs the three presentations (the toss with
 pad presses, a goal, the trophy) and a goal's hand-over from the match to
 the big screen and back, plays a PK-mode shoot-out between two CPU sides to
 its decision, takes a match's penalty through the view and back to the
-spot, and starts a match in the game scene.
+spot, pauses a match on both pad kinds and takes a replay through its
+controls, and starts a match in the game scene.
 
-The front end, the presentations, the endings and the shoot-out were
-checked frame by frame against the ROM running in `tools/md_harness.py`:
+The front end, the presentations, the endings, the shoot-out and the
+match's pause menu, replay and banners were checked against the ROM
+running in `tools/md_harness.py`:
 the same RAM, the same pad presses (and the same HV counter readings, which
 the computer's takers and keepers use as random bits), and screenshots
 compared pixel for pixel (see
@@ -889,7 +910,11 @@ V counter at `$C00008`; the title's HInt compares it with 90), and a
 longword to the data port is two words (the boot module writes its
 palettes with `move.l`). Frames are rendered whole, with the VRAM, CRAM
 and VSRAM as the frame left them: a raster routine's per-line scroll or a
-mid-frame palette change does not show.
+mid-frame palette change does not show. Addresses outside the mapped
+regions are what the 68000's 24-bit bus makes of them: RAM through
+`$E00000-$FFFFFF` and the cartridge below `$400000` are mapped as mirrors
+on first touch (the pitch drawing adds a negative word offset as a
+longword), so a match runs in the harness too.
 
 `tools/boot_capture.py <rom> <prefix> <start> <end>` saves the boot
 screens' frames from power-on, and `iss/iss_boot_capture.gd` (run with
@@ -1001,11 +1026,10 @@ training, with the front end, the rules, the AI and the presentation
 rebuilt on the exported data.
 
 Open work, in rough order of value for a port:
-1. In the Godot game: the in-match pause menu and replay.
-2. The field layout of each mode's password and the object behind each
+1. The field layout of each mode's password and the object behind each
    remaining menu screen.
-3. The exact effects of curl, intelligence, balance and dribble (bytes 4,
+2. The exact effects of curl, intelligence, balance and dribble (bytes 4,
    5 and 7 are read by the tackle, foul and ball-control code; no read of
    byte 3 was found yet).
-4. Sound: the note and pattern encoding in full (to convert songs to MIDI)
+3. Sound: the note and pattern encoding in full (to convert songs to MIDI)
    and the FM patch format; the rendered audio already covers playback.

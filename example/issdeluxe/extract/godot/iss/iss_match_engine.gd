@@ -102,6 +102,9 @@ class Slot:
 	var type := 0
 	var area := 0
 	var manual := 0
+	## A 6-button pad (slot+8): its pause menu has two items, a 3-button
+	## pad's four (ISSMatch).
+	var six := true
 
 var slots: Array = []
 ## The part of the stadium map on the screen (ISSMatch sets it each frame;
@@ -176,6 +179,7 @@ func setup(home: int, away: int, opts: Dictionary) -> void:
 		sl.type = int(c.get("type", 0))
 		sl.area = int(c.get("area", 0))
 		sl.manual = int(c.get("manual", 0))
+		sl.six = bool(c.get("six", true))
 		slots.append(sl)
 		per_side[sl.side] += 1
 	pads = per_side

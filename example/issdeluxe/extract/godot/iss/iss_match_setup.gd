@@ -209,8 +209,10 @@ static func squad(side: int) -> Array:
 
 
 ## The controllers in pad order: the home side's slots (g_control_slots),
-## then the away side's ($15C4): player switch type (+$A), area (+$C),
-## cursor change (+$E) and button layout (+$18). The layouts go to ISSInput.
+## then the away side's ($15C4): pad type (+8, 0 = a 3-button pad, whose
+## pause menu offers the strategies and the match menu), player switch type
+## (+$A), area (+$C), cursor change (+$E) and button layout (+$18). The
+## layouts go to ISSInput.
 static func controllers() -> Array:
 	var out := []
 	var pad := 0
@@ -218,7 +220,7 @@ static func controllers() -> Array:
 		var base: int = S.g_control_slots if side == 0 else 0x15C4
 		for i in _w(S.g_pads_home if side == 0 else S.g_pads_away):
 			var a := base + i * 0x1A
-			out.append({"side": side, "type": _w(a + 0xA), "area": _w(a + 0xC), "manual": _w(a + 0xE)})
+			out.append({"side": side, "six": _w(a + 8) != 0, "type": _w(a + 0xA), "area": _w(a + 0xC), "manual": _w(a + 0xE)})
 			if pad < ISSInput.layouts.size():
 				ISSInput.layouts[pad] = clampi(_w(a + 0x18) / 16, 0, 23)
 			pad += 1

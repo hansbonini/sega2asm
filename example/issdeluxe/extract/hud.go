@@ -18,21 +18,25 @@ import (
 // tiles 2-71 redrawn by the hud_update chain; the score and clock are digit
 // tiles written into the map.
 const (
-	entHUDMap      = 3
-	entHUDPalette  = 9
-	entRadarTiles  = 20      // res04: clean radar bitmap, 10 columns of 7 tiles
-	grpTeamGfx     = 6       // res06
-	entTeamNames   = 0       // 5 tiles per team
-	entTeamFlags   = 2       // 6 tiles per team (3 x 2 cells, column-major)
-	tblDigits      = 0x1CD00 // 10 digits x (top, bottom) tile words
-	tblTimeUp      = 0x1CD50 // 4 cells shown instead of the clock at time up
-	tblRadarMaps   = 0x1BBF0 // per stadium: column table, row table
-	tblRadarDots   = 0x1BB90 // 6 dot patterns x 16 bytes
-	radarFirstTile = 2
-	hudTeams       = 42
-	entStrategies  = 5        // res04, raw: 9 blocks of 8 tiles, block s+1 = label of strategy s
-	bannerFont     = 0x0195AA // 27 glyphs ('@' = space, A-Z) x 8 window-cell words (2 x 4)
-	bannerGlyphs   = 27
+	entHUDMap       = 3
+	entReplayTiles  = 8 // res16, raw: 43 tiles streamed over overlay tiles $11B-$145 while a replay runs
+	replayTiles     = 43
+	replayFirst     = 0x11B
+	stateMatch8Data = 0x1ABA6 // state_match_8_data: the replay HUD's cells
+	entHUDPalette   = 9
+	entRadarTiles   = 20      // res04: clean radar bitmap, 10 columns of 7 tiles
+	grpTeamGfx      = 6       // res06
+	entTeamNames    = 0       // 5 tiles per team
+	entTeamFlags    = 2       // 6 tiles per team (3 x 2 cells, column-major)
+	tblDigits       = 0x1CD00 // 10 digits x (top, bottom) tile words
+	tblTimeUp       = 0x1CD50 // 4 cells shown instead of the clock at time up
+	tblRadarMaps    = 0x1BBF0 // per stadium: column table, row table
+	tblRadarDots    = 0x1BB90 // 6 dot patterns x 16 bytes
+	radarFirstTile  = 2
+	hudTeams        = 42
+	entStrategies   = 5        // res04, raw: 9 blocks of 8 tiles, block s+1 = label of strategy s
+	bannerFont      = 0x0195AA // 27 glyphs ('@' = space, A-Z) x 8 window-cell words (2 x 4)
+	bannerGlyphs    = 27
 )
 
 // bannerMessages are the banner_draw strings (str_banner_*): text and the
@@ -93,6 +97,12 @@ func exportHUD(dir string) {
 	must(types.WritePNG(filepath.Join(dir, "window.png"), renderPlane(window, tiles, 32, 32)))
 	idx, _ := types.TileSheet(tiles, 16, types.GrayPalette(16), false)
 	must(types.WritePNG(filepath.Join(dir, "overlay_tiles.png"), grayIndex(idx)))
+	// Replay HUD: while a replay runs match_init_hud streams 43 raw tiles
+	// (res16 entry 8) over overlay tiles $11B-$145: the REPLAY logo and the
+	// control icons state_match_8 puts in the window's top rows.
+	rt := entry(grpOverlay, entReplayTiles)
+	ridx, _ := types.TileSheet(rom[rt:rt+replayTiles*32], 16, types.GrayPalette(16), false)
+	must(types.WritePNG(filepath.Join(dir, "replay_tiles.png"), grayIndex(ridx)))
 	var words []int
 	for i := 0; i+1 < len(window); i += 2 {
 		words = append(words, int(be16s(window, i)))
@@ -225,14 +235,42 @@ func exportHUD(dir string) {
 			"clock":      map[string]any{"cells": []int{27, 1}, "format": "M:SS, minutes at column 27, colon at 28, seconds at 29-30; time_up.png at 27-30 when the clock is 0"},
 			"half":       map[string]any{"cells": []int{25, 1}, "tiles": "$6C first half, $64 second half"},
 			"radar":      map[string]any{"cells": []int{11, 20}, "size_px": []int{80, 56}},
-			"banner": map[string]any{"cells": []int{4, 23}, "size": []int{24, 4},
-				"note": "banner_draw: 16x32 letters from banner_font.png ('@' = space, A-Z, 16 px each) at row 23, " +
-					"from the message's column; see banner_messages"},
+			"banner": map[string]any{"cells": []int{4, 23}, "size": []int{24, 4}, "window_row": 10, "band": 20,
+				"note": "banner_draw: 16x32 letters from banner_font.png ('@' = space, A-Z, 16 px each) at HUD map row 23, " +
+					"from the message's column (see banner_messages); the map's rows 22-27 are uploaded to window rows 9-14, " +
+					"shown through the band in the middle of the screen (centre line 95) that opens a line a frame each way to 20"},
 			"home_strategy": map[string]any{"cells": []int{2, 22}, "size": []int{8, 1},
 				"images": "strategies/strategy_N.png (tm_strategy N) while the strategy runs"},
 			"away_strategy": map[string]any{"cells": []int{22, 22}, "size": []int{8, 1}},
 		},
-		"strategy_names":  strategyNames,
+		"strategy_names": strategyNames,
+		"replay": map[string]any{
+			"png": "replay_tiles.png", "first_tile": replayFirst, "count": replayTiles,
+			"note": "state_match_8: pairs of [HUD map byte offset, cell word] (row = offset / 64, column = offset % 64 / 2; " +
+				"tile = word's low 11 bits + the overlay base, bit 11 = flipped). The logo blinks 16 frames on, 16 off; " +
+				"the icons show once a button has been pressed (manual mode): A (backward) and C (forward) lit for the direction " +
+				"played, B lit while slow, and the START legend.",
+			"logo":  cellPairs(stateMatch8Data, 12),
+			"a_dim": cellPairs(stateMatch8Data+0x30, 4),
+			"b_dim": cellPairs(stateMatch8Data+0x40, 4),
+			"c_dim": cellPairs(stateMatch8Data+0x50, 4),
+			"a_lit": cellPairs(stateMatch8Data+0x60, 4),
+			"b_lit": cellPairs(stateMatch8Data+0x70, 4),
+			"c_lit": cellPairs(stateMatch8Data+0x80, 4),
+			"start": cellPairs(stateMatch8Data+0x90, 12),
+		},
+		"pause": map[string]any{
+			"note": "The pause objects (matchflow_func_018BD8 for a 3-button pad, matchflow_func_018A7A for a 6-button one): " +
+				"a box of blank tiles $73 in the HUD map, shown through a window band centred on line 95 that opens 2 lines " +
+				"a frame each way to its height; texts in the 2-row font (top tile $74 + letter, bottom tile + $50), " +
+				"the cursor tiles $5E / $5F on the chosen item, $61 (blank) on the others.",
+			"three_button": map[string]any{"items": []string{"RESUME", "REPLAY", "STRATEGY", "EDIT SCREEN"},
+				"box_cols": []int{9, 22}, "box_rows": []int{12, 21}, "text_col": 11, "cursor_col": 10, "first_item_row": 13,
+				"window_row": 7, "band": 36},
+			"six_button": map[string]any{"items": []string{"RESUME", "REPLAY"},
+				"box_cols": []int{11, 20}, "box_rows": []int{6, 11}, "text_col": 13, "cursor_col": 12, "first_item_row": 7,
+				"window_row": 9, "band": 20},
+		},
 		"banner_font":     map[string]any{"png": "banner_font.png", "chars": "@ABCDEFGHIJKLMNOPQRSTUVWXYZ", "glyph_px": []int{16, 32}},
 		"banner_messages": messages,
 		"digits":          "digits.png: 10 digits of 8x16 pixels",
@@ -248,4 +286,13 @@ func exportHUD(dir string) {
 		},
 	})
 	fmt.Printf("hud: window, %d flags and names, radar maps for %d stadiums\n", hudTeams, len(maps))
+}
+
+// cellPairs reads n [HUD map offset, cell word] pairs at a.
+func cellPairs(a uint32, n int) [][]int {
+	var out [][]int
+	for i := 0; i < n; i++ {
+		out = append(out, []int{int(be16(a + uint32(4*i))), int(be16(a + uint32(4*i) + 2))})
+	}
+	return out
 }

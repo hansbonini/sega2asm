@@ -115,6 +115,7 @@ func _init() -> void:
 	_check_shootout()
 	_check_penalty_view()
 	_check_boot()
+	_check_pause_replay()
 	_check_competitions()
 	_check_strategies_and_subs()
 	_check_long_modes()
@@ -500,6 +501,102 @@ func _check_boot() -> void:
 		_check(demo_ok and e.over and e.end_reason == "demo_title",
 			"the attract demo: over after %d steps (%s), Start leaves for the title" % [steps, e.end_reason])
 		e.dispose()
+
+
+## n frames of match m, pad 1's button `press` held for the first `hold`
+## (a release needs a frame of its own before the next press has an edge).
+func _match_frames(m: ISSMatch, n: int, press := "", hold := 1) -> void:
+	for i in n:
+		if press != "" and i == 0:
+			Input.action_press(ISSInput.action(0, press))
+		m._physics_process(1.0 / 60.0)
+		if press != "" and i == hold - 1:
+			Input.action_release(ISSInput.action(0, press))
+
+
+## The pause menu and the replay: Start freezes the game and opens the
+## band to its menu's height (two items on a 6-button pad, four on a
+## 3-button one); the replay ring holds the last six seconds; REPLAY fades
+## to a replay that plays by itself (A / B / C take it over), Start brings
+## the menu back and RESUME closes it with the game where it was.
+func _check_pause_replay() -> void:
+	for six in [true, false]:
+		var m := ISSMatch.new()
+		root.add_child(m)
+		m.set_physics_process(false)
+		m.start(0, 6, {"pads": [1, 0], "controllers": [{"side": 0, "six": six}], "level": 1})
+		_match_frames(m, 200)
+		var frame0: int = m.engine.frame
+		var ring_ok: bool = m._rec_frame == 200 and m._rec_start == 0 and m._ring[24] != null \
+			and m._ring[24]["anim"][1] != null and m._ring[25] == null
+		_match_frames(m, 2, "start")
+		var kind := "six_button" if six else "three_button"
+		var opened: bool = m.paused and m._pause["kind"] == kind and int(m._pause["band"]) == 2
+		_match_frames(m, 20)
+		var band := 20 if six else 36
+		var full: bool = int(m._pause["band"]) == band and m.engine.frame == frame0 and m._hud.pause["band"] == band
+		_match_frames(m, 2, "down")
+		var cursor: bool = int(m._pause["cursor"]) == 1
+		if not six:
+			# STRATEGY takes the first slot, EDIT SCREEN asks for the match
+			# menu; the cursor wraps both ways.
+			_match_frames(m, 2, "down")
+			_match_frames(m, 2, "c")
+			var slot0 := int(m.engine.teams[0].strategy_slots[0])
+			cursor = cursor and int(m._pause["cursor"]) == 2 and m.engine.teams[0].strategy == slot0
+			_match_frames(m, 2, "down")
+			_match_frames(m, 2, "c")
+			cursor = cursor and int(m._pause["cursor"]) == 3 and m.engine.menu_request[0] == 1
+			_match_frames(m, 2, "down")
+			cursor = cursor and int(m._pause["cursor"]) == 0
+			_match_frames(m, 2, "up")
+			cursor = cursor and int(m._pause["cursor"]) == 3
+			_match_frames(m, 2, "down")
+			_match_frames(m, 2, "down")
+		else:
+			_match_frames(m, 2, "up")
+			cursor = cursor and int(m._pause["cursor"]) == 0
+			_match_frames(m, 2, "down")
+		cursor = cursor and int(m._pause["cursor"]) == 1
+		_match_frames(m, 1, "c")
+		var fading: bool = m._fade_dir == 1 and m.paused
+		_match_frames(m, ISSMatch.FADE)
+		var started: bool = not m._replay.is_empty() and int(m._replay["frame"]) == 0 and int(m._replay["end"]) == 200 \
+			and m._fade_dir == -1 and not m._referee.visible
+		_match_frames(m, ISSMatch.FADE + 10)
+		var auto: bool = not m._replay.is_empty() and int(m._replay["frame"]) == 10 and int(m._replay["auto"]) == 2 \
+			and not m._hud.replay.get("manual", false)
+		# B: slow motion and manual; C held 8 frames moves 4; A held 8 moves
+		# back 4; B again and it plays backwards by itself; C forwards.
+		_match_frames(m, 2, "b")
+		_match_frames(m, 8, "c", 8)
+		var slow: bool = int(m._replay["frame"]) == 14 and int(m._replay["slow"]) != 0 and m._hud.replay["manual"] \
+			and m._hud.replay["slow"] and not m._hud.replay["back"]
+		_match_frames(m, 1)
+		_match_frames(m, 8, "a", 8)
+		var back: bool = int(m._replay["frame"]) == 10 and m._replay["back"] and m._hud.replay["back"]
+		_match_frames(m, 1)
+		_match_frames(m, 1, "b")
+		_match_frames(m, 4)
+		var plays: bool = int(m._replay["frame"]) == 5 and int(m._replay["slow"]) == 0
+		_match_frames(m, 1, "c")
+		_match_frames(m, 1)
+		plays = plays and int(m._replay["frame"]) == 7 and not m._replay["back"]
+		_match_frames(m, 1, "start")
+		_match_frames(m, ISSMatch.FADE)
+		var menu_back: bool = m._replay.is_empty() and m.paused and int(m._pause["cursor"]) == 0 \
+			and int(m._pause["band"]) == band and m._hud.replay.is_empty() and m._referee.visible and m._fade_dir == -1
+		_match_frames(m, ISSMatch.FADE)
+		_match_frames(m, 1, "start")
+		_match_frames(m, band / 2)
+		var closed: bool = not m.paused and m.engine.frame == frame0
+		_match_frames(m, 5)
+		closed = closed and m.engine.frame == frame0 + 5 and m._rec_frame == 205
+		_check(ring_ok and opened and full and cursor and fading and started and auto and slow and back and plays \
+			and menu_back and closed,
+			"%s pause and replay: ring %s open %s band %s cursor %s fade %s replay %s auto %s slow %s back %s plays %s menu %s close %s" % [
+			kind, ring_ok, opened, full, cursor, fading, started, auto, slow, back, plays, menu_back, closed])
+		m.queue_free()
 
 
 func _check_penalty_view() -> void:

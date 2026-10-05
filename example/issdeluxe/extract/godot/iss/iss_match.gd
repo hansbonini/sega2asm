@@ -11,7 +11,18 @@ const SCREEN := Vector2(256, 224)
 
 var engine := ISSMatchEngine.new()
 var options := {}
+## Start pauses the match (match_rules_update spawns matchflow_func_018BD8
+## for a 3-button pad, matchflow_func_018A7A for a 6-button one, or
+## challenge_pause in a challenge): the game freezes (g_frame_state 1) and
+## a menu opens in the window band.
 var paused := false
+## The pause object's state: the band's half-height in lines ($964, 2 a
+## frame up to the menu's), the cursor ($8C), the closing flag
+## (obj_distance), the side that paused and the menu kind ("" = a
+## challenge's pause, which has no menu).
+var _pause := {}
+## The strategy item's position in the four slots ($1846 / $18CE).
+var _strategy_cycle := [0, 0]
 
 var _pitch := ISSPitch.new()
 var _weather := ISSWeather.new()
@@ -24,7 +35,7 @@ var _marker := Sprite2D.new()
 var _referee := ISSNPCSprite.new()
 var _linesman := ISSNPCSprite.new()
 var _cursor := Cursor.new()
-var _pause := PauseText.new()
+var _pk_text := PKText.new()
 var _props := ChallengeProps.new()
 var _sprites := {}
 var _cam := Vector2.ZERO
@@ -34,54 +45,36 @@ var _end_wait := -1
 var _fade := ColorRect.new()
 ## fade_out_start: the frames the picture takes to go black.
 const FADE := 16
+var _fade_dir := 0
+var _fade_t := 0
+var _fade_then := Callable()
+
+## The replay ring (state_match_frame_2): 45 snapshots at $FFD0A6, one every
+## 8 frames with the positions, the camera and who is controlled, plus the
+## animation of frames 2 and 6 in between; $17E8 is the frame being
+## recorded, $17E6 the oldest kept, $17EC the goal mark that freezes it 16
+## frames into a goal (the ring restarts at the kick-off).
+const RING := 45
+const RING_FRAMES := RING * 8
+var _ring: Array = []
+var _rec_frame := 0
+var _rec_start := 0
+var _rec_frozen := false
+var _goal_timer := -1
+## The replay running ($17DC = 2): {"frame": $17EA, "start", "end", "auto":
+## $17E2 (1 to start, 2 playing by itself, 0 once a button was pressed),
+## "back": $17DE, "slow": $17E0, "blink": $17E4, "manual"}; empty = none.
+var _replay := {}
 
 
-## The pause menu (continue, substitutions) and the penalty tally during a
-## shoot-out.
-class PauseText:
+## The penalty tally during a shoot-out.
+class PKText:
 	extends Node2D
-	var on := false
 	var pk := ""
-	## 0 menu, 1 player coming off, 2 player coming on.
-	var menu := 0
-	var cursor := 0
-	var team: ISSTeam = null
-	## A challenge's pause (match_rules_update_9): no menu, Start resumes.
-	var plain := false
-	## A match played from the front end: the second item asks for the
-	## match menu (screen 6) at the next dead ball, as X does.
-	var requests := false
-
-	func items() -> Array:
-		if plain:
-			return []
-		if requests:
-			return ["CONTINUE", "MATCH MENU"]
-		match menu:
-			1:
-				var out := []
-				for p in team.players:
-					out.append("%2d %-10s %2d" % [p.number, p.name.to_upper().left(10), p.energy])
-				return out
-			2:
-				var out := []
-				for rec: Dictionary in team.bench:
-					out.append("%2d %-10s %s" % [int(rec["number"]), str(rec["name"]).to_upper().left(10), rec["position"].left(3).to_upper()])
-				return out
-		return ["CONTINUE", "SUBSTITUTE %d" % team.subs_left]
 
 	func _draw() -> void:
 		if pk != "":
 			ISSText.draw_centred(self, pk, 128, 36, false, true)
-		if not on:
-			return
-		var list := items()
-		var h := 20 + list.size() * 10
-		var top := maxf(34.0, 112.0 - h / 2.0)
-		draw_rect(Rect2(16, top, 224, h), Color(0, 0, 0.25, 0.85))
-		ISSText.draw_centred(self, ["PAUSE", "SUBSTITUTE WHO    ENERGY", "BRING ON"][menu], 128, top + 4, false, true)
-		for i in list.size():
-			ISSText.draw(self, list[i], Vector2(24, top + 16 + i * 10), false, i == cursor)
 
 
 ## The challenges' props: the dribble's flags (flag_draw frames, waving like
@@ -209,7 +202,7 @@ func start(home: int, away: int, opts: Dictionary) -> void:
 	_hud.home_team = engine.teams[0].team_id
 	_hud.away_team = engine.teams[1].team_id
 	layer.add_child(_hud)
-	layer.add_child(_pause)
+	layer.add_child(_pk_text)
 	add_child(layer)
 	_hud.set_stadium(engine.stadium)
 	_hud.set_teams(engine.teams[0].team_id, engine.teams[1].team_id)
@@ -221,8 +214,7 @@ func start(home: int, away: int, opts: Dictionary) -> void:
 	engine.music.connect(func(id: int) -> void: _sound.play_music(id))
 	_props.engine = engine
 	add_child(_props)
-	_pause.plain = engine.challenge >= 0
-	_pause.requests = engine.half_only
+	_ring_reset()
 	var fade_layer := CanvasLayer.new()
 	fade_layer.layer = 20
 	_fade.color = Color(0, 0, 0, 0)
@@ -239,6 +231,15 @@ func _physics_process(_delta: float) -> void:
 	if engine.teams.is_empty():
 		return
 	var sides := _human_sides()
+	# Controller n drives the engine's slot n; what is on the screen limits
+	# AREA A control. The pads are read every frame so that presses have
+	# edges even while the picture fades.
+	var pads: Array = []
+	for i in sides.size():
+		pads.append(ISSInput.read(i))
+	if _fade_dir != 0:
+		_fade_step()
+		return
 	if engine.drill >= 0 and ISSInput.start_pressed(0):
 		# Training: Start goes to the training menu (match_rules_update_3).
 		match_over.emit({"training_menu": true})
@@ -246,17 +247,11 @@ func _physics_process(_delta: float) -> void:
 	if engine.demo and _end_wait < 0 and (ISSInput.start_pressed(0) or ISSInput.start_pressed(1)):
 		# The attract demo: Start on either pad leaves for the title.
 		engine.demo_start()
-	for i in sides.size():
-		if ISSInput.start_pressed(i):
-			paused = not paused
-			_pause.on = paused
-			_pause.menu = 0
-			_pause.cursor = 0
-			_pause_pad = i
-			_pause.team = engine.teams[sides[i]]
-			_pause.queue_redraw()
+	if not _replay.is_empty():
+		_replay_frame(pads)
+		return
 	if paused:
-		_pause_menu(ISSInput.read(_pause_pad))
+		_pause_frame(sides, pads)
 		return
 	if _end_wait >= 0:
 		_end_wait -= 1
@@ -266,22 +261,19 @@ func _physics_process(_delta: float) -> void:
 			match_over.emit(result())
 		_sync()
 		return
-	# Controller n drives the engine's slot n; what is on the screen limits
-	# AREA A control.
-	var pads: Array = []
 	for i in sides.size():
-		pads.append(ISSInput.read(i))
+		if pads[i]["raw_press"] & ISSInput.START:
+			_pause_open(i, sides[i])
+			return
+	for i in sides.size():
 		if engine.half_only and engine.drill < 0 and pads[i]["raw_press"] & ISSInput.X:
 			# match_players_update: X asks for (or cancels) the match menu.
 			engine.menu_request[sides[i]] ^= 1
 	var vp := get_viewport_rect().size
 	engine.view = Rect2(_camera.get_screen_center_position() - vp / 2.0, vp)
 	engine.step(pads)
+	_record()
 	_sync()
-
-
-var _pause_pad := 0
-var _menu_hold := 0
 
 
 ## Pad n plays for the side of the engine's slot n.
@@ -292,62 +284,319 @@ func _human_sides() -> Array:
 	return out
 
 
-func _pause_menu(pad: Dictionary) -> void:
-	if _pause.plain:
-		return
-	var dir: int = pad["dir"]
-	var step := 0
-	if dir < 0:
-		_menu_hold = 0
-	else:
-		_menu_hold += 1
-		if _menu_hold == 1 or (_menu_hold > 20 and _menu_hold % 6 == 0):
-			var v := ISSProjection.heading_vector(dir)
-			step = roundi(v.y)
-	var ok: bool = pad["raw_press"] & ISSInput.C
-	var back: bool = pad["raw_press"] & ISSInput.B
-	var n := _pause.items().size()
-	_pause.cursor = clampi(_pause.cursor + step, 0, maxi(0, n - 1))
-	var t := _pause.team
-	if _pause.requests:
-		if ok:
-			if _pause.cursor == 1:
-				engine.menu_request[t.side] ^= 1
+# ---------------------------------------------------------------------------
+# The pause menu.
+
+## Start on pad i: the pause object for its side and pad type.
+func _pause_open(i: int, side: int) -> void:
+	paused = true
+	var six: bool = engine.slots[i].six if i < engine.slots.size() else true
+	var kind := ""
+	if engine.challenge < 0:
+		kind = "six_button" if six else "three_button"
+	_pause = {"band": 0, "cursor": 0, "closing": false, "side": side, "kind": kind}
+	_hud.pause = {}
+
+
+## One frame of the pause object: the band opens 2 lines a frame each way;
+## up / down move the cursor (a 6-button pad's two items just swap), Start
+## closes, C takes the item: RESUME, REPLAY (after a fade), STRATEGY (the
+## side's next strategy slot, then none) and EDIT SCREEN (the match menu
+## request, as X does). Closing shrinks the band before play resumes.
+func _pause_frame(sides: Array, pads: Array) -> void:
+	var press := 0
+	for i in sides.size():
+		if sides[i] == int(_pause["side"]):
+			press |= int(pads[i]["raw_press"])
+	var kind: String = _pause["kind"]
+	if kind == "":
+		# challenge_pause: Start again resumes.
+		if press & ISSInput.START:
 			paused = false
-			_pause.on = false
-		if step != 0 or ok:
-			_pause.queue_redraw()
 		return
-	match _pause.menu:
+	var layout := _hud.pause_layout(kind)
+	var items: Array = layout.get("items", ["RESUME", "REPLAY"])
+	var side := int(_pause["side"])
+	if _pause["closing"]:
+		_pause["band"] = maxi(0, int(_pause["band"]) - 2)
+		if int(_pause["band"]) == 0:
+			paused = false
+			_hud.pause = {}
+			return
+	else:
+		_pause["band"] = mini(int(layout.get("band", 36)), int(_pause["band"]) + 2)
+		var cursor := int(_pause["cursor"])
+		if kind == "six_button":
+			if press & (ISSInput.UP | ISSInput.DOWN):
+				cursor ^= 1
+		else:
+			if press & ISSInput.UP:
+				cursor = cursor - 1 if cursor > 0 else items.size() - 1
+			if press & ISSInput.DOWN:
+				cursor = (cursor + 1) % items.size()
+		if press & ISSInput.START:
+			cursor = 0
+			_pause["closing"] = true
+		if press & ISSInput.C:
+			match cursor:
+				0:
+					_pause["closing"] = true
+				1:
+					_fade_out(_replay_start)
+				2:
+					_strategy_next(side)
+				3:
+					engine.menu_request[side] ^= 1
+					_hud.menu_request = [engine.menu_request[0] != 0, engine.menu_request[1] != 0]
+		_pause["cursor"] = cursor
+	_hud.pause = {"kind": kind, "cursor": _pause["cursor"], "band": _pause["band"]}
+
+
+## The STRATEGY item: the side's strategy slots in turn, then none
+## (tm_strategy_on is set for every match).
+func _strategy_next(side: int) -> void:
+	var t := engine.teams[side]
+	var c := int(_strategy_cycle[side])
+	if c > 3:
+		t.strategy = -1
+		_strategy_cycle[side] = 0
+	else:
+		t.strategy = int(t.strategy_slots[c])
+		_strategy_cycle[side] = c + 1
+	t.strategy_run = -1
+	if side == 0:
+		_hud.home_strategy = t.strategy
+	else:
+		_hud.away_strategy = t.strategy
+
+
+# ---------------------------------------------------------------------------
+# The replay.
+
+func _ring_reset() -> void:
+	_ring = []
+	_ring.resize(RING)
+	_rec_frame = 0
+	_rec_start = 0
+	_rec_frozen = false
+	_goal_timer = -1
+
+
+## state_match_frame_2 after each engine frame.
+func _record() -> void:
+	var goal := engine.restart_type == ISSMatchEngine.R.GOAL or engine.restart_type == ISSMatchEngine.R.OWN_GOAL
+	if goal:
+		if _goal_timer < 0:
+			_goal_timer = 16
+		elif _goal_timer > 0:
+			_goal_timer -= 1
+			if _goal_timer == 0:
+				_rec_frozen = true
+	elif _goal_timer >= 0:
+		# The kick-off re-enters state_match, which empties the ring.
+		_ring_reset()
+	if _rec_frozen or engine.over:
+		return
+	var f := _rec_frame
+	_rec_frame = (f + 1) % RING_FRAMES
+	if _rec_frame == _rec_start:
+		_rec_start = (_rec_start + 8) % RING_FRAMES
+	match f & 7:
 		0:
-			if ok and _pause.cursor == 0:
-				paused = false
-				_pause.on = false
-			elif ok and t.subs_left > 0 and not t.bench.is_empty():
-				_pause.menu = 1
-				_pause.cursor = 1
-		1:
-			if back:
-				_pause.menu = 0
-				_pause.cursor = 1
-			elif ok:
-				_sub_out = _pause.cursor
-				_pause.menu = 2
-				_pause.cursor = 0
+			_snapshot(f / 8)
 		2:
-			if back:
-				_pause.menu = 1
-				_pause.cursor = _sub_out
-			elif ok:
-				if t.substitute(_sub_out, _pause.cursor):
-					_sound.play_sfx(0x48) # whistle
-				_pause.menu = 0
-				_pause.cursor = 0
-	if step != 0 or ok or back:
-		_pause.queue_redraw()
+			_snapshot_anim(f / 8, 0)
+		6:
+			_snapshot_anim(f / 8, 1)
 
 
-var _sub_out := -1
+## state_match_6: the positions, heights and facings, the ball, the camera
+## and the controlled players.
+func _snapshot(slot: int) -> void:
+	var b := engine.ball
+	var s := {"players": [], "anim": [null, null], "ball": [b.pos, b.z, b.heading], "cam": [_cam, _cam_z, _lead], "ctl": []}
+	for t in engine.teams:
+		for p in t.players:
+			s["players"].append([p.pos, p.z, p.facing])
+	for sl in engine.slots:
+		s["ctl"].append(sl.player)
+	_ring[slot] = s
+
+
+## state_match_7: the animation (action and frame) of everyone, the ball's spin.
+func _snapshot_anim(slot: int, k: int) -> void:
+	if _ring[slot] == null:
+		return
+	var a := [[engine.ball.spin, engine.ball.heading]]
+	for t in engine.teams:
+		for p in t.players:
+			a.append([p.action, p.anim_frame])
+	_ring[slot]["anim"][k] = a
+
+
+## The REPLAY item once the picture is black (state_match_5 with $17DC = 1):
+## the ring's end is completed with the current frame unless the goal mark
+## froze it, then the replay starts from the oldest snapshot.
+func _replay_start() -> void:
+	if not _rec_frozen:
+		_rec_frame &= ~7
+		_snapshot(_rec_frame / 8)
+		_snapshot_anim(_rec_frame / 8, 0)
+	else:
+		_rec_frame = posmod((_rec_frame & ~7) - 8, RING_FRAMES)
+	_replay = {"frame": _rec_start, "start": _rec_start, "end": _rec_frame, "auto": 1, "back": false,
+		"slow": 0, "blink": 0, "manual": false}
+	_hud.pause = {}
+	_referee.visible = false
+	_linesman.visible = false
+	_marker.visible = false
+	_apply_replay(int(_replay["frame"]))
+	_fade_in()
+
+
+## One frame of the replay (state_match_frame_2 with $17DC = 2): it plays by
+## itself to the end unless a button is pressed; then C plays forward, A
+## backward, B toggles slow motion (half speed while the direction's button
+## is held) and only Start leaves. Leaving fades out and returns to the
+## pause menu, or to play when the goal mark had frozen the ring.
+func _replay_frame(pads: Array) -> void:
+	var r := _replay
+	if int(r["auto"]) == 1:
+		r["auto"] = 2
+		_sound.play_sfx(0x3F)
+	var press := 0
+	var held := 0
+	for pd in pads:
+		press |= int(pd["raw_press"])
+		held |= int(pd["raw"])
+	if (int(r["auto"]) != 0 and r["frame"] == r["end"]) or press & ISSInput.START:
+		_fade_out(_replay_end)
+		return
+	if not engine.slots.is_empty():
+		if held & (ISSInput.A | ISSInput.C) or press & ISSInput.B:
+			r["auto"] = 0
+			r["manual"] = true
+		if press & ISSInput.B:
+			r["slow"] = 0 if int(r["slow"]) != 0 else 1
+		if held & ISSInput.C:
+			r["back"] = false
+		if held & ISSInput.A:
+			r["back"] = true
+	var move := 0
+	var button: int = ISSInput.A if r["back"] else ISSInput.C
+	if int(r["slow"]) == 0:
+		move = -1 if r["back"] else 1
+	elif held & button:
+		if int(r["slow"]) <= 1:
+			r["slow"] = 2
+			move = -1 if r["back"] else 1
+		else:
+			r["slow"] = int(r["slow"]) - 1
+	if move > 0 and r["frame"] != r["end"]:
+		r["frame"] = (int(r["frame"]) + 1) % RING_FRAMES
+	elif move < 0 and r["frame"] != r["start"]:
+		r["frame"] = posmod(int(r["frame"]) - 1, RING_FRAMES)
+	r["blink"] = int(r["blink"]) + 1
+	_apply_replay(int(r["frame"]))
+
+
+func _replay_end() -> void:
+	_replay = {}
+	_hud.set_replay({})
+	_referee.visible = true
+	_linesman.visible = true
+	if _rec_frozen:
+		_ring_reset()
+		paused = false
+		_pause = {}
+		_hud.pause = {}
+	else:
+		_pause["cursor"] = 0
+		_pause["closing"] = false
+		_hud.pause = {"kind": _pause["kind"], "cursor": 0, "band": _pause["band"]}
+	_sync()
+	_fade_in()
+
+
+## state_match_8: frame f of the replay on the screen, the positions between
+## its snapshot and the next (eighths), the animation of the nearer sampled
+## frame, the camera likewise.
+func _apply_replay(f: int) -> void:
+	var s0: Variant = _ring[f / 8]
+	if s0 == null:
+		return
+	var s1: Variant = _ring[((f & ~7) + 8) % RING_FRAMES / 8]
+	if s1 == null:
+		s1 = s0
+	var t := float(f & 7) / 8.0
+	var anim: Variant = s0["anim"][(f & 4) >> 2]
+	if anim == null:
+		anim = s0["anim"][0]
+	var dots: Array = []
+	var cursors: Array = []
+	var k := 0
+	for team in engine.teams:
+		for p in team.players:
+			var a0: Array = s0["players"][k]
+			var a1: Array = s1["players"][k]
+			var pos: Vector2 = a0[0] + (a1[0] - a0[0]) * t
+			var z: float = a0[1] + (a1[1] - a0[1]) * t
+			var spr: Sprite2D = _sprites[p]
+			if anim != null:
+				_pose(spr, p, int(anim[k + 1][0]), int(anim[k + 1][1]), int(a0[2]))
+			spr.position = ISSProjection.to_map(pos, z).round()
+			spr.z_index = int(pos.y)
+			var mine: bool = s0["ctl"].has(p)
+			dots.append([pos, ("controlled_" if mine else "") + ("home" if team.side == 0 else "away")])
+			if mine:
+				cursors.append([spr.position + Vector2(0, -42), Color(1, 1, 0.3) if team.side == 0 else Color(0.4, 1, 1)])
+			k += 1
+	var b0: Array = s0["ball"]
+	var b1: Array = s1["ball"]
+	var bpos: Vector2 = b0[0] + (b1[0] - b0[0]) * t
+	_ball.position = ISSProjection.to_map(bpos).round()
+	_ball.height = b0[1] + (b1[1] - b0[1]) * t
+	_ball.facing = roundi(b0[2]) & 63
+	if anim != null:
+		_ball.spin = anim[0][0]
+	_ball.z_index = int(bpos.y) + 1
+	dots.append([bpos, "ball"])
+	var c0: Array = s0["cam"]
+	var c1: Array = s1["cam"]
+	var cam: Vector2 = c0[0] + (c1[0] - c0[0]) * t
+	var cam_z: float = c0[1] + (c1[1] - c0[1]) * t
+	_camera.position = ISSProjection.to_map(cam, cam_z).round()
+	_cursor.points = cursors
+	_cursor.queue_redraw()
+	_hud.set_radar(dots)
+	var r := _replay
+	_hud.set_replay({"manual": r["manual"], "back": r["back"], "slow": int(r["slow"]) != 0, "blink": r["blink"]})
+
+
+# ---------------------------------------------------------------------------
+# Fades (fade_out_start): the game freezes while the picture goes black or
+# comes back over FADE frames.
+
+func _fade_out(then: Callable) -> void:
+	_fade_dir = 1
+	_fade_t = 0
+	_fade_then = then
+
+
+func _fade_in() -> void:
+	_fade_dir = -1
+	_fade_t = 0
+	_fade_then = Callable()
+
+
+func _fade_step() -> void:
+	_fade_t += 1
+	_fade.color.a = float(_fade_t) / FADE if _fade_dir > 0 else 1.0 - float(_fade_t) / FADE
+	if _fade_t >= FADE:
+		var then := _fade_then
+		_fade_dir = 0
+		if then.is_valid():
+			then.call()
 
 
 func _exit_tree() -> void:
@@ -402,11 +651,7 @@ func _sync() -> void:
 			if not p.is_keeper() and (s.look_number != p.number or s.look_hair != p.hair):
 				# A substitute came on in his place.
 				s.set_look(t.team_id, t.second_kit, p.number, p.hair)
-			if p.is_keeper():
-				var ka := keeper_action(p.action)
-				s.set_pose(ka, p.anim_frame, p.facing, ka in KEEPER_LOOPING)
-			else:
-				s.set_pose(p.action, p.anim_frame, p.facing, p.action in LOOPING)
+			_pose(s, p, p.action, p.anim_frame, p.facing)
 			s.position = ISSProjection.to_map(p.pos, p.z).round()
 			s.z_index = int(p.pos.y)
 			var mine := false
@@ -451,10 +696,20 @@ func _sync() -> void:
 	_hud.away_strategy = e.teams[1].strategy
 	_hud.set_radar(dots)
 	var pk := "PK %d-%d" % [e.pk_scores[0], e.pk_scores[1]] if e.shootout else ""
-	if pk != _pause.pk:
-		_pause.pk = pk
-		_pause.queue_redraw()
+	if pk != _pk_text.pk:
+		_pk_text.pk = pk
+		_pk_text.queue_redraw()
 	_update_camera()
+
+
+## The sprite's pose for an action, frame and facing (the keepers have their
+## own frame set).
+func _pose(s: Sprite2D, p: ISSFootballer, action: int, frame: int, facing: int) -> void:
+	if p.is_keeper():
+		var ka := keeper_action(action)
+		s.set_pose(ka, frame, facing, ka in KEEPER_LOOPING)
+	else:
+		s.set_pose(action, frame, facing, action in LOOPING)
 
 
 ## camera_update: follow the ball (or whoever has it) with a lead that eases
