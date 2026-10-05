@@ -40,6 +40,9 @@ var cover: ISSFootballer
 var strategy := -1
 var strategy_run := -1
 var strategy_slots := [-1, -1, -1, -1]
+## tm_strategy_label: the HUD shows a running strategy as nothing (0),
+## CONFIRM (1) or its own label (2).
+var strategy_label := 2
 
 ## Substitutions left (screen_select_squad: up to 3).
 var subs_left := 3

@@ -567,9 +567,12 @@ go run ./example/issdeluxe/extract -rom "<rom>" -out example/issdeluxe/out/godot
   frame each), tiled over the stadium from its origin.
 * `iss/hud/` — the match HUD: the window plane (`window.png`, 32 × 32
   cells), the 42 team flags and name plates, score / clock digits, the
-  strategy labels, the banner font and all 17 banner messages (CORNER
-  KICK, THROW IN, HALF TIME ...; `ISSHud.show_banner`), the radar background and, per stadium, the pitch → radar
-  pixel mapping and the dot colours (`hud.json` gives every item's cells).
+  strategy labels (and CONFIRM), the banner font and all 17 banner
+  messages (CORNER KICK, THROW IN, HALF TIME ...; `ISSHud.show_banner`),
+  the replay's logo and icons, the controlled players' markers, the radar
+  background and, per stadium, the pitch → radar pixel mapping and the dot
+  colours (`hud.json` gives every item's cells, the pause menus' layout
+  and the replay HUD's tables).
 * `iss/misc/` — the small sprites: rain drops and splashes, snowflakes,
   confetti and sparkles (`particle_draw`), the landing-point marker of lofted
   kicks and the practice goal target (`misc.json` says when each is used).
@@ -821,11 +824,13 @@ scaled by whole numbers:
   clash), the referee and linesman following play, the landing marker of
   lofted balls, `camera_update`'s lead toward the attacking goal, the HUD
   with the live radar, the banners in the band that opens in the middle of
-  the screen (a line a frame to 20, `hblank_hud_split`), commentary, crowd
-  and effects.
+  the screen (a line a frame to 20, `hblank_hud_split`), the name plates
+  of each side's kicker (`hud_draw_clock_2`: name, role, number and cards
+  in the bottom rows, the team defending the left goal on the left), the
+  ring under each pad's player (`hud_update`'s marker sprites, a different
+  one per controller), the strategy label as the team's display setting
+  shows it (its name, CONFIRM or nothing), commentary, crowd and effects.
 
-Not reproduced (yet): the name plates of the controlled players in the
-window's bottom rows (`hud_update`'s DISPLAY option).
 `iss_selftest.gd` plays a whole CPU match headless, drives a player
 through the pad input, plays a level knockout match to penalties, runs a
 league, a tournament, the International Cup and both paths of the World

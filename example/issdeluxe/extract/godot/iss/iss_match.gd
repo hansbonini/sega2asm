@@ -34,7 +34,10 @@ var _ball := ISSBallSprite.new()
 var _marker := Sprite2D.new()
 var _referee := ISSNPCSprite.new()
 var _linesman := ISSNPCSprite.new()
-var _cursor := Cursor.new()
+var _markers: Array[Marker] = []
+## $938 / $93C: each side's "kicker", whose name plate the HUD shows: the
+## player a pad drives, else the one who took the ball or a kick.
+var _kicker: Array = [null, null]
 var _pk_text := PKText.new()
 var _props := ChallengeProps.new()
 var _sprites := {}
@@ -134,15 +137,26 @@ class ChallengeProps:
 			_target.z_index = int(at.y)
 
 
-## Arrow over the controlled players (home / away colours).
-class Cursor:
-	extends Node2D
-	var points: Array = [] # [map position, colour]
+## The marker under a controlled player (hud_update): a ring for each
+## controller from controlled_markers.png, at its player's feet on the
+## ground, drawn just below him.
+class Marker:
+	extends Sprite2D
+	const IMAGES := 4
 
-	func _draw() -> void:
-		for p in points:
-			var at: Vector2 = p[0]
-			draw_colored_polygon(PackedVector2Array([at + Vector2(-3, -4), at + Vector2(3, -4), at]), p[1])
+	func _init(image: int, mat: Material) -> void:
+		centered = false
+		material = mat
+		texture = load(ISSHud.DIR + "controlled_markers.png")
+		region_enabled = true
+		region_rect = Rect2(32 * (image % IMAGES), 0, 32, 16)
+		visible = false
+
+	## Over the player at pitch position pos (the height ignored).
+	func place(pos: Vector2) -> void:
+		position = ISSProjection.to_map(pos).round() + Vector2(-16, -6)
+		z_index = int(pos.y) - 1
+		visible = true
 
 
 func start(home: int, away: int, opts: Dictionary) -> void:
@@ -187,8 +201,19 @@ func start(home: int, away: int, opts: Dictionary) -> void:
 	_referee.set_kit(engine.referee_kit)
 	add_child(_linesman)
 	_linesman.set_kit(engine.referee_kit)
-	_cursor.z_index = 4001
-	add_child(_cursor)
+	# The markers' image holds palette line 2's indices already.
+	var ring_mat := ShaderMaterial.new()
+	ring_mat.shader = load("res://md/md_indexed.gdshader")
+	ring_mat.set_shader_parameter("palette", load(ISSHud.DIR + "hud.pal.png"))
+	var per_side := [0, 0]
+	for sl in engine.slots:
+		# Home pads use the first and third images, away pads the others.
+		var mk := Marker.new(2 * per_side[sl.side] + sl.side, ring_mat)
+		per_side[sl.side] += 1
+		add_child(mk)
+		_markers.append(mk)
+	for s in 2:
+		_kicker[s] = engine.teams[s].players[0]
 	var size := Vector2(_pitch.pixel_size())
 	_camera.limit_left = 0
 	_camera.limit_top = 0
@@ -201,6 +226,7 @@ func start(home: int, away: int, opts: Dictionary) -> void:
 	layer.layer = 10
 	_hud.home_team = engine.teams[0].team_id
 	_hud.away_team = engine.teams[1].team_id
+	_hud.strategy_labels = [engine.teams[0].strategy_label, engine.teams[1].strategy_label]
 	layer.add_child(_hud)
 	layer.add_child(_pk_text)
 	add_child(layer)
@@ -414,7 +440,8 @@ func _record() -> void:
 ## and the controlled players.
 func _snapshot(slot: int) -> void:
 	var b := engine.ball
-	var s := {"players": [], "anim": [null, null], "ball": [b.pos, b.z, b.heading], "cam": [_cam, _cam_z, _lead], "ctl": []}
+	var s := {"players": [], "anim": [null, null], "ball": [b.pos, b.z, b.heading], "cam": [_cam, _cam_z, _lead],
+		"ctl": [], "kick": _kicker.duplicate()}
 	for t in engine.teams:
 		for p in t.players:
 			s["players"].append([p.pos, p.z, p.facing])
@@ -533,7 +560,9 @@ func _apply_replay(f: int) -> void:
 	if anim == null:
 		anim = s0["anim"][0]
 	var dots: Array = []
-	var cursors: Array = []
+	var ctl: Array = s0["ctl"]
+	for i in _markers.size():
+		_markers[i].visible = false
 	var k := 0
 	for team in engine.teams:
 		for p in team.players:
@@ -546,10 +575,10 @@ func _apply_replay(f: int) -> void:
 				_pose(spr, p, int(anim[k + 1][0]), int(anim[k + 1][1]), int(a0[2]))
 			spr.position = ISSProjection.to_map(pos, z).round()
 			spr.z_index = int(pos.y)
-			var mine: bool = s0["ctl"].has(p)
+			var mine := ctl.has(p)
 			dots.append([pos, ("controlled_" if mine else "") + ("home" if team.side == 0 else "away")])
 			if mine:
-				cursors.append([spr.position + Vector2(0, -42), Color(1, 1, 0.3) if team.side == 0 else Color(0.4, 1, 1)])
+				_markers[ctl.find(p)].place(pos)
 			k += 1
 	var b0: Array = s0["ball"]
 	var b1: Array = s1["ball"]
@@ -566,9 +595,8 @@ func _apply_replay(f: int) -> void:
 	var cam: Vector2 = c0[0] + (c1[0] - c0[0]) * t
 	var cam_z: float = c0[1] + (c1[1] - c0[1]) * t
 	_camera.position = ISSProjection.to_map(cam, cam_z).round()
-	_cursor.points = cursors
-	_cursor.queue_redraw()
 	_hud.set_radar(dots)
+	_set_plates(s0["kick"])
 	var r := _replay
 	_hud.set_replay({"manual": r["manual"], "back": r["back"], "slow": int(r["slow"]) != 0, "blink": r["blink"]})
 
@@ -641,7 +669,8 @@ static func keeper_action(a: int) -> int:
 func _sync() -> void:
 	var e := engine
 	var dots: Array = []
-	var cursors: Array = []
+	for i in _markers.size():
+		_markers[i].visible = false
 	for t in e.teams:
 		for p in t.players:
 			var s: Sprite2D = _sprites[p]
@@ -655,13 +684,11 @@ func _sync() -> void:
 			s.position = ISSProjection.to_map(p.pos, p.z).round()
 			s.z_index = int(p.pos.y)
 			var mine := false
-			for sl in e.slots:
-				if sl.player == p:
+			for i in e.slots.size():
+				if e.slots[i].player == p:
 					mine = true
+					_markers[i].place(p.pos)
 			dots.append([p.pos, ("controlled_" if mine else "") + ("home" if t.side == 0 else "away")])
-			if mine:
-				var colour := Color(1, 1, 0.3) if t.side == 0 else Color(0.4, 1, 1)
-				cursors.append([s.position + Vector2(0, -42), colour])
 	var b := e.ball
 	_ball.position = ISSProjection.to_map(b.pos).round()
 	_ball.height = b.z
@@ -684,9 +711,15 @@ func _sync() -> void:
 	_linesman.z_index = int(e.linesman_pos.y)
 	_linesman.facing = 16 if b.pos.x > e.linesman_pos.x else 48
 	_linesman.play(6 if absf(b.pos.x - e.linesman_pos.x) > 8.0 else 5)
-	_cursor.points = cursors
-	_cursor.queue_redraw()
 	_props.sync()
+	# Each side's kicker ($938 / $93C): the pad's player, else whoever took
+	# the ball or a kick for the side without a pad on him (kicker_claim).
+	for sl in e.slots:
+		_kicker[sl.side] = sl.player if sl.player != null else _kicker[sl.side]
+	for p in [e.ball.owner, e.restart_taker]:
+		if p != null and not _controlled(p):
+			_kicker[p.team] = p
+	_set_plates(_kicker)
 	_hud.home_score = e.teams[0].score
 	_hud.away_score = e.teams[1].score
 	_hud.clock_seconds = e.clock_seconds()
@@ -700,6 +733,28 @@ func _sync() -> void:
 		_pk_text.pk = pk
 		_pk_text.queue_redraw()
 	_update_camera()
+
+
+func _controlled(p: ISSFootballer) -> bool:
+	for sl in engine.slots:
+		if sl.player == p:
+			return true
+	return false
+
+
+## The name plates: the left one is the kicker's of the team defending the
+## left goal (training and the challenges show other things there).
+func _set_plates(kickers: Array) -> void:
+	if engine.drill >= 0 or engine.challenge >= 0:
+		_hud.plates = [{}, {}]
+		return
+	var left := 0 if engine.attack_dir(0) > 0.0 else 1
+	var out := [{}, {}]
+	for i in 2:
+		var p: ISSFootballer = kickers[left if i == 0 else 1 - left]
+		if p != null:
+			out[i] = {"name": p.name, "role": p.role & 3, "number": p.number, "status": p.status}
+	_hud.plates = out
 
 
 ## The sprite's pose for an action, frame and facing (the keepers have their

@@ -43,8 +43,12 @@ static func from_ram() -> Dictionary:
 	var keepers := []
 	var skills := []
 	var strategies := []
+	var labels := []
 	for side in 2:
 		var t: int = info[side]
+		# tm_strategy_label: how the HUD shows a picked strategy (0 not at
+		# all, 1 CONFIRM, 2 its own label).
+		labels.append(_w(t + 0x2C))
 		formations.append(_w(t + ISSModes.TM_FORMATION))
 		conditions.append(_w(t + ISSModes.TM_CONDITION))
 		players.append(_w(t + ISSModes.TM_PLAYERS) + 7)
@@ -60,6 +64,7 @@ static func from_ram() -> Dictionary:
 	opts["keepers"] = keepers
 	opts["keeper_skills"] = skills
 	opts["strategies_by_side"] = strategies
+	opts["strategy_labels"] = labels
 	opts["squads"] = [squad(0), squad(1)]
 	opts["controllers"] = controllers()
 	# The match so far (state_match plays one half and starts it from here).

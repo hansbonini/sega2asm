@@ -23,6 +23,8 @@ const (
 	replayTiles     = 43
 	replayFirst     = 0x11B
 	stateMatch8Data = 0x1ABA6 // state_match_8_data: the replay HUD's cells
+	entMarkerTiles  = 2       // res04: the block match_init_hud loads right after the overlay tiles
+	markerFirst     = 0x149   // hud_update: the controlled players' marker sprites, 4 x 2 cells each
 	entHUDPalette   = 9
 	entRadarTiles   = 20      // res04: clean radar bitmap, 10 columns of 7 tiles
 	grpTeamGfx      = 6       // res06
@@ -140,6 +142,25 @@ func exportHUD(dir string) {
 		must(types.WritePNG(filepath.Join(dir, "strategies", fmt.Sprintf("strategy_%d.png", st)),
 			cellsImage(lw, 8, 1, labels[b:b+8*32])))
 	}
+	// Block 9 (CONFIRM) is shown instead when the team's display setting
+	// (tm_strategy_label) is 1.
+	must(types.WritePNG(filepath.Join(dir, "strategies", "strategy_confirm.png"), cellsImage(lw, 8, 1, labels[9*8*32:10*8*32])))
+
+	// The controlled players' markers (hud_update): a 4 x 2-cell sprite over
+	// each controlled player's feet, one image per controller (home pad 1,
+	// away pad 1, home pad 2, away pad 2 at overlay tiles $149, $151, $159
+	// and $161), straddling the overlay tiles and the block match_init_hud
+	// loads right after them.
+	markers := append(append([]byte(nil), tiles...), unpack(entry(grpMisc, entMarkerTiles))...)
+	var mw []uint16
+	for r := 0; r < 2; r++ {
+		for img := 0; img < 4; img++ {
+			for c := 0; c < 4; c++ {
+				mw = append(mw, uint16(2<<13|(markerFirst+8*img+2*c+r)))
+			}
+		}
+	}
+	must(types.WritePNG(filepath.Join(dir, "controlled_markers.png"), cellsImage(mw, 16, 2, markers)))
 
 	// Banner font: glyph g is 2 x 4 cells, words added to the overlay base
 	// with priority and palette line 2 ($C000).
@@ -240,9 +261,22 @@ func exportHUD(dir string) {
 					"from the message's column (see banner_messages); the map's rows 22-27 are uploaded to window rows 9-14, " +
 					"shown through the band in the middle of the screen (centre line 95) that opens a line a frame each way to 20"},
 			"home_strategy": map[string]any{"cells": []int{2, 22}, "size": []int{8, 1},
-				"images": "strategies/strategy_N.png (tm_strategy N) while the strategy runs"},
+				"images": "strategies/strategy_N.png (tm_strategy N) while the strategy runs; the team's display " +
+					"setting (tm_strategy_label) shows nothing (0), strategies/strategy_confirm.png (1, so that the other side does not learn it) or the strategy's own label (2)"},
 			"away_strategy": map[string]any{"cells": []int{22, 22}, "size": []int{8, 1}},
+			"left_plate": map[string]any{"cells": []int{2, 24}, "size": []int{8, 3},
+				"note": "hud_draw_clock_2 / _3: the name (8 characters, 2-row font: tile = character + $33, bottom + $50) " +
+					"of the controlled player ($938 / $93C: the one a pad drives, else the kicker or ball carrier) of the " +
+					"team defending the left goal at rows 24-25, the other team's at left_plate's columns + 20; row 26: " +
+					"the role's two letters (FW, MF, DF, GK: D $6D, F $6E, G $6F, K $70, M $71, W $72), a blank, the shirt " +
+					"number (tbl_shirt_digits: tens $63-$64 or blank, units $62 + digit), two blanks, then the cards " +
+					"(status & 7 tiles $8E, or one $8F from 4)"},
+			"right_plate": map[string]any{"cells": []int{22, 24}, "size": []int{8, 3}},
 		},
+		"markers": map[string]any{"png": "controlled_markers.png", "size_px": []int{32, 16},
+			"images": []string{"home pad 1", "away pad 1", "home pad 2", "away pad 2"},
+			"note": "hud_update: one sprite per controller over its player's feet (the ground point of obj_x / obj_y, " +
+				"the height ignored), top left at (-16, -6) from it, palette line 2"},
 		"strategy_names": strategyNames,
 		"replay": map[string]any{
 			"png": "replay_tiles.png", "first_tile": replayFirst, "count": replayTiles,

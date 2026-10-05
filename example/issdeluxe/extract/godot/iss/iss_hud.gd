@@ -31,6 +31,16 @@ var away_strategy := -1:
 ## $182A / $18B2: the side asked for the match menu (hud_draw_clock_1 shows
 ## overlay tiles $90-$91 under its score).
 var menu_request := [false, false]
+## Each side's tm_strategy_label: a running strategy shows as nothing (0),
+## CONFIRM (1, so that the other side does not learn it) or its own label.
+var strategy_labels := [2, 2]
+## The name plates (hud_draw_clock_2 / _3) of the team defending the left
+## goal and of the other, in window rows 24-26: {"name", "role" (0 forward,
+## 1 midfield, 2 defence, 3 keeper), "number", "status"}; empty = none.
+var plates := [{}, {}]
+## The role letters of row 26 (engine_data_01CD60) and the card tiles.
+const ROLE_TILES := [[0x6E, 0x72], [0x71, 0x6E], [0x6D, 0x6E], [0x6F, 0x70]]
+const CARD_TILE := 0x8E
 
 ## The pause menu (matchflow_func_018BD8 / _018A7A): {"kind": "three_button"
 ## or "six_button", "cursor": item, "band": the band's half-height in lines
@@ -192,7 +202,13 @@ func _show_strategy(item: String, strategy: int) -> void:
 	if not _team_sprites.has(item):
 		return
 	var sp: Sprite2D = _team_sprites[item]
-	sp.texture = load(DIR + "strategies/strategy_%d.png" % strategy) if strategy >= 0 else null
+	var mode := int(strategy_labels[0 if item.begins_with("home") else 1])
+	if strategy < 0 or mode == 0:
+		sp.texture = null
+	elif mode == 1:
+		sp.texture = load(DIR + "strategies/strategy_confirm.png")
+	else:
+		sp.texture = load(DIR + "strategies/strategy_%d.png" % strategy)
 
 
 func set_stadium(index: int) -> void:
@@ -353,6 +369,8 @@ func _draw() -> void:
 			_cells("start")
 	var r := Rect2(_cell("radar"), Vector2(80, 56))
 	draw_texture_rect_region(_window, r, r)
+	for i in 2:
+		_draw_plate(plates[i], _doc["items"]["left_plate" if i == 0 else "right_plate"]["cells"])
 	if _banner.band > 0:
 		# The banner's rows are blank tiles right across; the letters come
 		# over them (BannerLayer).
@@ -360,6 +378,33 @@ func _draw() -> void:
 			for col in 32:
 				_cell_tile(FONT_BLANK, col, row, BAND_CENTRE - _banner.band, BAND_CENTRE + _banner.band)
 	_draw_pause()
+
+
+## A name plate: the window's own blank tiles behind the name (2-row font),
+## then the role, the number and the cards on the row below.
+func _draw_plate(plate: Dictionary, cells: Array) -> void:
+	if plate.is_empty():
+		return
+	var col := int(cells[0])
+	var row := int(cells[1])
+	var back := Rect2((col - 1) * 8, row * 8, 80, 16)
+	draw_texture_rect_region(_window, back, back)
+	_text2(str(plate.get("name", "")).left(8), col, row, 0, 256)
+	var role: Array = ROLE_TILES[int(plate.get("role", 0)) & 3]
+	_cell_tile(int(role[0]), col, row + 2)
+	_cell_tile(int(role[1]), col + 1, row + 2)
+	var number := int(plate.get("number", 0))
+	if number >= 10:
+		_cell_tile(FONT_DIGIT + number / 10, col + 3, row + 2)
+	_cell_tile(FONT_DIGIT + number % 10, col + 4, row + 2)
+	var status := int(plate.get("status", 0))
+	if status != 0:
+		var n := status & 7
+		if n >= 4:
+			_cell_tile(CARD_TILE + 1, col + 5, row + 2)
+		else:
+			for i in maxi(n, 1):
+				_cell_tile(CARD_TILE, col + 5 + i, row + 2)
 
 
 ## The pause menu: a box of blank tiles with the items in the 2-row font,

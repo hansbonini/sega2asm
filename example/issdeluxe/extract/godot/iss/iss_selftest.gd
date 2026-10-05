@@ -529,6 +529,15 @@ func _check_pause_replay() -> void:
 		var frame0: int = m.engine.frame
 		var ring_ok: bool = m._rec_frame == 200 and m._rec_start == 0 and m._ring[24] != null \
 			and m._ring[24]["anim"][1] != null and m._ring[25] == null
+		# The HUD's name plates name both kickers, the pad's marker (home pad
+		# 1: the first image) sits under its player.
+		var home_left: bool = m.engine.attack_dir(0) > 0.0
+		var mine: ISSFootballer = m.engine.slots[0].player
+		var plates: bool = m._hud.plates[0].has("name") and m._hud.plates[1].has("name") \
+			and m._hud.plates[0 if home_left else 1]["name"] == mine.name and m._markers.size() == 1 \
+			and m._markers[0].visible and m._markers[0].region_rect.position.x == 0.0 \
+			and m._markers[0].z_index == int(mine.pos.y) - 1
+		ring_ok = ring_ok and plates
 		_match_frames(m, 2, "start")
 		var kind := "six_button" if six else "three_button"
 		var opened: bool = m.paused and m._pause["kind"] == kind and int(m._pause["band"]) == 2
@@ -562,7 +571,7 @@ func _check_pause_replay() -> void:
 		var fading: bool = m._fade_dir == 1 and m.paused
 		_match_frames(m, ISSMatch.FADE)
 		var started: bool = not m._replay.is_empty() and int(m._replay["frame"]) == 0 and int(m._replay["end"]) == 200 \
-			and m._fade_dir == -1 and not m._referee.visible
+			and m._fade_dir == -1 and not m._referee.visible and m._hud.plates[0].has("name") and m._markers[0].visible
 		_match_frames(m, ISSMatch.FADE + 10)
 		var auto: bool = not m._replay.is_empty() and int(m._replay["frame"]) == 10 and int(m._replay["auto"]) == 2 \
 			and not m._hud.replay.get("manual", false)

@@ -218,6 +218,7 @@ func setup(home: int, away: int, opts: Dictionary) -> void:
 		elif human:
 			var slots: Array = opts.get("strategies", [0, 2, 4, 7])
 			t.strategy_slots = slots.duplicate()
+		t.strategy_label = int(opts.get("strategy_labels", [2, 2])[s])
 		teams.append(t)
 	knockout = bool(opts.get("knockout", false))
 	demo = bool(opts.get("demo", false))
