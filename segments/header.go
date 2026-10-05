@@ -33,7 +33,6 @@ func processHeader(ctx *Context) (*Result, error) {
 	}
 
 	r := ctx.ROM
-	syms := ctx.Syms
 
 	// ── interrupts.asm ($000000–$0000FF) ──────────────────────────────────
 	var iv strings.Builder
@@ -52,7 +51,7 @@ func processHeader(ctx *Context) (*Result, error) {
 		"HBLANK_IRQ", "IRQ5", "VBLANK_IRQ", "IRQ7",
 	}
 	resolveVec := func(addr uint32) string {
-		if name := syms.Label(addr); name != "" {
+		if name, ok := ctx.Labels.Get(addr); ok {
 			return name
 		}
 		return fmt.Sprintf("$%08X", addr)

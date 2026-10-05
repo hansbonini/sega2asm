@@ -90,3 +90,19 @@ func (m *CharMap) DecodeString(data []byte, terminator byte) string {
 
 // Empty returns true if no entries are loaded.
 func (m *CharMap) Empty() bool { return len(m.entries) == 0 }
+
+// DecodeAll decodes every byte of data using the charmap (no terminator).
+// Bytes without a mapping are written as {$XX}.
+func (m *CharMap) DecodeAll(data []byte) string {
+	var sb strings.Builder
+	for i := 0; i < len(data); {
+		if ch, n := m.Lookup(data, i); n > 0 {
+			sb.WriteString(ch)
+			i += n
+		} else {
+			sb.WriteString(fmt.Sprintf("{$%02X}", data[i]))
+			i++
+		}
+	}
+	return sb.String()
+}

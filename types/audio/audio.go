@@ -39,6 +39,16 @@ func NormalizeSampleRate(rate int) int {
 	return rate
 }
 
+// Unsigned converts signed 8-bit PCM (as mixed in software by many drivers)
+// to the unsigned form 8-bit WAV files use.
+func Unsigned(data []byte) []byte {
+	out := make([]byte, len(data))
+	for i, b := range data {
+		out[i] = b ^ 0x80
+	}
+	return out
+}
+
 // WritePCMAsWAV is a convenience function that writes raw PCM data as a WAV file.
 func WritePCMAsWAV(data []byte, path string, sampleRate int) error {
 	sampleRate = NormalizeSampleRate(sampleRate)

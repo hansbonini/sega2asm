@@ -1,3 +1,8 @@
 out
 sega2asm
-Altered Beast (USA, Europe).md
+Altered Beast (USA, Europe).md# International Superstar Soccer Deluxe project: never commit the ROM or
+# the generated disassembly / assets (they are produced from your own ROM)
+example/issdeluxe/*.md
+!example/issdeluxe/README.md
+example/issdeluxe/out/
+__pycache__/

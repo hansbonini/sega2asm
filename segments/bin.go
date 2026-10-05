@@ -1,21 +1,15 @@
 package segments
 
-import "os"
-
 func init() {
 	Register("bin", processBin)
 }
 
+// processBin writes the segment bytes for incbin. When a compression is set
+// the decompressed data is written next to it for reference.
 func processBin(ctx *Context) (*Result, error) {
-	outPath := ctx.SegPath(ctx.AssetDir, ".bin")
 	if ctx.DryRun {
-		return &Result{Includes: []Include{{Path: outPath, Addr: ctx.Start(), Name: ctx.Seg.Name}}, IsBinary: true}, nil
+		return binResult(ctx, ctx.SegPath(ctx.AssetDir, ".bin")), nil
 	}
-	if err := ctx.EnsureDir(outPath); err != nil {
-		return nil, err
-	}
-	return &Result{
-		Includes: []Include{{Path: outPath, Addr: ctx.Start(), Name: ctx.Seg.Name}},
-		IsBinary: true,
-	}, os.WriteFile(outPath, ctx.ROMData(), 0644)
+	binPath, _, err := decodeSegment(ctx, false)
+	return binResult(ctx, binPath), err
 }

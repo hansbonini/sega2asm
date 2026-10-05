@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
+	"sega2asm/disasm/m68k"
 	"sega2asm/segments"
 	"sega2asm/types"
 )
@@ -21,6 +23,7 @@ type Options struct {
 // Splitter is the main splitting engine.
 type Splitter struct {
 	cfg        *types.Config
+	labels     *types.Labels
 	opts       Options
 	labelHits  int
 	labelTotal int
@@ -64,12 +67,13 @@ func (s *Splitter) Run() error {
 	}
 	s.log("[SYM] Loaded %d symbols from %s", len(syms.Ordered), cfg.Options.SymbolsPath)
 
-	// ── Inject segment names as symbols (lower priority than symbols file) ─
-	for _, seg := range cfg.Segments {
-		if seg.Name != "" {
-			syms.Add(uint32(seg.Start), seg.Name)
-		}
-	}
+	// ── Order segments and make sure they cover the whole ROM ─────────────
+	s.normaliseSegments(r)
+
+	// ── Global label pass ─────────────────────────────────────────────────
+	labels := segments.CollectLabels(cfg, r, syms, s.warn)
+	s.labels = labels
+	s.log("[SYM] Global labels: %d", len(labels.ByAddr))
 
 	// ── Load charmap ─────────────────────────────────────────────────────
 	cmap, err := types.LoadCharmap(cfg.Options.CharmapPath)
@@ -106,6 +110,11 @@ func (s *Splitter) Run() error {
 		Log:      s.log,
 		Logv:     s.logv,
 		Warn:     s.warn,
+		Labels:   labels,
+		Config:   cfg,
+		BaseDir:  base,
+		Assets:   map[string][]byte{},
+		Deferred: &[]func(){},
 	}
 
 	// ── Build global include list ─────────────────────────────────────────
@@ -134,8 +143,9 @@ func (s *Splitter) Run() error {
 		ctx.Seg = seg
 		ctx.ExtraBins = nil
 
-		// Z80 lookahead: absorb consecutive bin segments as embedded data.
-		if strings.EqualFold(seg.Type, "z80") {
+		// Z80 lookahead: absorb consecutive bin segments as embedded data
+		// (the dc.b form stays in the 68000 address space and needs none).
+		if strings.EqualFold(seg.Type, "z80") && !strings.EqualFold(seg.Format, "bytes") {
 			var extraBins []segments.Include
 			for j := i + 1; j < len(segs); j++ {
 				next := segs[j]
@@ -173,6 +183,10 @@ func (s *Splitter) Run() error {
 		s.labelHits += result.LabelHits
 	}
 
+	for _, fn := range *ctx.Deferred {
+		fn()
+	}
+
 	s.labelTotal = len(syms.Ordered)
 
 	// ── Write ports.asm and prepend to includes ───────────────────────────
@@ -184,7 +198,19 @@ func (s *Splitter) Run() error {
 		includes = append([]segments.Include{{Path: portsPath}}, includes...)
 		s.log("[OUT] Hardware registers: %s", portsPath)
 
-		varsPath, err := s.writeVariables(syms, asmDir)
+		macrosPath, err := s.writeMacros(asmDir)
+		if err != nil {
+			return fmt.Errorf("writing macros.asm: %w", err)
+		}
+		includes = append([]segments.Include{{Path: macrosPath}}, includes...)
+
+		if structsPath, err := s.writeStructs(asmDir); err != nil {
+			return fmt.Errorf("writing structs.asm: %w", err)
+		} else if structsPath != "" {
+			includes = append([]segments.Include{{Path: structsPath}}, includes...)
+		}
+
+		varsPath, err := s.writeVariables(labels, r, asmDir)
 		if err != nil {
 			return fmt.Errorf("writing variables.asm: %w", err)
 		}
@@ -248,11 +274,19 @@ Z80_RAM			equ	$00A00000	; Z80 RAM base ($A00000–$A01FFF)
 Z80_BUSREQ		equ	$00A11100	; Z80 bus request (write $0100 to request, $0000 to release)
 Z80_RESET		equ	$00A11200	; Z80 reset (write $0000 to assert, $0100 to deassert)
 
+; ── YM2612 (68000 access while holding the Z80 bus) ─────────────────────────
+YM2612_A0		equ	$00A04000	; Part I register address
+YM2612_D0		equ	$00A04001	; Part I register data
+YM2612_A1		equ	$00A04002	; Part II register address
+YM2612_D1		equ	$00A04003	; Part II register data
+
 ; ── I/O ports ────────────────────────────────────────────────────────────────
 IO_PCBVER		equ	$00A10001	; Version register (hardware version / region)
 IO_DATA_1		equ	$00A10003	; Controller port 1 data
 IO_DATA_2		equ	$00A10005	; Controller port 2 data
 IO_DATA_EXP		equ	$00A10007	; Expansion port data
+IO_CTRL_12_W	equ	$00A10008	; Controller 1+2 control (word/long access)
+IO_CTRL_EXP_W	equ	$00A1000C	; Expansion control (word access)
 IO_CTRL_1		equ	$00A10009	; Controller port 1 control (direction)
 IO_CTRL_2		equ	$00A1000B	; Controller port 2 control (direction)
 IO_CTRL_EXP		equ	$00A1000D	; Expansion port control (direction)
@@ -283,19 +317,17 @@ RAM_END			equ	$00FFFFFF	; Work RAM end
 // RAM variables file
 // ---------------------------------------------------------------------------
 
-func (s *Splitter) writeVariables(syms *types.SymbolTable, asmDir string) (string, error) {
-	var ramSyms []types.Symbol
-	for _, sym := range syms.Ordered {
-		addr := sym.Addr
-		if addr >= 0x00FF0000 && addr <= 0x00FFFFFF {
-			ramSyms = append(ramSyms, sym)
-		} else if addr >= 0xFFFF8000 {
-			ramSyms = append(ramSyms, sym)
+func (s *Splitter) writeVariables(labels *types.Labels, r *types.ROM, asmDir string) (string, error) {
+	var addrs []uint32
+	for a := range labels.ByAddr {
+		if a >= uint32(r.Size) && m68k.HWPortName(a) != labels.ByAddr[a] {
+			addrs = append(addrs, a)
 		}
 	}
-	if len(ramSyms) == 0 {
+	if len(addrs) == 0 {
 		return "", nil
 	}
+	sort.Slice(addrs, func(i, j int) bool { return addrs[i] < addrs[j] })
 
 	outPath := filepath.Join(asmDir, "include", "variables.asm")
 	if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil {
@@ -304,11 +336,101 @@ func (s *Splitter) writeVariables(syms *types.SymbolTable, asmDir string) (strin
 
 	var sb strings.Builder
 	sb.WriteString("; Auto-generated by sega2asm\n")
-	sb.WriteString("; Game RAM variables\n\n")
-	for _, sym := range ramSyms {
-		sb.WriteString(fmt.Sprintf("%-24s\tequ\t$%08X\n", sym.Name, sym.Addr))
+	sb.WriteString("; RAM variables and other addresses outside the ROM\n\n")
+	for _, a := range addrs {
+		line := fmt.Sprintf("%-32s\tequ\t$%08X", labels.ByAddr[a], a)
+		if c := labels.Comments[a]; c != "" {
+			line += "\t; " + strings.ReplaceAll(c, "\\n", " ")
+		}
+		sb.WriteString(line + "\n")
 	}
 	return outPath, os.WriteFile(outPath, []byte(sb.String()), 0644)
+}
+
+func (s *Splitter) writeMacros(asmDir string) (string, error) {
+	outPath := filepath.Join(asmDir, "include", "macros.asm")
+	if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil {
+		return "", err
+	}
+	content := "; Auto-generated by sega2asm\n; Assembler support macros\n\n" + m68k.Macros
+	return outPath, os.WriteFile(outPath, []byte(content), 0644)
+}
+
+// writeStructs emits the structure field offsets declared in the config.
+func (s *Splitter) writeStructs(asmDir string) (string, error) {
+	if len(s.cfg.Structs) == 0 {
+		return "", nil
+	}
+	var names []string
+	for n := range s.cfg.Structs {
+		names = append(names, n)
+	}
+	sort.Strings(names)
+	var sb strings.Builder
+	sb.WriteString("; Auto-generated by sega2asm\n; Structure field offsets\n")
+	for _, n := range names {
+		sb.WriteString(fmt.Sprintf("\n; ── %s ──\n", n))
+		fields := append([]types.StructField(nil), s.cfg.Structs[n]...)
+		sort.SliceStable(fields, func(i, j int) bool { return int16(fields[i].Offset) < int16(fields[j].Offset) })
+		for _, f := range fields {
+			line := fmt.Sprintf("%-24s\tequ\t%s", f.Name, signedHexStr(int16(uint16(f.Offset))))
+			if f.Comment != "" {
+				line += "\t; " + f.Comment
+			}
+			sb.WriteString(line + "\n")
+		}
+	}
+	outPath := filepath.Join(asmDir, "include", "structs.asm")
+	if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil {
+		return "", err
+	}
+	return outPath, os.WriteFile(outPath, []byte(sb.String()), 0644)
+}
+
+func signedHexStr(v int16) string {
+	if v < 0 {
+		return fmt.Sprintf("-$%X", -int32(v))
+	}
+	return fmt.Sprintf("$%X", v)
+}
+
+// normaliseSegments sorts segments by address, reports overlaps and fills
+// uncovered ROM ranges with bin segments so a rebuild is always complete.
+func (s *Splitter) normaliseSegments(r *types.ROM) {
+	cfg := s.cfg
+	segs := cfg.Segments
+	sort.SliceStable(segs, func(i, j int) bool { return segs[i].Start < segs[j].Start })
+	fill := cfg.Options.FillGaps == nil || *cfg.Options.FillGaps
+	var out []types.Segment
+	cur := uint32(0)
+	romEnd := uint32(r.Size)
+	gap := func(a, b uint32) {
+		if !fill || b <= a {
+			return
+		}
+		s.warn("ROM range $%06X–$%06X is not covered by any segment; adding bin segment", a, b)
+		out = append(out, types.Segment{
+			Name: fmt.Sprintf("unk_%06X", a), Type: "bin", Start: types.HexInt(a), End: types.HexInt(b),
+			SubDir: "unknown", Compression: "none",
+		})
+	}
+	for _, seg := range segs {
+		st, en := uint32(seg.Start), uint32(seg.End)
+		if en > romEnd {
+			en = romEnd
+		}
+		if st < cur {
+			s.warn("segment %s ($%06X) overlaps the previous segment (ends $%06X)", seg.Name, st, cur)
+		} else {
+			gap(cur, st)
+		}
+		out = append(out, seg)
+		if en > cur {
+			cur = en
+		}
+	}
+	gap(cur, romEnd)
+	cfg.Segments = out
 }
 
 // ---------------------------------------------------------------------------
@@ -318,15 +440,24 @@ func (s *Splitter) writeVariables(syms *types.SymbolTable, asmDir string) (strin
 func (s *Splitter) writeMainASM(path string, includes []segments.Include, romEnd uint32) error {
 	var sb strings.Builder
 	sb.WriteString("; Auto-generated by sega2asm\n")
-	sb.WriteString(fmt.Sprintf("; Project: %s\n\n", s.cfg.Name))
+	sb.WriteString(fmt.Sprintf("; Project: %s\n", s.cfg.Name))
+	sb.WriteString(fmt.Sprintf("; Build from %s:  clownassembler -i %s -o %s.bin\n\n",
+		s.cfg.Options.BasePath, filepath.ToSlash(filepath.Join(s.cfg.Options.AsmPath, s.cfg.Options.Basename+".asm")),
+		filepath.ToSlash(filepath.Join(s.cfg.Options.BuildPath, s.cfg.Options.Basename))))
 	sb.WriteString("\torg\t$00000000\n")
 	sb.WriteString("RomStart:\n\n")
+	base := s.cfg.Options.BasePath
 	for _, inc := range includes {
-		if strings.HasSuffix(inc.Path, ".asm") || strings.HasSuffix(inc.Path, ".txt") {
+		if rel, err := filepath.Rel(base, inc.Path); err == nil {
+			inc.Path = filepath.ToSlash(rel)
+		}
+		if strings.HasSuffix(inc.Path, ".asm") {
 			sb.WriteString(fmt.Sprintf("\tinclude\t'%s'\n", inc.Path))
 		} else if strings.HasSuffix(inc.Path, ".bin") {
 			sb.WriteString(fmt.Sprintf("\n\torg\t$%06X\n", inc.Addr))
-			if inc.Name != "" {
+			if def := s.labels.Def(inc.Addr); def != "" {
+				sb.WriteString(def)
+			} else if inc.Name != "" {
 				sb.WriteString(inc.Name + ":\n")
 			}
 			sb.WriteString(fmt.Sprintf("\tincbin\t'%s'\n", inc.Path))

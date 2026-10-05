@@ -7,10 +7,12 @@ import (
 	"strings"
 )
 
-// Symbol is a named ROM address.
+// Symbol is a named ROM address. Comment is the text after ';' on the
+// symbols-file line; it is emitted above the label in the output.
 type Symbol struct {
-	Addr uint32
-	Name string
+	Addr    uint32
+	Name    string
+	Comment string
 }
 
 // SymbolTable manages symbol lookups by address and name.
@@ -55,10 +57,15 @@ func LoadSymbols(path string) (*SymbolTable, error) {
 		if line == "" || line[0] == ';' || strings.HasPrefix(line, "//") || line[0] == '#' {
 			continue
 		}
+		comment := ""
+		if i := strings.IndexByte(line, ';'); i >= 0 {
+			comment = strings.TrimSpace(line[i+1:])
+		}
 		sym, err := parseSymbolLine(line)
 		if err != nil {
 			continue
 		}
+		sym.Comment = comment
 		if _, ok := t.ByAddr[sym.Addr]; !ok {
 			t.ByAddr[sym.Addr] = sym.Name
 		}

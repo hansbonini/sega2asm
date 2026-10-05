@@ -26,7 +26,11 @@ func processPCM(ctx *Context) (*Result, error) {
 	}
 
 	rate := ctx.Seg.SampleRate
-	if err := audio.WritePCMAsWAV(data, wavPath, rate); err != nil {
+	wav := data
+	if ctx.Seg.Signed {
+		wav = audio.Unsigned(data)
+	}
+	if err := audio.WritePCMAsWAV(wav, wavPath, rate); err != nil {
 		ctx.Warn("  PCM → WAV failed: %v", err)
 	} else {
 		ctx.Logv("  PCM → WAV: %s (%d samples @ %d Hz)", wavPath, len(data), audio.NormalizeSampleRate(rate))

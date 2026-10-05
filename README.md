@@ -17,8 +17,39 @@ Inspired by [ethteck/splat](https://github.com/ethteck/splat) and [nathancassano
 | `gfx`      | `.png` + `.bin` | Raw 4bpp tile graphics → PNG sheet |
 | `gfxcomp`  | `.png` + `.bin` | Compressed graphics (auto-decompress) |
 | `pcm`      | `.wav` + `.bin` | Raw PCM samples → WAV (7040 Hz default) |
-| `text`     | `.txt` | Text with optional charmap decode |
-| `bin`      | `.bin` | Raw binary blob |
+| `text`     | `.asm` + `.txt` | Byte-exact `dc.b` strings, charmap decode as reference |
+| `bin`      | `.bin` | Raw binary blob (decompressed copy written when `compression` is set) |
+| `data`     | `.asm` | Structured data as `dc.b/w/l` with a label at every referenced address (`format: byte\|word\|long\|text`) |
+| `table`    | `.asm` | Pointer / offset table written symbolically (`dc.l label`, `dc.w label-base`); `format: long\|word`, `relative`, `signed`, `base` |
+| `palette`  | `.bin` + `.png` + `.gpl` + `.json` | CRAM colours: swatch, GIMP palette, RGB + raw words |
+| `tilemap`  | `.bin` + `.json` + `.png` | VDP nametable; rendered when `tiles`, `palette` (segment names), `tile_base` and `width` are given |
+
+Per-segment overrides: `heuristics`, `base_regs` (value 0 cancels a global
+register) and `struct_regs` (empty string cancels).
+
+Tile graphics (`gfx`, `gfxcomp`) are written as **indexed PNGs**; set
+`palette: <palette segment>` and `palette_line: N` to colour them.
+
+**Commands**
+
+| Command | Description |
+|---|---|
+| `sega2asm <config.yaml>` | Split the ROM into assembly and assets |
+| `sega2asm verify <config.yaml>` | Assemble the output with clownassembler and compare it with the ROM byte for byte |
+| `sega2asm analyze <rom> [-c config.yaml]` | Recursive-descent 68000 trace: code/data regions, jump tables, cross references, unresolved indirect jumps |
+| `sega2asm godot <config.yaml>` | Export the assets as a Godot 4 project (index textures + palette shader, tilemaps, WAV, manifest) |
+| `sega2asm detect <rom>` | Scan for known decompressor signatures |
+
+The 68000 disassembler is validated by an exhaustive round-trip test: every
+opcode word is disassembled, re-assembled with clownassembler and compared
+(`go test ./disasm/m68k` with clownassembler in `PATH`). Encodings that an
+asm68k-style assembler would rewrite (`ADD #imm,Dn` → `ADDI`, …) are emitted
+through `add_ea`/`sub_ea`/`and_ea`/`or_ea`/`cmp_ea` macros (written to
+`include/macros.asm`), and non-canonical encodings as `dc.w`, so output always
+rebuilds bit-for-bit.
+
+A complete worked example — *International Superstar Soccer Deluxe*, 860
+segments, bit-exact — lives in [`example/issdeluxe`](example/issdeluxe/README.md).
 
 
 **Compression formats supported:**
@@ -149,6 +180,28 @@ options:
   charmap_path: ./charmap.tbl
   header_output: true           # Write main .asm include file
   no_suggestions: false         # Set true to suppress split-hint output
+  heuristics: true              # Linear-sweep jump-table/dead-data heuristics for m68k
+                                # segments; set false for maps produced by `analyze`
+  fill_gaps: true               # Add bin segments for ROM ranges no segment covers
+  base_regs:                    # Address registers holding a constant base:
+    a6: 0xFF0000                #   d16(a6) is printed as (symbol-$FF0000)(a6)
+  struct_regs:                  # Address registers pointing at a structure:
+    a5: obj                     #   d16(a5) is printed as field(a5)
+
+structs:                        # Structure layouts (written to include/structs.asm)
+  obj:
+    - {offset: 0x10, name: obj_x, comment: "pitch X"}
+    - {offset: 0x34, name: obj_update, comment: "update callback"}
+
+instances:                      # Structures at fixed addresses (name defined in the symbols file)
+  - {name: g_ball, addr: 0xFF19C0, struct: obj}              # (g_ball+obj_x-$FF0000)(a6)
+  - {name: g_players, addr: 0xFF1B6A, struct: obj, count: 20, stride: 0x8E}
+
+analysis:                       # Options for `sega2asm analyze -c`
+  entries: [0x001234]           # Extra code entry points
+  noreturn: [0x002000]          # Subroutines that never return
+  data: [{start: 0x80000, end: 0x100000}]   # Never treat as code
+  tables: [{addr: 0x3000, type: long, count: 8}]  # long | word_rel | branch
 
 segments:
   - name: header
@@ -231,7 +284,16 @@ segments:
 
 ## Symbols file formats
 
-All of the following are accepted:
+All of the following are accepted. Text after `;` is a comment that is
+written above the label in the generated source (`\n` starts a new line).
+Addresses outside the ROM (RAM, I/O) are emitted as equates in
+`include/variables.asm` and used symbolically in operands.
+
+Labels are only emitted where they can be defined (instruction, hint and
+segment boundaries); every other reference falls back to a hexadecimal
+address so the output always assembles. Priority when naming an address:
+symbols file > hint label > segment name > `sub_` (call targets / code
+pointers) > `loc_` (branch targets) > `dat_` (data references).
 
 ```
 ; C-style or semicolon comments are ignored
@@ -293,11 +355,11 @@ a different instruction or skipped them inside a multi-byte opcode.
 | `data_long` | `dc.l $XXXXXXXX` per 4 bytes | |
 | `ptr_table` | `dc.l <label>` per 4 bytes | Absolute 32-bit pointer; resolves to symbol name if known |
 | `ptr_table_rel` | `dc.w <target>-<base>` per 2 bytes | Signed 16-bit offset relative to `base`; target resolved to symbol name |
-| `text` | `dc.b 'string',0` | ASCII or charmap-decoded string; null terminator appended |
+| `text` | `dc.b 'string',$FF` | Exact bytes: printable runs as strings, others as hex; charmap decoding in a comment |
 | `vdp_regs` | `dc.w $XXXX ; VDP reg #N = $YY (...)` | Each 16-bit word decoded as a VDP register write; annotated with register name and field values |
 | `vdp_cmds` | `dc.l $XXXXXXXX ; VDP <type> addr=$XXXX` | Each 32-bit longword decoded as a VDP control port command (address set, DMA setup, or register pair) |
-| `bin` | `incbin "file.bin"` | Extracts bytes to `file` (beside the `.asm`) and emits an `incbin` directive |
-| `skip` | `even` | Alignment padding; length bytes are suppressed |
+| `bin` | `incbin 'file.bin'` | Extracts bytes to `file` (beside the `.asm`) and emits an `incbin` directive |
+| `skip` | `dc.b ...` | Alignment padding; the exact bytes are kept so the ROM rebuilds |
 
 **VDP hint example**
 

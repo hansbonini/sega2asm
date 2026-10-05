@@ -48,6 +48,20 @@ type Context struct {
 
 	ExtraBins []Include
 
+	// Labels is the global label table (nil when unavailable).
+	Labels *Labels
+	// Config is the whole project configuration.
+	Config *Config
+	// BaseDir is the directory the assembler runs from; include and incbin
+	// paths are written relative to it.
+	BaseDir string
+	// Assets holds decoded segment data by segment name (for cross-segment
+	// rendering, e.g. tilemap + tiles + palette).
+	Assets map[string][]byte
+	// Deferred jobs run after every segment has been processed (rendering
+	// that depends on other segments' decoded data).
+	Deferred *[]func()
+
 	Log  func(string, ...any)
 	Logv func(string, ...any)
 	Warn func(string, ...any)
@@ -90,4 +104,26 @@ func (ctx *Context) End() uint32 {
 		end = uint32(ctx.ROM.Size)
 	}
 	return end
+}
+
+// RelPath returns p relative to the assembler base directory, using forward
+// slashes, so generated include/incbin paths are portable.
+func (ctx *Context) RelPath(p string) string {
+	if ctx.BaseDir == "" {
+		return filepath.ToSlash(p)
+	}
+	if r, err := filepath.Rel(ctx.BaseDir, p); err == nil {
+		return filepath.ToSlash(r)
+	}
+	return filepath.ToSlash(p)
+}
+
+// Defer schedules fn to run after all segments are processed; when no
+// deferred queue exists it runs immediately.
+func (ctx *Context) Defer(fn func()) {
+	if ctx.Deferred == nil {
+		fn()
+		return
+	}
+	*ctx.Deferred = append(*ctx.Deferred, fn)
 }
