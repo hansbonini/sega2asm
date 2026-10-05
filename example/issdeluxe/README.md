@@ -279,7 +279,66 @@ Everything runs on the 68000; the Z80 program (`z80_driver`, disassembled as
 * **Songs.** `song_play` reads the song header (16 track → script words),
   the tempo and an order list of 6-byte entries (delay, pattern, transpose,
   volume, track; `$FF` end, `$FE` jump); patterns hold packed notes
-  (`song_read_note`) that start scripts through the note queue.
+  (`song_read_note`) that start scripts through the note queue. The
+  format in full is below; `sound.json` holds every song decoded and
+  `tools/songs_to_midi.py` writes them as MIDI files.
+
+**Song format.** The music bank (`music_bank`, `$1EB45C`) starts with the
+offsets of the script table, of `music_table1` and of the effect table,
+then of songs 0–25. A song: 16 words, the script each track plays its
+notes with (0 = none); a word table of variants (offsets from the table;
+every song has one); a variant: the word offset of its pattern table (word
+offsets from that table), the tempo in beats a minute, then the order
+list. Time is counted in ticks of 1/24 beat: each frame adds
+tempo × 96 × 256 / 240 × 16 / 60 (50 on PAL) × 16 as 16.16 to the
+counters, that is tempo / 150 ticks (NTSC). An order entry is `delay.w,
+pattern, transpose, volume, track`: `delay` ticks after the previous entry
+the pattern starts on a free one of 16 slots (`song_find_track`) with the
+entry's transpose, volume and track; pattern `$FF` ends the song, `$FE`
+jumps to the order offset in its word at +4 (the loop). A pattern is a
+run of packed notes, `[note, volume, duration, delay(, script)]`: note
+bit 7 says the delay is a word, bit 6 that this is an instrument change
+(the word after the delay is the track's new script); volume bit 7 says
+the duration is a word; the duration is the note's gate in ticks, the
+delay the ticks after the previous note (0 = a chord); note 0 ends the
+pattern. When a note is due the slot queues it (`note_queue_push`: volume
+= the note's + the entry's, 0–63; pitch = note + 35 + transpose; the
+track's script), and `note_queue_run` starts the script on its channel
+(`script_start`: the pitch at `$1F4` + channel, the gate at `$74` + 4 ×
+channel counting down to the release flag, bit 3 of `$128` + channel).
+An instrument script plays the queued pitch with `$0B` (pitch + argument),
+so its MIDI number is pitch + 11 + that argument: the FM pitch table
+(`cmd_0A_data2`, 96 words, block and F-number) starts at 15.5 Hz, B(−1),
+and the PSG table (`cmd_0A_data`, periods) is used from pitch 6. A script
+beginning with `$14` / `$16` events is a drum kit: each entry picks the
+script for one pitch (`script_start_1`).
+
+**FM patches.** `$02` sends the patch that follows: the event itself and
+the 23 after it are `[02, 00, register, value]` for registers `$30`–`$8C`
+(DT/MUL, TL, RS/AR, AM/D1R, D2R and SL/RR of the four operators), then
+two `$22` events write `$B0` (feedback / algorithm) and `$B4` (stereo,
+LFO sensitivity). `cmd_fm_patch` releases the operators first, writes the
+registers for the channel (+1 / +2 within a part), and the carriers' TL
+(from the algorithm in the `$B0` event) last.
+
+**Script commands** (`tbl_script_commands`, `[command, argument,
+word]`): `$00` end; `$01` wait word + 1 frames; `$02` FM patch; `$03`
+loop (argument times, 0 forever) from event hi(word); `$04` continue in
+script word; `$05` call instrument script word on channel argument; `$06`
+return; `$07` volume = argument; `$08` volume envelope (argument step,
+word target / rate); `$09` register `$B4` stereo / LFO (argument, with the
+song's pan); `$0A` note at pitch argument (word = fine detune); `$0B` note
+at the queued pitch + argument; `$0C` vibrato (argument, word); `$0D`
+portamento over word frames; `$0E` algorithm argument, feedback hi(word);
+`$0F` nothing; `$10` key on (hi(word) ≠ 0) or off, argument 1 clears the
+channel's flags, `$FF` only the flags; `$11` frequency = the word; `$12`
+sustain (wait for the release); `$13` loop until released; `$14` / `$16`
+continue in script word when the queued pitch is below / equals the
+argument; `$15` the same when the volume is below; `$17` priority =
+argument; `$18` flag 2; `$19` PSG all off; `$1A` PSG noise control
+argument; `$1B`–`$1E`, `$21`, `$25` PCM (below); `$1F` stereo from the
+volume; `$22` write FM register hi(word) = lo(word); `$24` volume +=
+argument (signed).
 
 PCM commands: `$25` selects a set (a window of 8 entries of the sorted
 sample offset list, `tbl_pcm_sets`), `$21` picks an entry for a voice,
@@ -903,6 +962,11 @@ are missing render as whatever data follows, so `ISSSound` skips them.
 `res://assets/iss/music/song_NN.ogg`, then the rendered files, then the
 extractor's PCM renders (which keep exact loop points for the crowd).
 
+`tools/songs_to_midi.py out/godot/assets/iss/sound/sound.json <dir>`
+writes every song as a format-1 MIDI file (a track per song track, 24
+ticks a beat, the header's tempo, gates as note lengths, a `loop` marker
+where the song jumps back).
+
 ### Capturing the ROM's own screens
 
 `tools/md_harness.py` is a small Mega Drive for running the game's own code
@@ -1049,8 +1113,6 @@ tournament, the International Cup, the World Series, the scenarios, PK and
 training, with the front end, the rules, the AI and the presentation
 rebuilt on the exported data.
 
-Open work, in rough order of value for a port:
+Open work:
 1. The field layout of each mode's password and the object behind each
    remaining menu screen.
-2. Sound: the note and pattern encoding in full (to convert songs to MIDI)
-   and the FM patch format; the rendered audio already covers playback.

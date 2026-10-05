@@ -517,7 +517,10 @@ func exportSound(dir string) {
 
 	var songs []map[string]any
 	for s := 0; s < numSongs; s++ {
-		songs = append(songs, map[string]any{"id": s, "rom": fmt.Sprintf("$%06X", musicTable(3+s))})
+		song := decodeSong(musicTable(3 + s))
+		song["id"] = s
+		song["rom"] = fmt.Sprintf("$%06X", musicTable(3+s))
+		songs = append(songs, song)
 	}
 
 	writeJSON(filepath.Join(dir, "sound.json"), map[string]any{
@@ -538,6 +541,19 @@ func exportSound(dir string) {
 		"sfx":             sfx,
 		"instruments":     instruments,
 		"songs":           songs,
+		"song_format": "song_play / song_order_update / song_pattern_update / song_read_note. A song: 16 track -> " +
+			"script words, then a word table of variants; a variant: the pattern table's offset word, the tempo " +
+			"(beats a minute, 24 ticks a beat), then the order list of 6-byte entries [delay.w (ticks before the " +
+			"entry), pattern, transpose, volume, track] ending in pattern $FF (end) or $FE (jump: the word at +4 is " +
+			"the order list offset to continue from); every entry starts its pattern on a free slot (16) playing " +
+			"the track's script. A pattern is packed notes: [note | $80 delay is a word | $40 instrument change, " +
+			"volume | $80 duration is a word, duration (1-2 bytes, the gate in ticks), delay (1-2 bytes, ticks after " +
+			"the previous note), (instrument change: a word, the track's new script)]; note 0 ends the pattern. " +
+			"A note queues (volume + the entry's volume, 0-63; pitch = note + 35 + transpose) the track's script, " +
+			"whose $0B events play the pitch plus their argument: MIDI note = pitch + 11 + that. The instrument " +
+			"scripts' $02 event and the 23 events after it are an FM patch (each [02, 00, register, value] for " +
+			"registers $30-$8C), followed by $22 events writing $B0 (feedback / algorithm) and $B4 (stereo, LFO). " +
+			"tools/songs_to_midi.py writes the songs as MIDI files from this.",
 	})
 	fmt.Printf("sound: %d PCM samples (%d missing from this ROM), %d effects rendered, %d PCM instruments\n",
 		len(samples), len(missing), rendered, len(instruments))
@@ -548,4 +564,139 @@ func channelName(c int) string {
 		return channelNames[c]
 	}
 	return fmt.Sprintf("channel %d", c)
+}
+
+// readNote decodes one packed pattern note (song_read_note): note (bit 7
+// = an instrument change), volume, duration (the gate), delay, and the
+// instrument change's script (or -1), plus the bytes it took.
+func readNote(a uint32) ([]int, uint32) {
+	b0, b1 := rom[a], rom[a+1]
+	p := a + 2
+	n := uint32(4)
+	dur := int(rom[p])
+	if b1&0x80 != 0 {
+		dur = int(be16(p))
+		p += 2
+		n++
+	} else {
+		p++
+	}
+	delay := int(rom[p])
+	if b0&0x80 != 0 {
+		delay = int(be16(p))
+		p++
+		n++
+	}
+	note := int(b0 & 0x7F)
+	cmd := -1
+	if note&0x40 != 0 {
+		note = (note & 0x3F) | 0x80
+		cmd = int(be16(p + 1))
+		n += 2
+	}
+	return []int{note, int(b1 & 0x3F), dur, delay, cmd}, n
+}
+
+// trackInstrument says how script id plays a queued note: the pitch
+// offset its $0B event adds (following a $04 goto), a fixed pitch ($0A,
+// percussion), or a drum map ($14 / $16 entries picking a script by
+// pitch, script_start_1).
+func trackInstrument(id int) map[string]any {
+	out := map[string]any{"script": id}
+	if id == 0 {
+		return out
+	}
+	for hop := 0; hop < 4; hop++ {
+		a := scriptAddr(id) + 2
+		if c := rom[a]; c == 0x14 || c == 0x16 {
+			var drums [][]int
+			for rom[a] == 0x14 || rom[a] == 0x16 {
+				drums = append(drums, []int{int(rom[a+1]), int(be16(a + 2))})
+				a += 4
+			}
+			out["drums"] = drums
+			return out
+		}
+		for k := 0; k < 64; k++ {
+			c, arg := rom[a], rom[a+1]
+			switch c {
+			case 0:
+				return out
+			case 2:
+				a += 0x5C
+			case 4:
+				id = int(be16(a + 2))
+				k = 64
+				continue
+			case 0x0A:
+				out["fixed_pitch"] = int(arg)
+				return out
+			case 0x0B:
+				out["pitch_offset"] = int(int8(arg))
+				return out
+			}
+			a += 4
+		}
+	}
+	return out
+}
+
+// decodeSong reads a song's tracks, variants, order lists and patterns
+// (see song_format in sound.json).
+func decodeSong(s uint32) map[string]any {
+	tracks := make([]int, 16)
+	var instruments []map[string]any
+	for i := range tracks {
+		tracks[i] = int(be16(s + uint32(2*i)))
+		instruments = append(instruments, trackInstrument(tracks[i]))
+	}
+	vt := s + 32
+	nvar := int(be16(vt)) / 2
+	var variants []map[string]any
+	for v := 0; v < nvar; v++ {
+		va := vt + uint32(be16(vt+uint32(2*v)))
+		pt := va + uint32(be16(va))
+		o := va + 4
+		var order []map[string]any
+		used := map[int]bool{}
+		for n := 0; n < 4096; n++ {
+			delay := int(be16(o))
+			pat := int(rom[o+2])
+			if pat == 0xFF {
+				order = append(order, map[string]any{"delay": delay, "end": true})
+				break
+			}
+			if pat == 0xFE {
+				order = append(order, map[string]any{"delay": delay, "jump": int(be16(o+4)) / 6})
+				break
+			}
+			order = append(order, map[string]any{"delay": delay, "pattern": pat, "transpose": int(int8(rom[o+3])),
+				"volume": int(int8(rom[o+4])), "track": int(rom[o+5])})
+			used[pat] = true
+			o += 6
+		}
+		npat := 0
+		for p := range used {
+			if p+1 > npat {
+				npat = p + 1
+			}
+		}
+		patterns := make([][][]int, npat)
+		for p := 0; p < npat; p++ {
+			if !used[p] {
+				continue
+			}
+			a := pt + uint32(be16(pt+uint32(2*p)))
+			for k := 0; k < 4096; k++ {
+				nt, n := readNote(a)
+				patterns[p] = append(patterns[p], nt)
+				a += n
+				if nt[0] == 0 {
+					break
+				}
+			}
+		}
+		variants = append(variants, map[string]any{"tempo": int(be16(va + 2)), "order": order, "patterns": patterns})
+	}
+	return map[string]any{"track_scripts": tracks, "track_instruments": instruments, "variants": variants}
 }
