@@ -41,6 +41,7 @@ const A_FALL_BACK := 36
 const A_BEND_DOWN := 37
 const A_LOSE_BALL := 40
 const A_STOP_BALL := 44
+const A_LEAP := 45
 const CELEBRATIONS := [30, 31, 32, 33, 34, 53]
 
 var eng: ISSMatchEngine

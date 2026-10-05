@@ -893,7 +893,30 @@ func _touch(p: ISSFootballer) -> void:
 		p.set_state(ISSFootballer.S.TRAP, ISSFootballer.A_TRAP, 10)
 
 
-## Standing challenges: an opponent at the ball can knock it loose.
+## The ROM's contest tables (match.json "contests"): the signed byte
+## `index` past table `t` ("slide", "charge", or "keeper" with the keeper's
+## skill), read as the 68000 does: past a table's end comes what follows.
+static func contest(t: String, index: int, skill := -1) -> int:
+	var c: Dictionary = ISSMatchData.consts["contests"]
+	var addr := int(c["keeper"][skill]) if skill >= 0 else int(c[t])
+	var bytes: Array = c["bytes"]
+	var b := int(bytes[clampi(addr - int(c["base"]) + index, 0, bytes.size() - 1)])
+	return b - 256 if b >= 128 else b
+
+
+## The card for knocking the carrier over (the slide and charge contests):
+## one when the tackle came from behind, the carrier facing within 9 of
+## the tackler (g_foul_card 0), none otherwise (-1).
+static func _card_for(tackler: ISSFootballer, victim: ISSFootballer) -> int:
+	var d := (int(victim.facing) - int(tackler.facing)) & 63
+	return 0 if d < 10 or d > 54 else -1
+
+
+## Standing challenges: an opponent at the ball runs into the carrier
+## (player_start_chip_0070AE_1, the crouched run's charge): his
+## intelligence against the carrier's, + 2, x 4 and a random 0-3 into the
+## charge table: -1 he falls backwards off the carrier, 0 the ball comes
+## loose, 1 the carrier is knocked over and fouled.
 func _steals() -> void:
 	var o := ball.owner
 	if o.holding_in_hands() or o.protect > 0 or restart_type != R.NONE:
@@ -905,16 +928,19 @@ func _steals() -> void:
 			continue
 		if (p.pos - ball.pos).length() > 9.0:
 			continue
-		var level := teams[p.team].ai_level if not p.human else 2
-		var chance := 0.3 + 0.04 * float(p.a("balance") - o.a("dribble")) + 0.03 * float(level - 2)
-		if randf() < chance:
+		var idx := maxi(p.a("intelligence") - o.a("intelligence") + 2, 0) * 4 + (randi() & 3)
+		var r := contest("charge", idx)
+		if r < 0:
+			p.knock_over(p.facing)
+		elif r == 0:
 			ball.owner = null
 			ball.launch(p, p.facing + float(randi() % 9 - 4), 1.5 + p.speed * 0.4, 0.3)
 			ball.kick_cooldown = 4
 			o.stumble()
 			emit_sound(0x58)
 		else:
-			p.protect = 12
+			o.knock_over(p.facing)
+			_foul(p, o, _card_for(p, o))
 		return
 
 
@@ -927,11 +953,27 @@ func slide_contact(s: ISSFootballer) -> void:
 		hits_ball = false
 	if hits_ball:
 		var victim := b.owner
+		s.timer = maxi(s.timer, 27)
+		if victim != null:
+			# player_start_sit_after_a_slide_008F16_1: the carrier's (position
+			# bonus + energy) x 2 + intelligence + dribble, halved, x 4 and a
+			# random 0-3 into the slide table: -1 he rides the tackle (a leap)
+			# and keeps the ball, 0 he loses it, 1 he is knocked over and
+			# fouled (a card from behind).
+			var score := (ISSMatchData.position_bonus(victim.position) + victim.energy) * 2 \
+				+ victim.a("intelligence") + victim.a("dribble")
+			var r := contest("slide", (score / 2) * 4 + (randi() & 3))
+			if r < 0:
+				victim.set_state(ISSFootballer.S.TRAP, ISSFootballer.A_LEAP, 12)
+				return
+			if r > 0:
+				victim.knock_over(s.facing)
+				_foul(s, victim, _card_for(s, victim))
+				return
+			victim.stumble()
+			say(0x0F)
 		b.owner = null
 		b.launch(s, s.facing + float(randi() % 9 - 4), 1.5 + s.speed * 0.5, 0.5)
-		if victim != null:
-			victim.stumble()
-		s.timer = maxi(s.timer, 27)
 		_clear_offside()
 		emit_sound(0x58)
 		return
@@ -945,11 +987,14 @@ func slide_contact(s: ISSFootballer) -> void:
 		o.knock_over(s.facing)
 		s.timer = maxi(s.timer, 27)
 		if had_ball or from_behind:
-			_foul(s, o, from_behind)
+			_foul(s, o, _card_for(s, o))
 		return
 
 
-func _foul(fouler: ISSFootballer, victim: ISSFootballer, severe: bool) -> void:
+## A foul by `fouler` on `victim`; card as g_foul_card: -1 none, 0 a card
+## (yellow, or red once booked), 1 a card and, half the time, a point of
+## the victim's energy (a keeper's never).
+func _foul(fouler: ISSFootballer, victim: ISSFootballer, card: int) -> void:
 	if not bool(options.get("fouls", true)) or restart_type != R.NONE or not ball.live:
 		return
 	var strict: Array = ISSMatchData.consts["referee_strictness"][referee_kit]
@@ -959,9 +1004,10 @@ func _foul(fouler: ISSFootballer, victim: ISSFootballer, severe: bool) -> void:
 	emit_sound(0x48)
 	var own_goal_x := goal_center(fouler.team).x
 	var penalty := absf(victim.pos.x - own_goal_x) < float(ISSMatchData.consts["penalty_distance"])
+	if card == 1 and not victim.is_keeper() and randi() & 1 == 0 and victim.energy > 0:
+		victim.energy -= 1
 	# No cards for a side already down to seven (tm_players 0).
-	if bool(options.get("cards", true)) and teams[fouler.team].active().size() > 7 \
-			and (severe and randi() % 2 == 0 or randi() % 5 == 0):
+	if card >= 0 and bool(options.get("cards", true)) and teams[fouler.team].active().size() > 7:
 		# g_player_status: booked in this match (bit 7) makes it red; with
 		# a red card or a third yellow over the competition (2 so far) no
 		# card at all once eight of the squad are out ($83 / $84).
@@ -1021,7 +1067,29 @@ func keeper_reach(k: ISSFootballer) -> void:
 	var dz := b.z - k.z
 	if d > 16.0 + skill * 2.0 or dz < -28.0 or dz > 40.0:
 		return
-	if b.speed < 5.0 + skill * 0.5 or randf() < 0.35 + skill * 0.1:
+	var held := b.speed < 5.0 + skill * 0.5 or randf() < 0.35 + skill * 0.1
+	if b.high and b.last_touch != null:
+		# ball_check_00A67A: a lofted ball against the kicker's balance + 4
+		# less the keeper's energy, x 4 and a random 0-3 into his skill's
+		# keeper table: -1 it gets past him, 0 it bounces back off him at a
+		# quarter of its speed, 1 he pushes it on at half speed, 2 he holds it.
+		var idx := (b.last_touch.a("balance") + 4 - k.energy) * 4 + (randi() & 3)
+		var r := contest("keeper", idx, teams[k.team].keeper_skill)
+		if r < 0:
+			return
+		held = r >= 2
+		if r == 0:
+			event_counts["parries"] = int(event_counts.get("parries", 0)) + 1
+			b.launch(k, b.heading + 32.0, b.speed * 0.25, 1.0, b.z)
+			emit_sound(0x5A)
+			return
+		if r == 1:
+			event_counts["parries"] = int(event_counts.get("parries", 0)) + 1
+			var on := goal_center(k.team).direction_to(b.pos)
+			b.launch(k, ISSFootballer.heading_to(Vector2.ZERO, on) + float(randi() % 17 - 8), b.speed * 0.5, 1.0, b.z)
+			emit_sound(0x5A)
+			return
+	if held:
 		event_counts["saves"] = int(event_counts.get("saves", 0)) + 1
 		_clear_offside()
 		b.owner = k

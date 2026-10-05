@@ -103,6 +103,7 @@ func _init() -> void:
 	snd.queue_free()
 	demo.queue_free()
 	await process_frame
+	_check_contests()
 	_check_match_engine()
 	_check_human_control()
 	_check_knockout()
@@ -126,6 +127,25 @@ func _init() -> void:
 
 ## A whole CPU v CPU match with 1-minute halves: kick-offs, half time, time up,
 ## restarts; the ball stays on or around the pitch and never dies for long.
+## The ROM's contest tables as the engine reads them (match.json
+## "contests"): the slide table's ends, the charge table's, the keepers'
+## by skill, and an index before a table reading what lies there.
+func _check_contests() -> void:
+	ISSMatchData.ensure_loaded()
+	var E := ISSMatchEngine
+	var ok: bool = E.contest("slide", 0) == 1 and E.contest("slide", 63) == -1 and E.contest("charge", 0) == -1 \
+		and E.contest("charge", 10) == -1 and E.contest("charge", 32) == 1 and E.contest("keeper", 0, 4) == 2 \
+		and E.contest("keeper", 42, 0) == -1 and E.contest("keeper", -20, 4) == 0 \
+		and E._card_for(_dummy(16), _dummy(20)) == 0 and E._card_for(_dummy(16), _dummy(48)) == -1
+	_check(ok, "the slide, charge and keeper contest tables read as the ROM does")
+
+
+func _dummy(facing: int) -> ISSFootballer:
+	var p := ISSFootballer.new()
+	p.facing = facing
+	return p
+
+
 func _check_match_engine() -> void:
 	seed(7)
 	var match_json = _json("res://assets/iss/match.json")

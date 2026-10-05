@@ -382,6 +382,25 @@ player's head graphic; byte 10 the hair graphic; byte 11 the position
 attacking and defensive types that only differ through
 `tbl_position_bonus`).
 
+Intelligence, balance and dribble decide the three contests through the
+signed-byte tables after `misc_data_03AD0A` (`match.json` "contests"),
+each indexed by a score × 4 plus a random 0–3 (and read past a table's
+end into whatever follows): a sliding tackle on the carrier
+(`player_start_sit_after_a_slide_008F16_1`) by half his (position bonus +
+energy) × 2 + intelligence + dribble: −1 he rides it (a leap or a hop), 0
+he loses the ball, 1 he is knocked over and fouled; a charge from the
+crouched run (`player_start_chip_0070AE_1`) by the challenger's
+intelligence − the carrier's + 2: −1 the challenger falls backwards, 0
+the ball comes loose, 1 the carrier is knocked over and fouled; and a
+goalkeeper meeting a lofted ball (`ball_check_00A67A`, one table per
+keeper skill) by the kicker's balance + 4 − the keeper's energy: −1 it
+gets past him, 0 it bounces back at a quarter speed, 1 he pushes it on at
+half speed, 2 he holds it. A foul from a contest carries a card
+(`g_foul_card` 0) only when the carrier faced within 9 of the tackler's
+way, that is was taken from behind; a keeper fouled with the ball in his
+hands always costs a card and, half the time, the victim an energy point
+(1). Curl (byte 3) is copied with the record but no code reads it.
+
 **Formations.** 16 (`tbl_formations`, names at `str_formation_names`):
 4-5-1, 4-4-2, 4-3-3, 4-2-4, 3-5-2, 3-4-3, 3-3-4, 3-2-5, 2-5-3, 2-4-4, 2-3-5,
 5-4-1, 5-3-2, 5-2-3, 1-5-4, 1-4-5. Each is 11 × (form_x, form_y, role) in
@@ -1033,8 +1052,5 @@ rebuilt on the exported data.
 Open work, in rough order of value for a port:
 1. The field layout of each mode's password and the object behind each
    remaining menu screen.
-2. The exact effects of curl, intelligence, balance and dribble (bytes 4,
-   5 and 7 are read by the tackle, foul and ball-control code; no read of
-   byte 3 was found yet).
-3. Sound: the note and pattern encoding in full (to convert songs to MIDI)
+2. Sound: the note and pattern encoding in full (to convert songs to MIDI)
    and the FM patch format; the rendered audio already covers playback.

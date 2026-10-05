@@ -213,6 +213,24 @@ func exportMatch(dir string) {
 				"again reset_frames after the ball goes out, or the home side has it (1, 3), or the other side (2)",
 		},
 		"knocked_over": []float64{fix(tblKnockedOverSpeed), fix(tblKnockedOverLift)},
+		"contests": map[string]any{
+			"base":           tblContests,
+			"bytes":          bytesAt(tblContests, contestsLen),
+			"slide":          0x3ADA2,
+			"charge":         0x3ADE8,
+			"keeper":         []int{0x3AD6A, 0x3AD52, 0x3AD4A, 0x3AD42, 0x3AD32},
+			"position_bonus": 0x3ADE2,
+			"note": "signed bytes read at table + index, past a table's end into whatever follows. slide " +
+				"(player_start_sit_after_a_slide_008F16_1, the keeper's too): index = ((position bonus + energy) x 2 + " +
+				"intelligence + dribble) / 2 x 4 + random 0-3 of the ball carrier; -1 he rides the tackle (a leap or a " +
+				"hop), 0 he loses the ball, 1 he is knocked over, a foul and a card when tackled from behind (facing " +
+				"within 9 of the tackler's). charge (player_start_chip_0070AE_1, the crouched run meeting the carrier): " +
+				"index = (challenger's intelligence - carrier's + 2, at least 0) x 4 + random 0-3; -1 the challenger " +
+				"falls backwards, 0 the carrier loses the ball, 1 the carrier is knocked over as above. keeper " +
+				"(ball_check_00A67A, one table per keeper skill 0-4, a lofted ball in flight): index = (kicker's balance " +
+				"+ 4 - keeper's energy) x 4 + random 0-3; -1 it gets past him, 0 it bounces back off him at a quarter " +
+				"of its speed, 1 he pushes it on his kick direction at half speed, 2 he holds it",
+		},
 		"simulate": map[string]any{
 			"strength": bytesAt(tblTeamStrength, numTeams),
 			"goals":    bytesAt(tblSimGoals, 64),
@@ -234,6 +252,11 @@ func exportMatch(dir string) {
 	}
 	writeJSON(filepath.Join(dir, "match.json"), doc)
 }
+
+const (
+	tblContests = 0x3AD0A // misc_data_03AD0A: the contest tables and tbl_position_bonus
+	contestsLen = 0x120
+)
 
 func bytesAt(a uint32, n int) []int {
 	var out []int
