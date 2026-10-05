@@ -1104,8 +1104,9 @@ shoot-out state, the strategies, the small sprites and the 60 front-end
 screen handlers are named, and every routine and data block now has a name
 (hand-written or derived from its owner, see above).
 
-The options, the handicap settings, the password container, the
-goalkeeper's dive and distribution and the shoot-out keeper are decoded too.
+The options, the handicap settings, the password container and the field
+layout of every mode's password (`ISSPassword.FIELDS`), the goalkeeper's
+dive and distribution and the shoot-out keeper are decoded too.
 
 The game itself runs in Godot (see [Playing the game](#playing-the-game)):
 open games for one or two players or CPU against CPU, the short league and
@@ -1113,6 +1114,9 @@ tournament, the International Cup, the World Series, the scenarios, PK and
 training, with the front end, the rules, the AI and the presentation
 rebuilt on the exported data.
 
-Open work:
-1. The field layout of each mode's password and the object behind each
-   remaining menu screen.
+Open work: the match engine is a reimplementation on the ROM's tables and
+rules, not a frame-exact port of its AI and physics, so a match played in
+the port and one played in the harness from the same RAM diverge after
+the kick-off; the front end, the boot and title screens, the
+presentations, the endings, the shoot-out, the pause menu, the replay and
+the banners are the parts checked against the ROM frame by frame.
