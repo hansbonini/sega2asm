@@ -14,6 +14,12 @@ uniform sampler2D sat : filter_nearest;    // R8, 512 x 1: 64 sprites x 8 bytes
 uniform int plane_a = 8192;
 uniform int plane_b = 0;
 uniform int plane_w = 4096;
+uniform int plane_cols = 64;
+uniform int plane_rows = 32;
+uniform bool vline_scroll = false;
+uniform int vlines_a[224];
+uniform int vlines_b[224];
+uniform bool display = true;
 uniform int window_h = 0;
 uniform int window_v = 0;
 uniform int scroll_ax = 0;
@@ -52,7 +58,7 @@ int sb(int i) {
 
 // Colour index (0 = transparent) | priority << 8.
 int plane_px(int base, int x, int y) {
-	int e = vw(base + 2 * (((y >> 3) & 31) * 64 + ((x >> 3) & 63)));
+	int e = vw(base + 2 * (((y >> 3) & (plane_rows - 1)) * plane_cols + ((x >> 3) & (plane_cols - 1))));
 	int px = x & 7;
 	int py = y & 7;
 	if ((e & 2048) != 0) { px = 7 - px; }
@@ -115,8 +121,10 @@ void fragment() {
 	int y = int(floor(UV.y * 224.0));
 	int bx = line_scroll ? lines_b[y] : scroll_bx;
 	int ax = line_scroll ? lines_a[y] : scroll_ax;
-	int b = show_b ? plane_px(plane_b, x - bx, y + scroll_by) : 0;
-	int a = show_a ? (in_window(x, y) ? window_px(x, y) : plane_px(plane_a, x - ax, y + scroll_ay)) : 0;
+	int by = vline_scroll ? vlines_b[y] : scroll_by;
+	int ay = vline_scroll ? vlines_a[y] : scroll_ay;
+	int b = show_b ? plane_px(plane_b, x - bx, y + by) : 0;
+	int a = show_a ? (in_window(x, y) ? window_px(x, y) : plane_px(plane_a, x - ax, y + ay)) : 0;
 	int s = sprite_px(x, y);
 	int bc = b & 255; bool bp = (b & 256) != 0;
 	int ac = a & 255; bool ap = (a & 256) != 0;
@@ -156,6 +164,9 @@ void fragment() {
 	}
 	if (high_only && !hi) {
 		discard;
+	}
+	if (!display) {
+		rgb = vec3(0.0);
 	}
 	COLOR = vec4(rgb, 1.0);
 }

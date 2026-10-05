@@ -20,6 +20,11 @@ import (
 
 const mainProgramEnd = 0x05DB50 // res_directory: the archive follows the program
 
+// The boot module (boot_main: the logo screens, the intro and the title),
+// its data and its own packed resources, after the archive.
+const bootStart = 0x144318
+const bootEnd = 0x1613EC
+
 // exportResources writes every resource entry: packed ones unpacked as
 // res/gGG_eEE.bin (group, entry), raw ones as gGG_eEE.raw (the bytes up to
 // the next entry), and res/resources.json with the entry sizes.
@@ -91,8 +96,9 @@ type romBlock struct {
 
 // exportROMData writes the data blocks of the main program ($000200 to the
 // archive): the hints of the code segments and the data segments of the
-// segment map, as one binary (rom_data.bin) with an index of blocks
-// (address, offset in the binary, length) and every symbol inside them.
+// segment map, and the whole boot module, as one binary (rom_data.bin)
+// with an index of blocks (address, offset in the binary, length) and
+// every symbol inside them.
 func exportROMData(dir, yamlPath, symbolsPath string) {
 	must(os.MkdirAll(dir, 0755))
 	var cfg struct {
@@ -113,6 +119,10 @@ func exportROMData(dir, yamlPath, symbolsPath string) {
 	must(yaml.Unmarshal(b, &cfg))
 	var spans [][2]int
 	for _, s := range cfg.Segments {
+		if s.Start >= bootStart && s.End <= bootEnd {
+			spans = append(spans, [2]int{s.Start, s.End})
+			continue
+		}
 		if s.Start < 0x200 || s.Start >= mainProgramEnd {
 			continue
 		}
@@ -158,7 +168,7 @@ func exportROMData(dir, yamlPath, symbolsPath string) {
 			continue
 		}
 		a, _ := strconv.ParseInt(m[2], 16, 64)
-		if a < mainProgramEnd && inBlock(int(a)) {
+		if inBlock(int(a)) {
 			symbols[m[1]] = int(a)
 		}
 	}

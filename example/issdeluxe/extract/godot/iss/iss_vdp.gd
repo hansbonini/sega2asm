@@ -27,6 +27,19 @@ var scroll_b := Vector2i.ZERO
 ## empty for the full-screen scroll.
 var lines_a := PackedInt32Array()
 var lines_b := PackedInt32Array()
+## Each line's vertical scroll of planes A and B, when a raster routine
+## writes VSRAM line by line (the boot screens); empty for the whole-screen
+## scroll.
+var vlines_a := PackedInt32Array()
+var vlines_b := PackedInt32Array()
+## Registers 2, 4 and 16: the planes' bases and size in cells (the game's
+## 64 x 32 at $2000 / $0000; the boot module's 64 x 64 at $A000 / $E000).
+var plane_a := PLANE_A
+var plane_b := PLANE_B
+var plane_cols := 64
+var plane_rows := 32
+## Register 1 bit 6: the display (black when off).
+var display := true
 var backdrop := 0x20
 var shadow_highlight := true
 ## Registers 17 and 18: the window's horizontal and vertical extent (bit 7
@@ -176,20 +189,64 @@ func flush() -> void:
 		mat.set_shader_parameter("shadow_highlight", shadow_highlight)
 		mat.set_shader_parameter("window_h", window_h)
 		mat.set_shader_parameter("window_v", window_v)
+		mat.set_shader_parameter("vline_scroll", not vlines_b.is_empty())
+		if not vlines_b.is_empty():
+			mat.set_shader_parameter("vlines_a", vlines_a)
+			mat.set_shader_parameter("vlines_b", vlines_b)
+		mat.set_shader_parameter("plane_a", plane_a)
+		mat.set_shader_parameter("plane_b", plane_b)
+		mat.set_shader_parameter("plane_cols", plane_cols)
+		mat.set_shader_parameter("plane_rows", plane_rows)
+		mat.set_shader_parameter("display", display)
 	queue_redraw()
+
+
+## The game's registers again (vdp_init_game): planes at $2000 / $0000, 64
+## x 32, whole-screen scrolls, the display on.
+func reset_registers() -> void:
+	plane_a = PLANE_A
+	plane_b = PLANE_B
+	plane_cols = 64
+	plane_rows = 32
+	vlines_a = PackedInt32Array()
+	vlines_b = PackedInt32Array()
+	lines_a = PackedInt32Array()
+	lines_b = PackedInt32Array()
+	display = true
+	window_h = 0
+	window_v = 0
+
+
+## One CRAM word (a CRAM write of the game's own).
+func set_cram_word(i: int, v: int) -> void:
+	cram[i & 63] = v
+	_cram_dirty = true
+
+
+## The sprite table as a program keeps it in RAM (sprite_alloc's buffer):
+## n entries of 8 bytes at addr.
+func set_sprites_from_ram(addr: int, n: int) -> void:
+	n = clampi(n, 0, MAX_SPRITES)
+	for i in n * 8:
+		sat[i] = ISSRam.m[(addr + i) & 0xFFFF]
+	sprite_count = n
 
 
 func _draw() -> void:
 	draw_rect(Rect2(0, 0, 256, 224), Color.WHITE)
 
 
-## The scroll table as the VDP reads it from VRAM (a word for plane A, one
-## for plane B per line, at table in RAM): every line its own (line mode)
-## or every eighth line's for its row (cell mode).
-func set_line_scroll(table: int, cell: bool) -> void:
+## The scroll table as the VDP reads it (a word for plane A, one for plane
+## B per line, at table in RAM, or in VRAM with from_vram): every line its
+## own (line mode) or every eighth line's for its row (cell mode).
+func set_line_scroll(table: int, cell: bool, from_vram := false) -> void:
 	lines_a.resize(224)
 	lines_b.resize(224)
 	for y in 224:
 		var a := table + (y & ~7 if cell else y) * 4
-		lines_a[y] = ISSRam.w(a) & 0x3FF
-		lines_b[y] = ISSRam.w(a + 2) & 0x3FF
+		if from_vram:
+			lines_a[y] = vram_w(a) & 0x3FF
+			lines_b[y] = vram_w(a + 2) & 0x3FF
+		else:
+			lines_a[y] = ISSRam.w(a) & 0x3FF
+			lines_b[y] = ISSRam.w(a + 2) & 0x3FF

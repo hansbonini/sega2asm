@@ -10,8 +10,9 @@ extends Node2D
 ## of the game's routines in the ISSScreens* scripts, which call the helpers
 ## below by their ROM names (text_draw_large, rect_flash, cursor_draw ...).
 ##
-## state_screen's presentations (ISSPresentation) and state_shootout's
-## kicks (ISSShootout) run on the same engine.
+## state_screen's presentations (ISSPresentation), state_shootout's kicks
+## (ISSShootout) and the boot screens before the title (ISSBoot, main_init)
+## run on the same engine.
 ##
 ## When a fade to black ends (g_frame_state = 0) the game jumps to
 ## g_next_state: another menu screen (g_next_screen) or a presentation is
@@ -96,6 +97,8 @@ var state := 0
 var presentation: ISSPresentation = null
 ## state_shootout's kick (made when one starts).
 var shootout: ISSShootout = null
+## main_init's boot screens (made when they start).
+var boot: ISSBoot = null
 ## VDP_HVCOUNTER, which the toss, the shoot-out's AIs and animations read
 ## for random bits: the beam's position, which nothing in the game controls
 ## (a random number here).
@@ -216,12 +219,22 @@ func add_w(a: int, v: int) -> void:
 # States.
 
 ## Enter state_menu, state_screen or state_shootout (after g_frame_state
-## reached 0).
+## reached 0), or main_init (the boot screens, which run the module's own
+## loop until the title is over).
 func enter(st: int) -> void:
 	# The state the game leaves is kept at $14 (state_menu_1 reads it).
 	set_l(0x14, l(S.g_current_state))
 	set_l(S.g_current_state, st)
 	state = st
+	if st == STATE_INIT:
+		for f in figures.get_children():
+			f.queue_free()
+		vdp.clear_sprites()
+		objs.clear()
+		vdp.priority_overlay = false
+		boot = ISSBoot.new(self)
+		boot.run()
+		return
 	set_l(S.g_unpack_buffer, 0xFF3E18)
 	set_w(S.g_unpack_vram, 0x3000)
 	_vdp_init_game()
@@ -252,16 +265,19 @@ func enter(st: int) -> void:
 ## vdp_init_game: the registers the menus use (backdrop = line 2 colour 0,
 ## shadow/highlight on, full-screen scroll, no window).
 func _vdp_init_game() -> void:
+	vdp.reset_registers()
 	vdp.backdrop = 0x20
 	vdp.shadow_highlight = true
-	vdp.window_h = 0
-	vdp.window_v = 0
-	vdp.lines_a = PackedInt32Array()
-	vdp.lines_b = PackedInt32Array()
 
 
 func _physics_process(_delta: float) -> void:
 	if state == 0:
+		return
+	if state == STATE_INIT:
+		# The boot module's VBlank, its main thread, then its picture.
+		boot.frame()
+		if boot != null:
+			boot.present()
 		return
 	frame()
 	# main loop: once a fade to black has ended, go to g_next_state.
@@ -274,6 +290,22 @@ func _physics_process(_delta: float) -> void:
 			set_l(0x14, l(S.g_current_state))
 			set_l(S.g_current_state, nxt)
 			next_state.emit(nxt)
+
+
+## main_init is over: a button pressed on the title goes to the main menu
+## (system_init, state_menu screen 0); none to the attract demo
+## (mode_start_demo, a match), handed to the owner as state_match.
+func _boot_done(pressed: bool) -> void:
+	state = 0
+	boot = null
+	vdp.reset_registers()
+	set_l(0x14, 0xFFFFFFFF)
+	set_w(S.g_frame_state, 0)
+	if pressed or true:
+		set_l(S.g_next_state, STATE_MENU)
+		set_w(S.g_next_screen, 0)
+		set_l(S.g_current_state, STATE_MENU)
+		next_state.emit(STATE_MENU)
 
 
 ## One VBlank of state_menu_frame (state_screen_frame: its own frame_1;

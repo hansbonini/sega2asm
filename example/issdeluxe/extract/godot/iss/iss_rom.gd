@@ -90,7 +90,53 @@ static func string(a: int) -> PackedByteArray:
 	return out
 
 
-## The ROM address of entry e of resource group g (where the game's own
+## The boot module's five resource tables (boot_res0-4 in issdeluxe.yaml:
+## word offsets to each entry, packed or raw).
+const BOOT_RES := [0x14A1F0, 0x156CE6, 0x15B298, 0x16049A, 0x160F38]
+
+
+## The ROM address of entry e of boot resource table n.
+static func boot_res(n: int, e: int) -> int:
+	var t: int = BOOT_RES[n]
+	return t + u16(t + 2 * e)
+
+
+## decompress_factor5 (boot_func_14519A): a Factor 5 "P1" / "P2" / "P3"
+## stream at a unpacked. The header: 'P', the kind, the unpacked length
+## (little-endian). P2: a byte 0-127 copies that many + 1 literal bytes, a
+## byte with bit 7 set a run of (its low bits + 4) bytes from (the next two
+## bytes + 1) back; P1 packs the run's length in the control byte's bits
+## 3-6 (+ 3) and the distance's high bits in bits 0-2; P3 is stored.
+static func unpack(a: int) -> PackedByteArray:
+	ensure_loaded()
+	var kind := u8(a + 1)
+	var n := (u8(a + 3) << 8) | u8(a + 2)
+	var p := _offset(a + 4)
+	var out := PackedByteArray()
+	if kind != 0x31 and kind != 0x32:
+		return _data.slice(p, p + n)
+	while out.size() < n:
+		var c := _data[p]
+		p += 1
+		if c < 0x80:
+			out.append_array(_data.slice(p, p + c + 1))
+			p += c + 1
+			continue
+		var back: int
+		var count: int
+		if kind == 0x32:
+			back = (_data[p] << 8) | _data[p + 1]
+			p += 2
+			count = (c & 0x7F) + 4
+		else:
+			back = ((c & 7) << 8) | _data[p]
+			p += 1
+			count = ((c & 0x7F) >> 3) + 3
+		var from := out.size() - back - 1
+		for i in count:
+			out.append(out[from + i])
+	return out
+
 ## pointers to it point; 0 when there is no such entry).
 static func res_addr(g: int, e: int) -> int:
 	if _res_addrs.is_empty():

@@ -37,7 +37,7 @@ func _ready() -> void:
 	ISSInput.ensure_actions()
 	ISSMenu.power_on()
 	ISSRam.set_w(S.g_next_screen, 0)
-	_menu()
+	_boot()
 
 
 func _layout() -> void:
@@ -61,6 +61,16 @@ func _jump(st: int) -> void:
 	ISSRam.set_l(S.g_current_state, st)
 
 
+## main_init: the boot screens (SEGA, Konami, Factor 5, the intro, the
+## title) on the front end's engine; then the main menu, or the attract
+## demo.
+func _boot() -> void:
+	var m := ISSMenu.new()
+	_set_screen(m)
+	m.next_state.connect(_state)
+	m.enter(ISSMenu.STATE_INIT)
+
+
 ## state_menu: the screen in g_next_screen.
 func _menu() -> void:
 	var m := ISSMenu.new()
@@ -78,9 +88,9 @@ func _state(st: int) -> void:
 		ISSMenu.STATE_SCREEN:
 			_presentation()
 		ISSMenu.STATE_INIT:
-			# main_init: the boot screens (not drawn yet), then the main menu.
 			_jump(ISSMenu.STATE_INIT)
-			ISSRam.set_w(S.g_next_screen, 0)
+			_boot()
+		ISSMenu.STATE_MENU:
 			_menu()
 		_:
 			push_error("ISSGame: state $%06X is not ported" % st)
