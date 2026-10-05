@@ -1360,3 +1360,53 @@ static func prematch_return() -> void:
 			_w(S.g_next_screen, 0x23)
 		9:
 			_w(S.g_next_screen, 0x32)
+
+
+# --------------------------------------------------------------------------
+# The attract demo (mode $B).
+
+## mode_start_demo: game level 1, two teams at random (the second another
+## than the first), no humans.
+static func mode_start_demo() -> void:
+	_w(S.g_game_mode, 0xB)
+	_w(S.g_knockout, 0)
+	_w(0x126A, 0)
+	_w(0x1276, 1)
+	_w(0x1268, 1)
+	_w(0x1264, 2)
+	_w(S.g_game_level, 1)
+	ISSRam.clear(S.g_player_status, 0x28)
+	var home := _hv() % 36
+	var away := _hv() % 35 + home + 1
+	if away > 35:
+		away -= 36
+	_w(0x127C, home)
+	_w(0x127E, away)
+	_w(0x1270, 0)
+	_w(0x153E, 0)
+	_w(S.g_pads_home, 0)
+	_w(S.g_pads_away, 0)
+
+
+## warm_start_1: the demo's match: a kick-off side, stadium, weather,
+## referee and time of day at random, 5-minute halves, the two teams in
+## slots 0 and 1 and their records (rules_input_01487E).
+static func warm_start_1() -> void:
+	_w(0x1638, 0)
+	_w(0x1634, _hv() & 1)
+	_w(S.g_left_goal_team, 0)
+	_w(S.g_restart_type, 4)
+	_w(S.g_stadium, _hv() & 7)
+	weather_random()
+	_w(S.g_officials_kit, _hv() % 3)
+	_w(0x1630, _hv() % 3)
+	_w(S.g_game_time, 2)
+	_w(S.g_half, 0)
+	ISSRam.set_l(S.g_match_clock, 0)
+	ISSRam.set_b(S.g_match_clock, ISSRam.w(S.g_game_time) * 2 + 1)
+	match_stats_clear()
+	_w(S.g_team_home, ISSRam.w(0x127C))
+	_w(S.g_team_away, ISSRam.w(0x127E))
+	_w(0x1642, 0)
+	_w(0x1644, 1)
+	team_info_init()

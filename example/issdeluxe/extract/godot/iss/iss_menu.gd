@@ -31,6 +31,9 @@ const STATE_MATCH := 0x0200D2
 const STATE_SHOOTOUT := 0x0201FE
 ## main_init: the boot screens, then the title and the main menu.
 const STATE_INIT := 0x000358
+## warm_start: the title alone (after the attract demo), then the menus or
+## the demo again.
+const STATE_WARM := 0x0003B8
 
 const NUM_OBJS := 16
 const OBJ_SIZE := 0x8E
@@ -226,14 +229,14 @@ func enter(st: int) -> void:
 	set_l(0x14, l(S.g_current_state))
 	set_l(S.g_current_state, st)
 	state = st
-	if st == STATE_INIT:
+	if st == STATE_INIT or st == STATE_WARM:
 		for f in figures.get_children():
 			f.queue_free()
 		vdp.clear_sprites()
 		objs.clear()
 		vdp.priority_overlay = false
 		boot = ISSBoot.new(self)
-		boot.run()
+		boot.run(st == STATE_WARM)
 		return
 	set_l(S.g_unpack_buffer, 0xFF3E18)
 	set_w(S.g_unpack_vram, 0x3000)
@@ -273,7 +276,7 @@ func _vdp_init_game() -> void:
 func _physics_process(_delta: float) -> void:
 	if state == 0:
 		return
-	if state == STATE_INIT:
+	if state == STATE_INIT or state == STATE_WARM:
 		# The boot module's VBlank, its main thread, then its picture.
 		boot.frame()
 		if boot != null:
@@ -292,20 +295,27 @@ func _physics_process(_delta: float) -> void:
 			next_state.emit(nxt)
 
 
-## main_init is over: a button pressed on the title goes to the main menu
-## (system_init, state_menu screen 0); none to the attract demo
-## (mode_start_demo, a match), handed to the owner as state_match.
+## main_init / warm_start is over: system_init's RAM, then a button
+## pressed on the title goes to the main menu (state_menu screen 0); none
+## to the attract demo (mode_start_demo, warm_start_1: a match between two
+## computer teams), handed to the owner as state_match.
 func _boot_done(pressed: bool) -> void:
 	state = 0
 	boot = null
 	vdp.reset_registers()
+	power_on()
 	set_l(0x14, 0xFFFFFFFF)
 	set_w(S.g_frame_state, 0)
-	if pressed or true:
-		set_l(S.g_next_state, STATE_MENU)
+	var nxt := STATE_MENU
+	if pressed:
 		set_w(S.g_next_screen, 0)
-		set_l(S.g_current_state, STATE_MENU)
-		next_state.emit(STATE_MENU)
+	else:
+		ISSModes.mode_start_demo()
+		ISSModes.warm_start_1()
+		nxt = STATE_MATCH
+	set_l(S.g_next_state, nxt)
+	set_l(S.g_current_state, nxt)
+	next_state.emit(nxt)
 
 
 ## One VBlank of state_menu_frame (state_screen_frame: its own frame_1;

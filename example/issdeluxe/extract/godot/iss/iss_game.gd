@@ -63,12 +63,12 @@ func _jump(st: int) -> void:
 
 ## main_init: the boot screens (SEGA, Konami, Factor 5, the intro, the
 ## title) on the front end's engine; then the main menu, or the attract
-## demo.
-func _boot() -> void:
+## demo. warm_start (after the demo): the title alone.
+func _boot(warm := false) -> void:
 	var m := ISSMenu.new()
 	_set_screen(m)
 	m.next_state.connect(_state)
-	m.enter(ISSMenu.STATE_INIT)
+	m.enter(ISSMenu.STATE_WARM if warm else ISSMenu.STATE_INIT)
 
 
 ## state_menu: the screen in g_next_screen.
@@ -90,6 +90,9 @@ func _state(st: int) -> void:
 		ISSMenu.STATE_INIT:
 			_jump(ISSMenu.STATE_INIT)
 			_boot()
+		ISSMenu.STATE_WARM:
+			_jump(ISSMenu.STATE_WARM)
+			_boot(true)
 		ISSMenu.STATE_MENU:
 			_menu()
 		_:
@@ -152,6 +155,16 @@ func _match_left(m: ISSMatch) -> void:
 			else:
 				ISSRam.set_l(S.g_next_state, ISSMenu.STATE_SHOOTOUT)
 				_shootout()
+			return
+		"demo_over":
+			# The attract demo's minute is up (match_rules_update): main_init,
+			# the boot screens from the start.
+			_state(ISSMenu.STATE_INIT)
+			return
+		"demo_title":
+			# Start during the demo (match_rules_update_3): warm_start, the
+			# title.
+			_state(ISSMenu.STATE_WARM)
 			return
 		"menu":
 			# rules_state_0185BA: the match menu, the restart waiting.

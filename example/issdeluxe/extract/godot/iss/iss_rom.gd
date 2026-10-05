@@ -101,7 +101,7 @@ static func boot_res(n: int, e: int) -> int:
 	return t + u16(t + 2 * e)
 
 
-## decompress_factor5 (boot_func_14519A): a Factor 5 "P1" / "P2" / "P3"
+## decompress_factor5 (boot_unpack): a Factor 5 "P1" / "P2" / "P3"
 ## stream at a unpacked. The header: 'P', the kind, the unpacked length
 ## (little-endian). P2: a byte 0-127 copies that many + 1 literal bytes, a
 ## byte with bit 7 set a run of (its low bits + 4) bytes from (the next two

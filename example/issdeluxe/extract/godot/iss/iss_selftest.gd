@@ -114,6 +114,7 @@ func _init() -> void:
 	_check_goal_presentation()
 	_check_shootout()
 	_check_penalty_view()
+	_check_boot()
 	_check_competitions()
 	_check_strategies_and_subs()
 	_check_long_modes()
@@ -444,6 +445,63 @@ func _check_shootout() -> void:
 ## view, which runs one kick (CPU v CPU here) and comes back with restart
 ## 7; the match then puts everyone in place, the kicker walks up and takes
 ## the kick the view decided, and play goes on.
+## The title screen (ISSBoot on ISSMenu, warm_start's screen alone): with
+## no press it hands over to the attract demo (mode $B: two computer teams,
+## state_match), whose match the engine ends after a minute of play, or at
+## Start; with Start on the title, to the main menu.
+func _check_boot() -> void:
+	for pressed in [false, true]:
+		ISSMenu.power_on()
+		ISSBoot.screens_override = [1]
+		var menu := ISSMenu.new()
+		root.add_child(menu)
+		menu.set_physics_process(false)
+		var states := []
+		menu.next_state.connect(func(st: int) -> void: states.append(st))
+		menu.enter(ISSMenu.STATE_WARM)
+		var frames := 0
+		while states.is_empty() and frames < 3000:
+			frames += 1
+			# A press counts only 24 frames into a wait (boot_vblank_pressed), so
+			# hold Start through the title's loading waits.
+			if pressed and frames == 150:
+				Input.action_press(ISSInput.action(0, "start"))
+			elif pressed and frames == 400:
+				Input.action_release(ISSInput.action(0, "start"))
+			menu._physics_process(1.0 / 60.0)
+		ISSBoot.screens_override = []
+		var want := ISSMenu.STATE_MENU if pressed else ISSMenu.STATE_MATCH
+		var ok: bool = states.size() == 1 and states[0] == want
+		if pressed:
+			ok = ok and ISSRam.w(ISSSym.g_next_screen) == 0 and frames < 1400
+		else:
+			ok = ok and ISSRam.w(ISSSym.g_game_mode) == 0xB and ISSRam.w(ISSSym.g_pads_home) == 0 \
+				and ISSRam.w(ISSSym.g_team_home) != ISSRam.w(ISSSym.g_team_away) and frames > 1400
+		_check(ok, "title %s: state $%X after %d frames" % ["with Start" if pressed else "unpressed", states[0] if not states.is_empty() else 0, frames])
+		menu.queue_free()
+		if pressed:
+			continue
+		# The demo's match: CPU against CPU, over once the clock's minutes drop
+		# below 4; a second one leaves at Start.
+		var setup := ISSMatchSetup.from_ram()
+		var e := ISSMatchEngine.new()
+		e.setup(int(setup["home"]), int(setup["away"]), setup["options"])
+		var steps := 0
+		while not e.over and steps < 6000:
+			e.step([])
+			steps += 1
+		var demo_ok := e.demo and e.over and e.end_reason == "demo_over" and steps > 3600 and e.slots.is_empty()
+		e.dispose()
+		e = ISSMatchEngine.new()
+		e.setup(int(setup["home"]), int(setup["away"]), setup["options"])
+		for i in 30:
+			e.step([])
+		e.demo_start()
+		_check(demo_ok and e.over and e.end_reason == "demo_title",
+			"the attract demo: over after %d steps (%s), Start leaves for the title" % [steps, e.end_reason])
+		e.dispose()
+
+
 func _check_penalty_view() -> void:
 	ISSMenu.power_on()
 	ISSModes.start_open_game()

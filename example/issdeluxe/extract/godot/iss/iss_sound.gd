@@ -127,6 +127,11 @@ func play_music(id: int) -> bool:
 		ogg.loop = r.has("loop_offset")
 		ogg.loop_offset = r.get("loop_offset", 0.0)
 		_music.stream = ogg
+	elif id < _rendered["songs"].size() and bool(_rendered["songs"][id].get("silent", false)):
+		# Song $19 is the driver's silence (the menus and the title stop the
+		# music with it).
+		_music.stop()
+		return true
 	else:
 		return false
 	_music.play()

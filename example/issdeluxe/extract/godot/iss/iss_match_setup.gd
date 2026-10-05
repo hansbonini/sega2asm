@@ -33,6 +33,8 @@ static func from_ram() -> Dictionary:
 	opts["offside"] = _w(S.g_opt_offside_off) == 0
 	opts["vgoal"] = _w(S.g_opt_vgoal)
 	opts["knockout"] = _w(S.g_knockout) != 0
+	# Mode $B: the attract demo (a minute of play, Start leaves).
+	opts["demo"] = _w(S.g_game_mode) == 0xB
 	opts["pads"] = [_w(S.g_pads_home), _w(S.g_pads_away)]
 	opts["kits"] = [_w(S.g_kit_home), _w(S.g_kit_away)]
 	var formations := []

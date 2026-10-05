@@ -84,7 +84,7 @@ out/build/issdeluxe.bin      rebuilt ROM
 | `$03B09E–$05D72A` | Front-end program: menus, team/option screens, scenarios, results |
 | `$05D72A–$05DB50` | Front-end data |
 | `$05DB50–$144318` | **Resource archive** (see formats): 87 groups |
-| `$144318–$14A150` | Boot module: Konami / Factor 5 / licence screens (`boot_main`, d0 = screen) |
+| `$144318–$14A150` | Boot module: SEGA, Konami, Factor 5, intro and title screens (`boot_main`, d0 = screen; `boot_sega` … `boot_title`) |
 | `$14A150–$1613EC` | Boot module palettes and five resource groups |
 | `$1613EC–$1EB45C` | PCM sample bank (signed 8-bit samples, addressed by the offset list at `$1FFBD8`) |
 | `$1EB45C–$1FD954` | Music bank: 29 offsets, 26 songs, the sound script table (1024 scripts), table 1 and the effect table |
@@ -690,6 +690,26 @@ scaled by whole numbers:
   from the spot (`restart_setup_penalty_spot`, restart 7: the kicker the
   order screen chose walks up and kicks toward the aim, the keeper dives
   as chosen 16 frames later).
+* **Boot screens** (`ISSBoot`, `main_init` / `warm_start`): the boot
+  module is a small program of its own (`boot_main`: 19 objects run every
+  VBlank, a DMA queue, a sprite buffer, palette fades, scroll objects and
+  two raster routines) and runs here as the game runs it, on the front
+  end's engine with the module's own VDP registers: the SEGA logo rippling
+  under its raster routine (`boot_raster_lines`), the Konami line, spark
+  and logo, Factor 5, the intro (`boot_intro`: a dozen scenes of unpacked
+  pictures, animated sprites, wipes and colour cycles, under songs `$19`
+  and 2) and the title (`boot_title`: the text written in, the ball, the
+  logo sliding in, PRESS START, the second palette switched in by an HInt
+  at line 90). Each screen's main thread is a coroutine on the VBlank, as
+  the program spins on its frame counter; a button press skips a screen
+  as it does there. Start on the title goes to the main menu; none to
+  the attract demo (`mode_start_demo`, `warm_start_1`: a minute of a
+  match between two computer teams, then the boot screens again, or the
+  title again after Start). The SEGA, Konami, Factor 5 and intro screens
+  match the ROM's frames pixel for pixel (`iss/iss_boot_capture.gd`
+  against `tools/boot_capture.py`), the ROM pausing a few frames longer
+  to unpack each picture; the title matches too, in each half with its
+  palette (the harness renders a frame with one).
 * **Endings**: the staff roll after the International Cup or the
   championship (screen `$33`, with its scenes of play), the scenarios'
   ending (`$26`), game over and congratulations.
@@ -786,8 +806,7 @@ scaled by whole numbers:
   with the live radar, banners, commentary, crowd and effects.
 
 Not reproduced (yet): the original's in-match pause menu and replay (the
-port's pause offers continue, substitutions and the match menu), and the
-boot screens before the title.
+port's pause offers continue, substitutions and the match menu).
 `iss_selftest.gd` plays a whole CPU match headless, drives a player
 through the pad input, plays a level knockout match to penalties, runs a
 league, a tournament, the International Cup and both paths of the World
@@ -864,6 +883,17 @@ md.screenshot('team_select.png')
 `goto_screen` leaves the main menu as the game does (C on an item) and
 replaces the next screen number during the fade; screens that read a
 competition's state need it set up in RAM first.
+
+Byte reads of the VDP ports return the word's half the address names (the
+V counter at `$C00008`; the title's HInt compares it with 90), and a
+longword to the data port is two words (the boot module writes its
+palettes with `move.l`). Frames are rendered whole, with the VRAM, CRAM
+and VSRAM as the frame left them: a raster routine's per-line scroll or a
+mid-frame palette change does not show.
+
+`tools/boot_capture.py <rom> <prefix> <start> <end>` saves the boot
+screens' frames from power-on, and `iss/iss_boot_capture.gd` (run with
+`-s` on `out/godot`) the port's, to put side by side.
 
 Interrupts are raised by the harness, which stacks the status register
 itself. Unicorn's SR register does not hold the live condition codes, and
@@ -971,8 +1001,7 @@ training, with the front end, the rules, the AI and the presentation
 rebuilt on the exported data.
 
 Open work, in rough order of value for a port:
-1. In the Godot game: the in-match pause menu and replay, and the boot
-   screens.
+1. In the Godot game: the in-match pause menu and replay.
 2. The field layout of each mode's password and the object behind each
    remaining menu screen.
 3. The exact effects of curl, intelligence, balance and dribble (bytes 4,

@@ -243,6 +243,9 @@ func _physics_process(_delta: float) -> void:
 		# Training: Start goes to the training menu (match_rules_update_3).
 		match_over.emit({"training_menu": true})
 		return
+	if engine.demo and _end_wait < 0 and (ISSInput.start_pressed(0) or ISSInput.start_pressed(1)):
+		# The attract demo: Start on either pad leaves for the title.
+		engine.demo_start()
 	for i in sides.size():
 		if ISSInput.start_pressed(i):
 			paused = not paused

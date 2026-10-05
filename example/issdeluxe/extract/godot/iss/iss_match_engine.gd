@@ -81,6 +81,9 @@ var last_pads: Array = []
 ## or for screen 6 ("menu": a side asked for the match menu, $182A /
 ## $18B2, and the ball went dead).
 var half_only := false
+## The attract demo (mode $B): the match ends after a minute of play, or
+## at Start.
+var demo := false
 var end_reason := ""
 ## end_reason "presentation": the goal's picture to show ({"side", "kind"}).
 var presentation := {}
@@ -213,6 +216,7 @@ func setup(home: int, away: int, opts: Dictionary) -> void:
 			t.strategy_slots = slots.duplicate()
 		teams.append(t)
 	knockout = bool(opts.get("knockout", false))
+	demo = bool(opts.get("demo", false))
 	game_time = int(opts.get("time", 2))
 	half_frames = _half_length()
 	clock = half_frames
@@ -430,6 +434,13 @@ func _penalty_spot_dive() -> void:
 
 ## The eight statistics words of g_stats_home / g_stats_away in order.
 const STAT_KEYS := ["shots", "free_kicks", "corners", "penalties", "yellow", "red", "offsides", "goals"]
+
+
+## Start during the attract demo (match_rules_update_3): the match leaves
+## for the title (warm_start).
+func demo_start() -> void:
+	if demo and not over:
+		_end("demo_title")
 
 
 ## The match leaves for the front end (half_only).
@@ -1300,6 +1311,10 @@ func _clock() -> void:
 		return
 	if clock > 0:
 		clock -= 1
+		if demo and restart_type == R.NONE and clock < half_frames - 3600:
+			# match_rules_update: the demo leaves once the clock's minutes
+			# fall below 4 (from 5), for main_init.
+			_end("demo_over")
 		return
 	if restart_type == R.NONE and ball.live:
 		# match_rules_update: half time after halves 0 and 2 (the first

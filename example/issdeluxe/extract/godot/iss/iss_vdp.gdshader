@@ -10,6 +10,8 @@ shader_type canvas_item;
 
 uniform sampler2D vram : filter_nearest;   // R8, 256 x 256: byte a at (a & 255, a >> 8)
 uniform sampler2D cram : filter_nearest;   // RGBA8, 64 x 1
+uniform sampler2D cram2 : filter_nearest;  // RGBA8, 32 x 1: colours 0-31 from split_line
+uniform int split_line = 1000;             // colour c from line split_line + (c >> 1)
 uniform sampler2D sat : filter_nearest;    // R8, 512 x 1: 64 sprites x 8 bytes
 uniform int plane_a = 8192;
 uniform int plane_b = 0;
@@ -112,8 +114,12 @@ int sprite_px(int x, int y) {
 	return 0;
 }
 
-vec3 colour(int c) {
-	return texelFetch(cram, ivec2(c & 63, 0), 0).rgb;
+vec3 colour(int c, int y) {
+	c &= 63;
+	if (c < 32 && y >= split_line + (c >> 1)) {
+		return texelFetch(cram2, ivec2(c, 0), 0).rgb;
+	}
+	return texelFetch(cram, ivec2(c, 0), 0).rgb;
 }
 
 void fragment() {
@@ -139,7 +145,7 @@ void fragment() {
 		if (bc != 0 && bp) { c = bc; hi = true; }
 		if (ac != 0 && ap) { c = ac; hi = true; }
 		if (sc != 0 && sp) { c = sc; hi = true; }
-		rgb = colour(c != 0 ? c : backdrop);
+		rgb = colour(c != 0 ? c : backdrop, y);
 	} else {
 		if (bc != 0 && !bp) { c = bc; }
 		if (ac != 0 && !ap) { c = ac; }
@@ -155,7 +161,7 @@ void fragment() {
 			hi = sp;
 			if (sp || (c & 15) == 14) { shade = 1; }
 		}
-		rgb = colour(c != 0 ? c : backdrop);
+		rgb = colour(c != 0 ? c : backdrop, y);
 		if (shade == 0) {
 			rgb = rgb * 0.5;
 		} else if (shade == 2) {

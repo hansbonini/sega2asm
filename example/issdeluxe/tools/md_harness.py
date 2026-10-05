@@ -63,6 +63,11 @@ class VDP:
 
     # -- ports
     def read(self, offset, size):
+        if size == 1:
+            # A byte read: the even address holds the word's high byte (the V
+            # counter at $C00008, the status flags' high byte at $C00004).
+            w = self.read(offset & ~1, 2)
+            return (w >> 8) & 0xFF if offset & 1 == 0 else w & 0xFF
         o = offset & 0x1F
         if o < 4:
             return self.data_read()
@@ -81,6 +86,12 @@ class VDP:
     def write(self, offset, size, value):
         o = offset & 0x1F
         if o < 4:
+            if size == 4:
+                # A longword is two words to the data port (the boot module
+                # writes its palettes with move.l).
+                self.data_write((value >> 16) & 0xFFFF)
+                self.data_write(value & 0xFFFF)
+                return
             if size == 1:
                 value = value | (value << 8)
             self.data_write(value & 0xFFFF)

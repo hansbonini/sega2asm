@@ -61,6 +61,8 @@ var _vram_img: Image
 var _vram_tex: ImageTexture
 var _cram_img: Image
 var _cram_tex: ImageTexture
+var _cram2_img: Image
+var _cram2_tex: ImageTexture
 var _sat_img: Image
 var _sat_tex: ImageTexture
 var _mat := ShaderMaterial.new()
@@ -68,6 +70,13 @@ var _high := ColorRect.new()
 var _high_mat := ShaderMaterial.new()
 var _vram_dirty := true
 var _cram_dirty := true
+var _cram2_dirty := true
+## A second set of colours 0-31 (the title's HInt palette): from line
+## cram_split, colour c from cram_split + (c >> 1) on (its write takes an
+## HBlank a pair); NO_SPLIT for none.
+const NO_SPLIT := 1000
+var cram2 := PackedInt32Array()
+var cram_split := NO_SPLIT
 
 
 func _init() -> void:
@@ -78,12 +87,16 @@ func _init() -> void:
 	_vram_tex = ImageTexture.create_from_image(_vram_img)
 	_cram_img = Image.create(64, 1, false, Image.FORMAT_RGBA8)
 	_cram_tex = ImageTexture.create_from_image(_cram_img)
+	cram2.resize(32)
+	_cram2_img = Image.create(32, 1, false, Image.FORMAT_RGBA8)
+	_cram2_tex = ImageTexture.create_from_image(_cram2_img)
 	_sat_img = Image.create_from_data(MAX_SPRITES * 8, 1, false, Image.FORMAT_R8, sat)
 	_sat_tex = ImageTexture.create_from_image(_sat_img)
 	for mat: ShaderMaterial in [_mat, _high_mat]:
 		mat.shader = load("res://iss/iss_vdp.gdshader")
 		mat.set_shader_parameter("vram", _vram_tex)
 		mat.set_shader_parameter("cram", _cram_tex)
+		mat.set_shader_parameter("cram2", _cram2_tex)
 		mat.set_shader_parameter("sat", _sat_tex)
 	material = _mat
 	_high_mat.set_shader_parameter("high_only", true)
@@ -173,6 +186,11 @@ func flush() -> void:
 			_cram_img.set_pixel(i, 0, md_color(cram[i]))
 		_cram_tex.update(_cram_img)
 		_cram_dirty = false
+	if _cram2_dirty:
+		for i in 32:
+			_cram2_img.set_pixel(i, 0, md_color(cram2[i]))
+		_cram2_tex.update(_cram2_img)
+		_cram2_dirty = false
 	_sat_img.set_data(MAX_SPRITES * 8, 1, false, Image.FORMAT_R8, sat)
 	_sat_tex.update(_sat_img)
 	for mat: ShaderMaterial in [_mat, _high_mat]:
@@ -198,6 +216,7 @@ func flush() -> void:
 		mat.set_shader_parameter("plane_cols", plane_cols)
 		mat.set_shader_parameter("plane_rows", plane_rows)
 		mat.set_shader_parameter("display", display)
+		mat.set_shader_parameter("split_line", cram_split)
 	queue_redraw()
 
 
@@ -215,12 +234,19 @@ func reset_registers() -> void:
 	display = true
 	window_h = 0
 	window_v = 0
+	cram_split = NO_SPLIT
 
 
 ## One CRAM word (a CRAM write of the game's own).
 func set_cram_word(i: int, v: int) -> void:
 	cram[i & 63] = v
 	_cram_dirty = true
+
+
+## One word of the second palette (the HInt's).
+func set_cram2_word(i: int, v: int) -> void:
+	cram2[i & 31] = v
+	_cram2_dirty = true
 
 
 ## The sprite table as a program keeps it in RAM (sprite_alloc's buffer):
