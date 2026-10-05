@@ -692,6 +692,11 @@ func _keeper_think(p: ISSFootballer) -> void:
 ## Every frame: stay on the line (or rush out) and dive at shots.
 func _keeper_steer(p: ISSFootballer) -> void:
 	var b := eng.ball
+	if p == eng.scripted_keeper and eng.pk_spot_wait > 0:
+		# penalty_spot_keeper_1: still until the dive chosen in the view.
+		p.input_dir = -1
+		p.held = 0
+		return
 	var target := _keeper_spot(p)
 	var dash := false
 	if p.ai_mode == AI.RUSH and b.is_loose() and b.live:

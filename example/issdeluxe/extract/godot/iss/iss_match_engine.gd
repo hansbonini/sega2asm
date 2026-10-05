@@ -49,6 +49,14 @@ var restart_phase := 0
 var restart_timer := 0
 var restart_taker: ISSFootballer = null
 var restart_after := R.NONE
+## A penalty in a match (restart 7, back from the shoot-out's view): the
+## kick as the view decided it ({"order0", "aim", "power", "dive_dir",
+## "dive_input"}), its taker, the frames until the keeper's dive, and the
+## keeper held still until then.
+var pk_spot := {}
+var pk_spot_taker: ISSFootballer = null
+var pk_spot_wait := 0
+var scripted_keeper: ISSFootballer = null
 var ball_entered := true
 var offside_side := -1
 
@@ -265,6 +273,8 @@ func _start_from_ram(opts: Dictionary) -> void:
 			start_restart(R.MATCH_START, kickoff_side, mid)
 		R.KICKOFF, R.GOAL, R.OWN_GOAL:
 			_start_kickoff(int(r.get("team", kickoff_side)))
+		R.PENALTY_SPOT:
+			_start_penalty_spot(int(r.get("team", 0)), opts.get("penalty", {}))
 		_:
 			# Back from the match menu: everyone at his place, the restart
 			# that was waiting set up again.
@@ -307,6 +317,115 @@ func goal_presentation() -> Dictionary:
 		if same:
 			kind = 2
 	return {} if kind < 0 else {"side": side, "kind": kind}
+
+
+## A penalty back from the shoot-out's view (restart_setup_penalty_spot,
+## restart_resume_penalty_spot): the ball 256 px in front of the goal, the
+## defending side's players 160-640 px out from their goal line
+## (tbl_penalty_spot_defenders) and their keeper 16 px in front of it, the
+## kicking side's players 10-5 400-450 px from the goal
+## (tbl_penalty_spot_attackers), its kicker (the first in the order list,
+## the one the order screen chose) 64 px behind the ball.
+func _start_penalty_spot(side: int, pk: Dictionary) -> void:
+	var d := attack_dir(side)
+	var g := goal_center(1 - side)
+	restart_type = R.PENALTY_SPOT
+	restart_side = side
+	restart_pos = g - Vector2(d * 256.0, 0)
+	restart_phase = 4
+	restart_timer = 0x80
+	restart_taker = null
+	set_places.clear()
+	_wall.clear()
+	event_counts[R.PENALTY_SPOT] = int(event_counts.get(R.PENALTY_SPOT, 0)) + 1
+	ball.owner = null
+	ball.stop()
+	ball.pos = restart_pos
+	ball.live = false
+	pk_spot = pk
+	var att := teams[side]
+	var dfd := teams[1 - side]
+	const DEFENDERS := [[10, -26], [10, 26], [25, -16], [25, -8], [28, 0], [25, 8], [25, 16], [32, -10], [36, 14],
+		[40, 0], [10, 10]]
+	const ATTACKERS := [[-25, -20], [-25, -12], [-25, -4], [-28, 4], [-25, 12], [-25, 20]]
+	for i in 10:
+		var e: Array = DEFENDERS[i]
+		set_places[dfd.players[i + 1]] = Vector2(g.x - d * float(e[0]) * 16.0, mid.y + float(e[1]) * 16.0)
+	for i in 6:
+		var e: Array = ATTACKERS[i]
+		set_places[att.players[10 - i]] = Vector2(g.x + d * float(e[0]) * 16.0, mid.y + float(e[1]) * 16.0)
+	scripted_keeper = dfd.players[0]
+	set_places[scripted_keeper] = g - Vector2(d * 16.0, 0)
+	var taker := att.players[clampi(int(pk.get("order0", 10)), 1, 10)]
+	if taker.state == ISSFootballer.S.SENT_OFF:
+		for p in att.active():
+			if not p.is_keeper():
+				taker = p
+	pk_spot_taker = taker
+	set_places[taker] = restart_pos - Vector2(d * 64.0, 0)
+	for t in teams:
+		for p in t.active():
+			if not p.busy():
+				p.set_state(ISSFootballer.S.MOVE, ISSFootballer.A_STAND)
+			p.speed = 0.0
+
+
+## penalty_spot_taker: 128 frames behind the ball, then to it; within 16 px
+## the ball is his and he kicks it toward the aim chosen in the view
+## ($14F2: across the goal from the middle, to his right), low or high as
+## chosen ($14F4).
+func _penalty_spot_step() -> void:
+	var taker := pk_spot_taker
+	if taker == null or taker.state == ISSFootballer.S.SENT_OFF:
+		restart_type = R.NONE
+		restart_phase = 0
+		ball.live = true
+		return
+	if restart_timer > 0:
+		restart_timer -= 1
+		if restart_timer == 0:
+			set_places[taker] = ball.pos
+		return
+	if (taker.pos - ball.pos).length() > 16.0:
+		set_places[taker] = ball.pos
+		return
+	var side := restart_side
+	var d := attack_dir(side)
+	ball.live = true
+	ball_entered = true
+	ball.owner = taker
+	ball.team = side
+	ball.last_touch = taker
+	taker.speed = 0.0
+	var target := Vector2(goal_center(1 - side).x, mid.y + float(int(pk_spot.get("aim", 0))) * d)
+	var h := ISSFootballer.heading_to(ball.pos, target)
+	taker.facing = int(h) & 63
+	restart_taker = taker
+	restart_phase = 1
+	var power := int(pk_spot.get("power", 0))
+	taker.start_kick(ISSFootballer.K.SHOT, h, null, 0 if power == 0 else (8 if power >= 0x10 else 7))
+
+
+## penalty_spot_keeper_dive: the save chosen in the view: with a direction
+## ($14F6, left or right of the taker) the jump (lofted) or the low dive
+## (pass) up or down the goal line; lofted alone the one-arm reach; pass
+## alone the step across (his own save here).
+func _penalty_spot_dive() -> void:
+	var k := scripted_keeper
+	scripted_keeper = null
+	if k == null or k.busy():
+		return
+	var h := 30 if int(pk_spot.get("dive_dir", 0x20)) > 0x20 else 2
+	if k.team != left_goal_team:
+		h = (h + 32) & 63
+	var sd: Array = ISSMatchData.consts["keeper"]["side_dive"]
+	match int(pk_spot.get("dive_input", 0x10)):
+		0x2C:
+			k.start_dive(h, float(sd[0]), float(sd[1]))
+		0x1C:
+			k.start_dive(h, float(sd[0]), float(sd[1]) * 0.5)
+		0x20:
+			k.start_dive(k.facing)
 
 
 ## The eight statistics words of g_stats_home / g_stats_away in order.
@@ -477,6 +596,10 @@ func step(pads: Array = []) -> void:
 		_clock()
 	if not shootout:
 		_director()
+	if pk_spot_wait > 0:
+		pk_spot_wait -= 1
+		if pk_spot_wait == 0:
+			_penalty_spot_dive()
 	_officials()
 
 
@@ -980,6 +1103,9 @@ func kick_ball(p: ISSFootballer) -> void:
 		if shootout:
 			pk_phase = 1
 			pk_timer = 0
+	elif was == R.PENALTY_SPOT and p == restart_taker:
+		# penalty_spot_keeper_1: the keeper's dive 16 frames after the kick.
+		pk_spot_wait = 16
 	if restart_type != R.NONE and restart_phase == 1 and p == restart_taker:
 		restart_type = R.NONE
 		restart_taker = null
@@ -1297,6 +1423,12 @@ func _director() -> void:
 					restart_phase = 3
 					restart_timer = 0x80
 					return
+				if restart_type == R.PENALTY and half_only and drill < 0 and challenge < 0:
+					# restart_penalty_1: the kick is taken in the shoot-out's
+					# view (a human side picks its kicker on the order screen
+					# first), then the match finishes it from the spot.
+					_end("penalty")
+					return
 				_setup_restart()
 	elif restart_phase == 2:
 		restart_timer -= 1
@@ -1312,6 +1444,8 @@ func _director() -> void:
 		if restart_timer <= 0:
 			menu_request = [0, 0]
 			_end("menu")
+	elif restart_phase == 4:
+		_penalty_spot_step()
 	elif restart_phase == 1:
 		if restart_taker == null or ball.owner != restart_taker:
 			restart_type = R.NONE

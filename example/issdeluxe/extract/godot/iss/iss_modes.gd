@@ -522,6 +522,19 @@ static func after_match(shootout: bool) -> void:
 			_w(S.g_next_screen, 0x33 if ISSRam.w(0x1272) == 0 else 0x27)
 
 
+## penalty_view_start: a match's penalty goes to the shoot-out's view: in a
+## match ($1638), no kicks yet, both orders 10, 9 ... 1 from the start (the
+## order screen puts a human side's kicker first).
+static func penalty_view_start() -> void:
+	_w(0x1638, 1)
+	_w(S.g_shootout_kicks, 0)
+	_w(0x14FA, 0)
+	_w(0x14FC, 0)
+	for i in 10:
+		_w(0x14FE + 2 * i, 10 - i)
+		_w(0x1512 + 2 * i, 10 - i)
+
+
 ## shootout_start: the shoot-out after extra time: out of the match ($1638),
 ## no kicks yet, the takers' places ($1526) free, nought each, both orders
 ## 10, 9 ... 1, the home side first.

@@ -83,6 +83,13 @@ static func from_ram() -> Dictionary:
 			opts["training"] = _w(S.g_training_drill)
 		0xD:
 			opts["challenge"] = {"event": _w(S.g_training_drill), "level": _w(S.g_challenge_level)}
+		ISSMatchEngine.R.PENALTY_SPOT:
+			# Back from the shoot-out's view: the kicker (the first in the
+			# side's order), the kick's aim ($14F2) and power ($14F4), the
+			# keeper's direction ($14F6) and buttons ($14F8).
+			var side := ISSRam.sw(S.g_restart_team)
+			opts["penalty"] = {"order0": _w(0x14FE if side == 0 else 0x1512), "aim": ISSRam.sw(0x14F2),
+				"power": _w(0x14F4), "dive_dir": _w(0x14F6), "dive_input": _w(0x14F8)}
 	return {"home": home, "away": away, "options": opts}
 
 

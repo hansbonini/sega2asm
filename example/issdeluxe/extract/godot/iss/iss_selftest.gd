@@ -113,6 +113,7 @@ func _init() -> void:
 	_check_presentations()
 	_check_goal_presentation()
 	_check_shootout()
+	_check_penalty_view()
 	_check_competitions()
 	_check_strategies_and_subs()
 	_check_long_modes()
@@ -437,6 +438,76 @@ func _check_shootout() -> void:
 	_check(ok, "shoot-out: %d kicks, %d-%d in %d frames, %d marks, %d sprites" % [kicks, home, away, frames, marks,
 		sprites])
 	menu.free()
+
+
+## A penalty in a front-end match: the match leaves for the shoot-out's
+## view, which runs one kick (CPU v CPU here) and comes back with restart
+## 7; the match then puts everyone in place, the kicker walks up and takes
+## the kick the view decided, and play goes on.
+func _check_penalty_view() -> void:
+	ISSMenu.power_on()
+	ISSModes.start_open_game()
+	ISSModes.open_game_setup()
+	ISSRam.set_w(ISSSym.g_pads_home, 0)
+	ISSRam.set_w(ISSSym.g_pads_away, 0)
+	_short_clock(50)
+	var setup := ISSMatchSetup.from_ram()
+	var e := ISSMatchEngine.new()
+	e.setup(int(setup["home"]), int(setup["away"]), setup["options"])
+	e.ball.live = true
+	e.start_restart(ISSMatchEngine.R.PENALTY, 0, e.goal_center(1) - Vector2(e.attack_dir(0) * 256.0, 0))
+	var frames := 0
+	while not e.over and frames < 600:
+		e.step([])
+		frames += 1
+	var left := e.end_reason
+	ISSMatchSetup.to_ram(e)
+	e.dispose()
+	_check(left == "penalty" and ISSRam.sw(ISSSym.g_restart_type) == ISSMatchEngine.R.PENALTY,
+		"penalty: the match leaves for the view (%s, restart %d)" % [left, ISSRam.sw(ISSSym.g_restart_type)])
+	ISSModes.penalty_view_start()
+	var menu := ISSMenu.new()
+	root.add_child(menu)
+	menu.set_physics_process(false)
+	var reads := [0]
+	menu.hv_counter = func() -> int:
+		var k: int = reads[0]
+		reads[0] = k + 1
+		return ((k * 2654435761) >> 7) & 0xFFFF
+	ISSRam.set_l(ISSSym.g_current_state, ISSMenu.STATE_MATCH)
+	var next := [0]
+	menu.next_state.connect(func(st: int) -> void: next[0] = st)
+	menu.enter(ISSMenu.STATE_SHOOTOUT)
+	frames = 0
+	while frames < 2000 and next[0] == 0:
+		frames += 1
+		menu._physics_process(1.0 / 60.0)
+	menu.free()
+	_check(next[0] == ISSMenu.STATE_MATCH and ISSRam.sw(ISSSym.g_restart_type) == ISSMatchEngine.R.PENALTY_SPOT,
+		"penalty: the view comes back to the match (state %X, restart %d, %d frames)" % [next[0],
+		ISSRam.sw(ISSSym.g_restart_type), frames])
+	var order0 := ISSRam.w(0x14FE)
+	setup = ISSMatchSetup.from_ram()
+	e = ISSMatchEngine.new()
+	e.setup(int(setup["home"]), int(setup["away"]), setup["options"])
+	var scripted := e.restart_type == ISSMatchEngine.R.PENALTY_SPOT and e.restart_phase == 4 \
+		and e.pk_spot_taker == e.teams[0].players[order0]
+	frames = 0
+	while frames < 900 and e.restart_type != ISSMatchEngine.R.NONE:
+		e.step([])
+		frames += 1
+	var kicker := e.ball.kicker
+	for i in 120:
+		e.step([])
+	# The kick is taken, the keeper has made the view's save, and play went
+	# on (a goal or a goal kick are restarts of their own by now).
+	var outcome := "goal" if e.restart_type in [ISSMatchEngine.R.GOAL, ISSMatchEngine.R.KICKOFF] else \
+		("play on" if e.restart_type == ISSMatchEngine.R.NONE else "restart %d" % e.restart_type)
+	_check(scripted and kicker == e.teams[0].players[order0] and int(e.teams[0].stats["shots"]) >= 1
+		and e.scripted_keeper == null and e.pk_spot_wait == 0 and e.restart_type != ISSMatchEngine.R.PENALTY_SPOT,
+		"penalty: taken from the spot by player %d in %d frames (dive %X, kicker %s, %s)" % [order0, frames,
+		int(setup["options"].get("penalty", {}).get("dive_input", -1)), kicker.index if kicker != null else -1, outcome])
+	e.dispose()
 
 
 ## A front-end match leaves for the big screen after a goal that puts a

@@ -129,6 +129,20 @@ func _match_left(m: ISSMatch) -> void:
 			ISSRam.set_l(S.g_next_state, ISSMenu.STATE_SCREEN)
 			_presentation()
 			return
+		"penalty":
+			# restart_penalty_1: the kick in the shoot-out's view; a human
+			# side picks its kicker on the order screen ($1A) first. The view
+			# comes back to state_match with restart 7.
+			ISSModes.penalty_view_start()
+			var side := ISSRam.sw(S.g_restart_team)
+			if ISSRam.w(S.g_pads_home if side == 0 else S.g_pads_away) != 0:
+				ISSRam.set_w(0x176A, side)
+				ISSRam.set_w(S.g_next_screen, 0x1A)
+				_menu()
+			else:
+				ISSRam.set_l(S.g_next_state, ISSMenu.STATE_SHOOTOUT)
+				_shootout()
+			return
 		"menu":
 			# rules_state_0185BA: the match menu, the restart waiting.
 			ISSRam.set_w(S.g_next_screen, 6)

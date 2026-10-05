@@ -685,7 +685,11 @@ scaled by whole numbers:
   then sudden death; a human side picks its next takers on the order screen
   (`$1A`) between rounds, and the result goes to the mode's own screen
   (`shootout_decided_1`). PK mode, the shoot-out after extra time and the
-  competitions' knockout games use it.
+  competitions' knockout games use it; so does a penalty in a match: the
+  view decides the kick and the keeper's save, then the match finishes it
+  from the spot (`restart_setup_penalty_spot`, restart 7: the kicker the
+  order screen chose walks up and kicks toward the aim, the keeper dives
+  as chosen 16 frames later).
 * **Endings**: the staff roll after the International Cup or the
   championship (screen `$33`, with its scenes of play), the scenarios'
   ending (`$26`), game over and congratulations.
@@ -781,12 +785,9 @@ scaled by whole numbers:
   lofted balls, `camera_update`'s lead toward the attacking goal, the HUD
   with the live radar, banners, commentary, crowd and effects.
 
-Not reproduced (yet): a penalty in a match is still taken on the pitch
-(the original shows its run-up and kick in the shoot-out's view, then
-finishes it on the pitch from the stored aim and dive, restart 7), the
-original's in-match pause menu and replay (the port's pause offers
-continue, substitutions and the match menu), and the boot screens before
-the title.
+Not reproduced (yet): the original's in-match pause menu and replay (the
+port's pause offers continue, substitutions and the match menu), and the
+boot screens before the title.
 `iss_selftest.gd` plays a whole CPU match headless, drives a player
 through the pad input, plays a level knockout match to penalties, runs a
 league, a tournament, the International Cup and both paths of the World
@@ -796,7 +797,8 @@ end, clears the dribble and checks the challenge timer and scores,
 strategies and substitutions, runs the three presentations (the toss with
 pad presses, a goal, the trophy) and a goal's hand-over from the match to
 the big screen and back, plays a PK-mode shoot-out between two CPU sides to
-its decision, and starts a match in the game scene.
+its decision, takes a match's penalty through the view and back to the
+spot, and starts a match in the game scene.
 
 The front end, the presentations, the endings and the shoot-out were
 checked frame by frame against the ROM running in `tools/md_harness.py`:
@@ -969,9 +971,8 @@ training, with the front end, the rules, the AI and the presentation
 rebuilt on the exported data.
 
 Open work, in rough order of value for a port:
-1. In the Godot game: a match penalty through the shoot-out's view
-   (`restart_penalty`, restart 7), the in-match pause menu and replay, and
-   the boot screens.
+1. In the Godot game: the in-match pause menu and replay, and the boot
+   screens.
 2. The field layout of each mode's password and the object behind each
    remaining menu screen.
 3. The exact effects of curl, intelligence, balance and dribble (bytes 4,
